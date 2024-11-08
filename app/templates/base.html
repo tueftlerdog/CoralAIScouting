@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Flask Auth App{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Add Tippy.js for better tooltips -->
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+</head>
+
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center">
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('index') }}" class="py-4 px-2 hover:text-blue-500">Home</a>
+                </div>
+
+                <!-- Search Bar in Middle -->
+                <div class="flex-1 max-w-lg px-4 relative">
+                    <div class="relative">
+                        <input type="text" 
+                               id="nav-team-search" 
+                               placeholder="Search team (e.g., 334)" 
+                               class="w-full p-2 pl-8 border rounded-lg focus:outline-none focus:border-blue-500"
+                               autocomplete="off">
+                        <div id="search-results" 
+                             class="absolute w-full bg-white mt-1 rounded-lg shadow-lg border hidden z-50">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-4">
+                    {% if current_user.is_authenticated %}
+                        <span class="py-4 px-2">{{ current_user.email }}</span>
+                        <a href="{{ url_for('auth.logout') }}" class="py-4 px-2 hover:text-blue-500">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="py-4 px-2 hover:text-blue-500">Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="py-4 px-2 hover:text-blue-500">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-4 rounded {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %} -->
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+    let debounceTimer;
+    let teamsCache = {};
+    const searchInput = document.getElementById('nav-team-search');
+    const searchResults = document.getElementById('search-results');
+
+    // Handle input in search box
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        const query = e.target.value.trim();
+        
+        if (query.length < 1) {
+            searchResults.classList.add('hidden');
+            return;
+        }
+
+        debounceTimer = setTimeout(async () => {
+            try {
+                // Try to get teams from cache first
+                let teams = teamsCache[query];
+                
+                if (!teams) {
+                    const response = await fetch(`/search_team?team_number=${query}&event_code=`);
+                    const data = await response.json();
+                    
+                    if (response.ok && data.tba_data) {
+                        teams = [data.tba_data];
+                        teamsCache[query] = teams;
+                    }
+                }
+
+                if (teams && teams.length > 0) {
+                    searchResults.innerHTML = teams.map(team => `
+                        <div class="p-2 hover:bg-gray-100 cursor-pointer" 
+                             onclick="selectTeam(${team.team_number})">
+                            <div class="font-medium">Team ${team.team_number}</div>
+                            <div class="text-sm text-gray-600">${team.nickname || ''}</div>
+                        </div>
+                    `).join('');
+                    searchResults.classList.remove('hidden');
+                } else {
+                    searchResults.innerHTML = `
+                        <div class="p-2 text-gray-500">No teams found</div>
+                    `;
+                    searchResults.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+        }, 300);
+    });
+
+    // Handle clicking outside of search
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.classList.add('hidden');
+        }
+    });
+
+    // Handle team selection
+    function selectTeam(teamNumber) {
+        window.location.href = `/search?team=${teamNumber}`;
+    }
+
+    // Handle keyboard navigation
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const firstResult = searchResults.querySelector('div.cursor-pointer');
+            if (firstResult) {
+                const teamNumber = firstResult.getAttribute('onclick').match(/\d+/)[0];
+                selectTeam(teamNumber);
+            }
+        }
+    });
+    </script>
+
+</body>
+</html>
