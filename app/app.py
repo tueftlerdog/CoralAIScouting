@@ -9,6 +9,7 @@ from functools import partial
 from auth.models import User
 from auth.auth_utils import UserManager
 from auth.routes import create_auth_blueprint
+from team import team_bp
 
 async def init_db():
     await Tortoise.init(
@@ -26,7 +27,7 @@ def run_async(coro):
         loop.close()
 
 async def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static', template_folder='templates')
     app.config.update(
         SECRET_KEY=os.getenv('SECRET_KEY', 'team334'),
         SESSION_COOKIE_HTTPONLY=True,
@@ -59,6 +60,7 @@ async def create_app():
     # Create and register blueprint
     auth_bp = create_auth_blueprint(user_manager)
     app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(team_bp, url_prefix='/team')
 
     # Main routes
     @app.route('/')

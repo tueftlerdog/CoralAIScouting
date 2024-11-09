@@ -1,7 +1,8 @@
-import asyncio
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, login_user, current_user, logout_user
+import asyncio
 from functools import wraps
+
 
 def run_async(coro):
     loop = asyncio.new_event_loop()
@@ -16,6 +17,8 @@ def async_route(f):
     def wrapper(*args, **kwargs):
         return run_async(f(*args, **kwargs))
     return wrapper
+
+
 
 def create_auth_blueprint(user_manager):
     auth_bp = Blueprint('auth', __name__)

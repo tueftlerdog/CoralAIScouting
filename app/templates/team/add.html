@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">Add Team Data</h1>
+    <form method="POST" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Team Number</label>
+            <input type="number" name="team_number" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Event Code</label>
+            <input type="text" name="event_code" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Match Number</label>
+            <input type="number" name="match_number" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Auto Points</label>
+            <input type="number" name="auto_points" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Teleop Points</label>
+            <input type="number" name="teleop_points" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Endgame Points</label>
+            <input type="number" name="endgame_points" required 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Notes</label>
+            <textarea name="notes" rows="3" 
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+        </div>
+        <button type="submit" 
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Add Team Data
+        </button>
+    </form>
+</div>
+{% endblock %}

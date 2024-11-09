@@ -129,22 +129,6 @@
                             <span class="check-icon unmet">•</span>
                             At least 8 characters
                         </div>
-                        <div class="requirement-item" data-requirement="uppercase">
-                            <span class="check-icon unmet">•</span>
-                            One uppercase letter
-                        </div>
-                        <div class="requirement-item" data-requirement="lowercase">
-                            <span class="check-icon unmet">•</span>
-                            One lowercase letter
-                        </div>
-                        <div class="requirement-item" data-requirement="number">
-                            <span class="check-icon unmet">•</span>
-                            One number
-                        </div>
-                        <div class="requirement-item" data-requirement="special">
-                            <span class="check-icon unmet">•</span>
-                            One special character
-                        </div>
                     </div>
                 </div>
 
@@ -163,7 +147,7 @@
                     <button type="submit" 
                             id="register-button"
                             class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                            disabled>
+                            >
                         Register
                     </button>
                 </div>
@@ -185,16 +169,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirm_password');
-    const strengthBar = document.querySelector('.strength-bar');
     const registerButton = document.getElementById('register-button');
     
     function checkPasswordStrength(password) {
         const checks = {
             length: password.length >= 8,
-            uppercase: /[A-Z]/.test(password),
-            lowercase: /[a-z]/.test(password),
-            number: /[0-9]/.test(password),
-            special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
         };
 
         // Update requirement items
@@ -218,13 +197,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Calculate strength
         const passedChecks = Object.values(checks).filter(Boolean).length;
         
-        // Update strength bar
-        strengthBar.className = 'strength-bar';
-        if (passedChecks === 0) strengthBar.classList.add('very-weak');
-        else if (passedChecks === 1) strengthBar.classList.add('weak');
-        else if (passedChecks === 2) strengthBar.classList.add('fair');
-        else if (passedChecks === 3 || passedChecks === 4) strengthBar.classList.add('good');
-        else strengthBar.classList.add('strong');
 
         return Object.values(checks).every(Boolean);
     }
@@ -235,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isStrong = checkPasswordStrength(password);
         const isMatching = password === confirmPassword;
         
-        registerButton.disabled = !(isStrong && isMatching && confirmPassword.length > 0);
+        // registerButton.disabled = !(isStrong && isMatching && confirmPassword.length > 0);
     }
 
     passwordInput.addEventListener('input', validatePasswords);
