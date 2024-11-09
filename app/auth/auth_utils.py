@@ -68,9 +68,7 @@ class UserManager:
         Authenticate user by email or username
         """
         # Try finding user by email first, then username
-        user = await User.filter(email=login).first()
-        if not user:
-            user = await User.filter(username=login).first()
+        user = await User.filter(email=login).first() or await User.filter(username=login).first()
         
         if user and user.check_password(password):
             await user.update_last_login()
