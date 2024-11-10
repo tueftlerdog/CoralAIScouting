@@ -93,7 +93,7 @@ async def delete_team_data(id):
     return redirect(url_for('team.list_team_data'))
 
 @team_bp.route('/api/search')
-@login_required
+# @login_required
 @async_route
 async def search_teams():
     query = request.args.get('q', '').strip()
@@ -121,7 +121,7 @@ async def search_teams():
             
             # If not numeric or team not found, fall back to event search
             event_code = "2024your_event_code"  # Replace with actual event code
-            teams = await tba.get_teams(event_code)
+            teams = await tba.get_teams_at_event(event_code)
             
             if teams:
                 filtered_teams = [

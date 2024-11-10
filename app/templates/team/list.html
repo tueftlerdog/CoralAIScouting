@@ -25,6 +25,9 @@
                         Points
                     </th>
                     <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Notes
+                    </th>
+                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Scouter
                     </th>
                     <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -39,6 +42,7 @@
                     <td class="px-6 py-4 whitespace-nowrap">{{ data.event_code }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ data.match_number }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ data.total_points }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ data.notes }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ data.scouter_name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <a href="{{ url_for('team.edit_team_data', id=data.id) }}" 
