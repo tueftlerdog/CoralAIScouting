@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto p-4">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold mb-2">Team Search</h1>
+        <p class="text-gray-600">Search for FRC teams by number or name</p>
+    </div>
+
+    <div class="flex-1 max-w-lg relative">
+        <div class="relative">
+            <input type="text" id="team-search" 
+                   placeholder="Search teams..." 
+                   class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+        </div>
+    </div>
+
+    <!-- Selected team info will appear here -->
+    <div id="selected-team-info" class="mt-8 hidden">
+        <h2 class="text-xl font-semibold mb-4">Team Information</h2>
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h3 class="font-medium text-gray-700">Team Number</h3>
+                    <p id="team-number" class="text-lg"></p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700">Nickname</h3>
+                    <p id="team-nickname" class="text-lg"></p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700">School</h3>
+                    <p id="team-school" class="text-lg"></p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700">Location</h3>
+                    <p id="team-location" class="text-lg"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+
+{% endblock %}

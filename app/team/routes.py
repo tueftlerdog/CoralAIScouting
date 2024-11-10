@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import Blueprint, flash, render_template, request, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from auth.models import TeamData
 from .TBA import TBAInterface
@@ -57,7 +57,6 @@ async def list_team_data():
     return render_template('team/list.html', team_data=team_data)
 
 @team_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
 @async_route
 async def edit_team_data(id):
     team_data = await TeamData.get_or_none(id=id)
@@ -87,13 +86,29 @@ async def edit_team_data(id):
 @login_required
 @async_route
 async def delete_team_data(id):
-    team_data = await TeamData.get_or_none(id=id)
-    if team_data:
-        await team_data.delete()
+    team_data = await TeamData.get_or_none(id=id).prefetch_related('scouter')
+    
+    if not team_data:
+        flash('Record not found.', 'error')
+        return redirect(url_for('team.list_team_data'))
+    
+    if team_data.scouter.id != current_user.id:
+        flash('You do not have permission to delete this record.', 'error')
+        return redirect(url_for('team.list_team_data'))
+    
+    await team_data.delete()
+    flash('Record deleted successfully.', 'success')
     return redirect(url_for('team.list_team_data'))
 
-@team_bp.route('/api/search')
+
 # @login_required
+@team_bp.route('/search')
+@login_required
+def team_search_page():
+    return render_template('team/search.html')
+
+@team_bp.route('/api/search')
+@login_required
 @async_route
 async def search_teams():
     query = request.args.get('q', '').strip()
@@ -103,43 +118,41 @@ async def search_teams():
     try:
         async with TBAInterface() as tba:
             # If the query is numeric, try to fetch specific team
-            if query.isdigit():
-                team_key = f"frc{query}"
-                url = f"{tba.base_url}/team/{team_key}"
-                
-                async with tba.session.get(url) as response:
-                    if response.status == 200:
-                        team = await response.json()
-                        return jsonify([{
-                            "team_number": team["team_number"],
-                            "nickname": team["nickname"],
-                            "school_name": team.get("school_name"),
-                            "city": team.get("city"),
-                            "state_prov": team.get("state_prov"),
-                            "country": team.get("country")
-                        }])
+            team_key = f"frc{query}"
+            url = f"{tba.base_url}/team/{team_key}"
             
-            # If not numeric or team not found, fall back to event search
-            event_code = "2024your_event_code"  # Replace with actual event code
-            teams = await tba.get_teams_at_event(event_code)
-            
-            if teams:
-                filtered_teams = [
-                    {
+            async with tba.session.get(url) as response:
+                if response.status == 200:
+                    team = await response.json()
+                    return jsonify([{
                         "team_number": team["team_number"],
                         "nickname": team["nickname"],
                         "school_name": team.get("school_name"),
                         "city": team.get("city"),
                         "state_prov": team.get("state_prov"),
                         "country": team.get("country")
-                    }
-                    for team in teams
-                    if str(team["team_number"]).startswith(query) or
-                       query.lower() in team["nickname"].lower()
-                ]
-                return jsonify(filtered_teams)
+                    }])
             
-            return jsonify([])
+            # event_code = "2024your_event_code"  # Replace with actual event code
+            # teams = await tba.get_teams_at_event(event_code)
+            
+            # if teams:
+            #     filtered_teams = [
+            #         {
+            #             "team_number": team["team_number"],
+            #             "nickname": team["nickname"],
+            #             "school_name": team.get("school_name"),
+            #             "city": team.get("city"),
+            #             "state_prov": team.get("state_prov"),
+            #             "country": team.get("country")
+            #         }
+            #         for team in teams
+            #         if str(team["team_number"]).startswith(query) or
+            #            query.lower() in team["nickname"].lower()
+            #     ]
+            #     return jsonify(filtered_teams)
+            
+            # return jsonify([])
             
     except Exception as e:
         print(f"Error searching teams: {e}")

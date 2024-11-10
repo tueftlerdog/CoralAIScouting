@@ -8,7 +8,7 @@ class User(Model, UserMixin):
     id = fields.IntField(pk=True)
     email = fields.CharField(max_length=255, unique=True)
     username = fields.CharField(max_length=255, null=True)
-    teamNumber = fields.IntField(default=0)
+    teamNumber = fields.IntField()
     password_hash = fields.CharField(max_length=255)
     role = fields.CharField(max_length=50, default="user")
     last_login = fields.DatetimeField(null=True)
@@ -54,4 +54,4 @@ class TeamData(Model):
 
     @property
     def scouter_name(self):
-        return self.scouter.username if self.scouter else "Unknown"
+        return f"{self.scouter.username} ({self.scouter.teamNumber})" if self.scouter else "Unknown"

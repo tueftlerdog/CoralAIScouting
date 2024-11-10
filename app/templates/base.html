@@ -19,7 +19,7 @@
                 </div>
 
                 <!-- Search Bar in Middle -->
-                <div class="flex-1 max-w-lg px-4 relative">
+                <!-- <div class="flex-1 max-w-lg px-4 relative">
                     <div class="relative">
                         <input type="text" id="team-search" 
                                placeholder="Search teams..." 
@@ -28,7 +28,7 @@
                              class="absolute w-full bg-white mt-1 rounded-lg shadow-lg border hidden z-50">
                         </div>
                     </div>
-                </div>
+                </div> -->
 
                 <div class="flex space-x-4">
                     {% if current_user.is_authenticated %}
@@ -56,6 +56,6 @@
 
         {% block content %}{% endblock %}
     </div>
-    <script src="{{ url_for('static', filename='js/search.js') }}"></script>
+    <!-- <script src="{{ url_for('static', filename='js/search.js') }}"></script> -->
 </body>
 </html>

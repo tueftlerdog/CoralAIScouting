@@ -3,12 +3,14 @@ import asyncio
 from typing import Optional, List, Dict
 from dataclasses import dataclass
 
+from flask import jsonify
+
 
 @dataclass
 class TBAInterface:
     """Async interface for The Blue Alliance API"""
     
-    def __init__(self, auth_key: str = "APIKEYHERE"):
+    def __init__(self, auth_key: str = "uTHeEfPigDp9huQCpLNkWK7FBQIb01Qrzvt4MAjh9z2WQDkrsvNE77ch6bOPvPb6"):
         self.auth_key = auth_key
         self.base_url = "https://www.thebluealliance.com/api/v3"
         self.headers = {"X-TBA-Auth-Key": self.auth_key}
