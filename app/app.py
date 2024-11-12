@@ -36,33 +36,27 @@ async def create_app():
         TEMPLATES_AUTO_RELOAD=True
     )
 
-    # Initialize Tortoise-ORM
     await init_db()
 
-    # Initialize Flask-Login
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message_category = 'error'
 
-    # Initialize UserManager
     user_manager = UserManager()
 
     @login_manager.user_loader
     def load_user(user_id):
         try:
-            # Run the async query in a synchronous context
             return run_async(User.get_or_none(id=int(user_id)))
         except Exception as e:
             print(f"Error loading user: {e}")
             return None
 
-    # Create and register blueprint
     auth_bp = create_auth_blueprint(user_manager)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(team_bp, url_prefix='/team')
 
-    # Main routes
     @app.route('/')
     def index():
         return render_template('index.html')

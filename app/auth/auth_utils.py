@@ -36,7 +36,6 @@ async def check_password_strength(password):
 class UserManager:
     async def create_user(self, email, username, password, teamNumber, role='user'):
         try:
-            # Check if user already exists
             existing_user = await User.filter(email=email).first()
             if existing_user:
                 return False, "Email already registered"
@@ -45,12 +44,10 @@ class UserManager:
             if existing_username:
                 return False, "Username already taken"
 
-            # Validate password
             password_valid, message = await check_password_strength(password)
             if not password_valid:
                 return False, message
 
-            # Create user
             await User.create(
                 email=email,
                 username=username,

@@ -10,7 +10,7 @@
             {% endfor %}
         {% endif %}
     {% endwith %}
-    <div class="flex justify-between items-center mb-4">
+    <div class="flex justify-between items-center mb-8">
         <h1 class="text-2xl font-bold">Team Data</h1>
         <div class="flex items-center space-x-4">
             <input
@@ -37,7 +37,7 @@
     <div id="teamDataContainer">
         {% for event_code, teams in event_groups.items() %}
         <div class="event-section mb-8" data-event-code="{{ event_code }}">
-            <h2 class="text-xl font-semibold mb-4 bg-gray-100 p-4 rounded">
+            <h2 class="text-xl font-semibold mb-4 bg-gray-100 rounded">
                 {{ event_code }}
             </h2>
             <div class="overflow-x-auto">
@@ -86,7 +86,7 @@
                             <td class="px-6 py-4 whitespace-nowrap">{{ data.teleop_points }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">{{ data.endgame_points }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">{{ data.total_points }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ data.notes }}</td>
+                            <td class="px-6 py-4 whitespace-normal ">{{ data.notes }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">{{ data.scouter_name }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <a href="{{ url_for('team.edit_team_data', id=data.id) }}" 

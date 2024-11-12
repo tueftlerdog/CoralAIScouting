@@ -100,6 +100,8 @@ async def delete_team_data(id):
     flash('Record deleted successfully.', 'success')
     return redirect(url_for('team.list_team_data'))
 
+    #TODO: make an dialog for delete
+
 
 # @login_required
 @team_bp.route('/search')
@@ -117,7 +119,7 @@ async def search_teams():
         
     try:
         async with TBAInterface() as tba:
-            # If the query is numeric, try to fetch specific team
+            #TODO: If the query is numeric, try to fetch specific team else try event code
             team_key = f"frc{query}"
             url = f"{tba.base_url}/team/{team_key}"
             

@@ -92,7 +92,7 @@ class TBAInterface:
         Returns:
             tuple[Optional[List[Dict]], Optional[List[Dict]]]: Tuple of (teams, schedule) data
         """
-        async with self:  # Use context manager to handle session
+        async with self:  
             teams_task = asyncio.create_task(self.get_teams_at_event(event_code))
             schedule_task = asyncio.create_task(self.get_schedule(event_code))
             

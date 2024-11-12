@@ -35,7 +35,6 @@ def create_auth_blueprint(user_manager):
             password = request.form.get('password', '').strip()
             remember = bool(request.form.get('remember', False))
             
-            # Save form data for repopulation (except password)
             form_data = {
                 'login': login,
                 'remember': remember

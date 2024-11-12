@@ -15,7 +15,9 @@
         <div class="max-w-6xl mx-auto px-4">
             <div class="flex justify-between items-center">
                 <div class="flex space-x-4">
-                    <a href="{{ url_for('index') }}" class="py-4 px-2 hover:text-blue-500">Home</a>
+                    <a href="{{ url_for('index') }}" class="py-4 px-2 hover:text-blue-500">Home</a>                    
+                    <a href="{{ url_for('team.list_team_data') }}" class="py-4 px-2 hover:text-blue-500">Scout</a>
+                    <a href="{{ url_for('team.team_search_page') }}" class="py-4 px-2 hover:text-blue-500">Search</a>
                 </div>
 
                 <!-- Search Bar in Middle -->
