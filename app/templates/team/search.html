@@ -1,46 +1,135 @@
 {% extends "base.html" %}
 {% block content %}
+
 <div class="max-w-6xl mx-auto p-4">
     <div class="mb-8">
         <h1 class="text-2xl font-bold mb-2">Team Search</h1>
-        <p class="text-gray-600">Search for FRC teams by number or name</p>
+        <p>Search for FRC teams by number or name</p>
     </div>
 
     <div class="flex-1 max-w-lg relative">
         <div class="relative">
-            <input type="text" id="team-search" 
-                   placeholder="Search teams..." 
-                   class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            <input type="text" 
+                   id="team-search" 
+                   class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                   placeholder="Enter team number...">
         </div>
     </div>
 
-    <!-- Selected team info will appear here -->
     <div id="selected-team-info" class="mt-8 hidden">
         <h2 class="text-xl font-semibold mb-4">Team Information</h2>
+        
         <div class="bg-white shadow rounded-lg p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                     <h3 class="font-medium text-gray-700">Team Number</h3>
-                    <p id="team-number" class="text-lg"></p>
+                    <p id="team-number" class="mt-1"></p>
                 </div>
                 <div>
                     <h3 class="font-medium text-gray-700">Nickname</h3>
-                    <p id="team-nickname" class="text-lg"></p>
+                    <p id="nickname" class="mt-1"></p>
                 </div>
                 <div>
                     <h3 class="font-medium text-gray-700">School</h3>
-                    <p id="team-school" class="text-lg"></p>
+                    <p id="school" class="mt-1"></p>
                 </div>
                 <div>
                     <h3 class="font-medium text-gray-700">Location</h3>
-                    <p id="team-location" class="text-lg"></p>
+                    <p id="location" class="mt-1"></p>
+                </div>
+            </div>
+
+            <div class="mt-10">
+                <h3 class="text-lg font-semibold mb-4">Scouting Data</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Match</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teleop</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Endgame</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scouter</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scouting-data" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!--TODO: show all scouting info on this team here-->
-<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+<script>
+document.getElementById('team-search').addEventListener('input', debounce(async (e) => {
+    const query = e.target.value.trim();
+    if (query.length === 0) {
+        document.getElementById('selected-team-info').classList.add('hidden');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/team/api/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        if (data.length > 0) {
+            const team = data[0];
+            displayTeamInfo(team);
+        }
+    } catch (error) {
+        console.error('Error fetching team data:', error);
+    }
+}, 300));
+
+function displayTeamInfo(team) {
+    document.getElementById('selected-team-info').classList.remove('hidden');
+    document.getElementById('team-number').textContent = team.team_number;
+    document.getElementById('nickname').textContent = team.nickname;
+    document.getElementById('school').textContent = team.school_name || 'N/A';
+    document.getElementById('location').textContent = [team.city, team.state_prov, team.country].filter(Boolean).join(', ');
+
+    const scoutingTableBody = document.getElementById('scouting-data');
+    scoutingTableBody.innerHTML = '';
+
+    if (team.scouting_data && team.scouting_data.length > 0) {
+        team.scouting_data.forEach(entry => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">${entry.event_code}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${entry.match_number}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${entry.auto_points}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${entry.teleop_points}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${entry.endgame_points}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${entry.total_points}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${entry.notes}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${entry.scouter}</td>
+            `;
+            scoutingTableBody.appendChild(row);
+        });
+    } else {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td colspan="8" class="px-6 py-4 text-center text-gray-500">No scouting data available for this team</td>
+        `;
+        scoutingTableBody.appendChild(row);
+    }
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+</script>
 
 {% endblock %}
