@@ -100,7 +100,101 @@ async def delete_team_data(id):
     flash('Record deleted successfully.', 'success')
     return redirect(url_for('team.list_team_data'))
 
-    #TODO: make an dialog for delete
+@team_bp.route('/compare')
+@login_required
+def team_compare_page():
+    return render_template('team/compare.html')
+
+@team_bp.route('/api/compare')
+@login_required
+@async_route
+async def compare_teams():
+    team1 = request.args.get('team1', '').strip()
+    team2 = request.args.get('team2', '').strip()
+
+    if not team1 or not team2:
+        return jsonify({"error": "Both team numbers are required"}), 400
+
+    try:
+        async with TBAInterface() as tba:
+            teams_data = {}
+
+            for team_num in [team1, team2]:
+                # Fetch TBA team info
+                team_key = f"frc{team_num}"
+                url = f"{tba.base_url}/team/{team_key}"
+
+                async with tba.session.get(url) as response:
+                    if response.status != 200:
+                        return jsonify({"error": f"Team {team_num} not found"}), 404
+
+                    team = await response.json()
+
+                    # Fetch all scouting data for this team
+                    team_scouting_data = await TeamData.filter(
+                        team_number=team["team_number"]
+                    ).prefetch_related('scouter')
+
+                    # Calculate statistics
+                    auto_points = [entry.auto_points for entry in team_scouting_data]
+                    teleop_points = [entry.teleop_points for entry in team_scouting_data]
+                    endgame_points = [entry.endgame_points for entry in team_scouting_data]
+                    total_points = [entry.total_points for entry in team_scouting_data]
+
+                    stats = {
+                        "matches_played": len(team_scouting_data),
+                        "avg_auto": (
+                            sum(auto_points) / len(auto_points)
+                            if auto_points
+                            else 0
+                        ),
+                        "avg_teleop": (
+                            sum(teleop_points) / len(teleop_points)
+                            if teleop_points
+                            else 0
+                        ),
+                        "avg_endgame": (
+                            sum(endgame_points) / len(endgame_points)
+                            if endgame_points
+                            else 0
+                        ),
+                        "avg_total": (
+                            sum(total_points) / len(total_points)
+                            if total_points
+                            else 0
+                        ),
+                        "max_total": max(total_points, default=0),
+                        "min_total": min(total_points, default=0),
+                    }
+
+                    scouting_entries = [
+                        {
+                            "event_code": entry.event_code,
+                            "match_number": entry.match_number,
+                            "auto_points": entry.auto_points,
+                            "teleop_points": entry.teleop_points,
+                            "endgame_points": entry.endgame_points,
+                            "total_points": entry.total_points,
+                            "notes": entry.notes,
+                            "scouter": entry.scouter.username,
+                        }
+                        for entry in team_scouting_data
+                    ]
+                    teams_data[team_num] = {
+                        "team_number": team["team_number"],
+                        "nickname": team["nickname"],
+                        "school_name": team.get("school_name"),
+                        "city": team.get("city"),
+                        "state_prov": team.get("state_prov"),
+                        "country": team.get("country"),
+                        "stats": stats,
+                        "scouting_data": scouting_entries
+                    }
+            return jsonify(teams_data)
+
+    except Exception as e:
+        print(f"Error comparing teams: {e}")
+        return jsonify({"error": "Failed to fetch team data"}), 500
 
 
 # @login_required
@@ -116,46 +210,46 @@ async def search_teams():
     query = request.args.get('q', '').strip()
     if not query:
         return jsonify([])
-        
+
     try:
         async with TBAInterface() as tba:
             #TODO: If the query is numeric, try to fetch specific team else try event code
             team_key = f"frc{query}"
             url = f"{tba.base_url}/team/{team_key}"
-            
+
             async with tba.session.get(url) as response:
                 if response.status == 200:
                     team = await response.json()
+
+                    # Fetch all scouting data for this team
+                    team_scouting_data = await TeamData.filter(
+                        team_number=team["team_number"]
+                    ).prefetch_related('scouter')
+
+                    scouting_entries = [
+                        {
+                            "id": entry.id,
+                            "event_code": entry.event_code,
+                            "match_number": entry.match_number,
+                            "auto_points": entry.auto_points,
+                            "teleop_points": entry.teleop_points,
+                            "endgame_points": entry.endgame_points,
+                            "total_points": entry.total_points,
+                            "notes": entry.notes,
+                            "scouter": entry.scouter.username,
+                        }
+                        for entry in team_scouting_data
+                    ]
                     return jsonify([{
                         "team_number": team["team_number"],
                         "nickname": team["nickname"],
                         "school_name": team.get("school_name"),
                         "city": team.get("city"),
                         "state_prov": team.get("state_prov"),
-                        "country": team.get("country")
+                        "country": team.get("country"),
+                        "scouting_data": scouting_entries
                     }])
-            
-            # event_code = "2024your_event_code"  # Replace with actual event code
-            # teams = await tba.get_teams_at_event(event_code)
-            
-            # if teams:
-            #     filtered_teams = [
-            #         {
-            #             "team_number": team["team_number"],
-            #             "nickname": team["nickname"],
-            #             "school_name": team.get("school_name"),
-            #             "city": team.get("city"),
-            #             "state_prov": team.get("state_prov"),
-            #             "country": team.get("country")
-            #         }
-            #         for team in teams
-            #         if str(team["team_number"]).startswith(query) or
-            #            query.lower() in team["nickname"].lower()
-            #     ]
-            #     return jsonify(filtered_teams)
-            
-            # return jsonify([])
-            
+
     except Exception as e:
         print(f"Error searching teams: {e}")
         return jsonify({"error": "Failed to fetch team data"}), 500

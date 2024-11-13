@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-7xl mx-auto p-4">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold mb-2">Team Comparison</h1>
+        <p>Compare statistics and scouting data between two teams</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div>
+            <label for="team1-input" class="block text-sm font-medium text-gray-700">Team 1</label>
+            <input type="number" 
+                   id="team1-input" 
+                   class="mt-1 block w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                   placeholder="Enter team number">
+        </div>
+        <div>
+            <label for="team2-input" class="block text-sm font-medium text-gray-700">Team 2</label>
+            <input type="number" 
+                   id="team2-input" 
+                   class="mt-1 block w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                   placeholder="Enter team number">
+        </div>
+    </div>
+
+    <button id="compare-btn" 
+            class="mb-8 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        Compare Teams
+    </button>
+
+    <div id="comparison-results" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Team Info Sections -->
+            <div id="team1-info" class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Team 1</h2>
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="font-medium text-gray-700">Team Info</h3>
+                        <p id="team1-number-name" class="mt-1"></p>
+                        <p id="team1-location" class="text-gray-600"></p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-medium text-gray-700">Statistics</h3>
+                        <div id="team1-stats" class="mt-2 space-y-2"></div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-medium text-gray-700 text-center">Performance Radar</h3>
+                        <div class="flex w-full h-64 items-center justify-center">
+                            <canvas id="radar-chart-team1"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="team2-info" class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Team 2</h2>
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="font-medium text-gray-700">Team Info</h3>
+                        <p id="team2-number-name" class="mt-1"></p>
+                        <p id="team2-location" class="text-gray-600"></p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-medium text-gray-700">Statistics</h3>
+                        <div id="team2-stats" class="mt-2 space-y-2"></div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-medium text-gray-700 text-center">Performance Radar</h3>
+                        <div class="flex w-full h-64 items-center justify-center">
+                            <canvas id="radar-chart-team2"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Match History Tables -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h3 class="text-lg font-semibold mb-4">Team 1 Match History</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Match</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auto</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teleop</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Endgame</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team1-matches" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold mb-4">Team 2 Match History</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Match</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auto</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teleop</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Endgame</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team2-matches" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/radar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/compare.js') }}"></script>
+
+{% endblock %}
