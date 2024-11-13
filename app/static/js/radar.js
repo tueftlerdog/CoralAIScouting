@@ -45,9 +45,12 @@ function createRadarChart(canvasId, data) {
 }
 
 function calculateConsistency(matchData) {
-    if (matchData.length < 2) {
+    if (matchData.length < 2 && matchData.length != 0) {
       return 10;
     } // Perfect consistency if only one match
+    if (matchData.length == 0) {
+        return 0;
+    }
     
     // Calculate standard deviation of total scores
     const scores = matchData.map(m => m.total_points);
