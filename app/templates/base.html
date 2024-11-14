@@ -3,12 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Flask Auth App{% endblock %}</title>
+    <title>{% block title %}Team 334 Scouting App{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+
+    <link rel="icon" href="{{ url_for('static', filename='/logo.png') }}" type="image/png"/>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='/logo.png') }}" type="image/png"/>
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='/logo.png') }}" type="image/png"/>
+
+
+    <meta property="twitter:image" content="{{ url_for('static', filename='/logo.png') }}">
+    <meta property="twitter:card" content="{{ url_for('static', filename='/logo.png') }}">
+    <meta property="twitter:title" content="Team 334 Scouting App">
+    <meta property="twitter:description" content="The unofficial website for Team 334's Scouting App">
+    <meta property="og:site_name" content="Team 334 Scouting App">
+
+
+    <meta property="og:title" content="Team 334 Scouting App"/>
+    <meta property="og:description"
+        content="The unofficial website for Team 334's Scouting App"/>
+    <meta property="og:image" content="{{ url_for('static', filename='/logo.png') }}"/>
+    <meta property="og:url" content=""/>
+    <meta name="description" content="The unofficial website for Team 334's Scouting App"/>
+
+
+    <meta name="viewport" content="initial-scale=1, width=device-width"/>
 </head>
 
 <body class="bg-gray-100">
@@ -19,6 +41,7 @@
                     <a href="{{ url_for('index') }}" class="py-4 px-2 hover:text-blue-500">Home</a>                    
                     <a href="{{ url_for('team.list_team_data') }}" class="py-4 px-2 hover:text-blue-500">Scout</a>
                     <a href="{{ url_for('team.team_search_page') }}" class="py-4 px-2 hover:text-blue-500">Search</a>
+                    <a href="{{ url_for('team.team_compare_page') }}" class="py-4 px-2 hover:text-purple-500">Compare</a>
                 </div>
 
                 <!-- Search Bar in Middle -->
