@@ -33,29 +33,19 @@
     <meta name="viewport" content="initial-scale=1, width=device-width"/>
 </head>
 
-<body class="bg-gray-100">
-    <nav class="bg-white shadow-lg">
+<body class="bg-gray-100 p-2">
+    <div class="flex justify-center items-center">
+    <nav class="z-50 box-border max-w-6xl shadow-lg hidden sm:block rounded-xl bg-[#f6f5f3] mt-2">
         <div class="max-w-6xl mx-auto px-4">
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center gap-10">
+                <!--TODO: Logo soon -->
                 <div class="flex space-x-4">
                     <a href="{{ url_for('index') }}" class="py-4 px-2 hover:text-blue-500">Home</a>                    
                     <a href="{{ url_for('team.list_team_data') }}" class="py-4 px-2 hover:text-blue-500">Scout</a>
                     <a href="{{ url_for('team.team_search_page') }}" class="py-4 px-2 hover:text-blue-500">Search</a>
                     <a href="{{ url_for('team.team_compare_page') }}" class="py-4 px-2 hover:text-purple-500">Compare</a>
                 </div>
-
-                <!-- Search Bar in Middle -->
-                <!-- <div class="flex-1 max-w-lg px-4 relative">
-                    <div class="relative">
-                        <input type="text" id="team-search" 
-                               placeholder="Search teams..." 
-                               class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                        <div id="search-results" 
-                             class="absolute w-full bg-white mt-1 rounded-lg shadow-lg border hidden z-50">
-                        </div>
-                    </div>
-                </div> -->
-
+                <div className="mx-2"></div> <!-- Seperation -->
                 <div class="flex space-x-4">
                     {% if current_user.is_authenticated %}
                         <span class="py-4 px-2">{{ current_user.email }}</span>
@@ -68,8 +58,38 @@
             </div>
         </div>
     </nav>
+    </div>
+    <nav class="bg-white shadow-lg sm:hidden rounded-xl bg-[#f6f5f3] fixed left-0 top-0 w-full">
+        <div class="max-w-6xl mx-auto px-4">
+          <div class="flex justify-between items-center py-4">
+            <a href="{{ url_for('index') }}" class="font-bold text-blue-500">
+              Team 334 Scouting App
+            </a>
+            <button class="mobile-menu-button focus:outline-none">
+              <svg class="w-6 h-6" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="mobile-menu hidden bg-white border-t rounded-xl">
+          <a href="{{ url_for('index') }}" class="block py-4 px-4 hover:bg-gray-100">Home</a>
+          <a href="{{ url_for('team.list_team_data') }}" class="block py-4 px-4 hover:bg-gray-100">Scout</a>
+          <a href="{{ url_for('team.team_search_page') }}" class="block py-4 px-4 hover:bg-gray-100">Search</a>
+          <a href="{{ url_for('team.team_compare_page') }}" class="block py-4 px-4 hover:bg-gray-100">Compare</a>
+          {% if current_user.is_authenticated %}
+            <hr className="align-middle border-gray-500 my-3 w-[50%] overflow-x-hidden m-auto"/>
+            <span class="block py-4 px-4">{{ current_user.email }}</span>
+            <a href="{{ url_for('auth.logout') }}" class="block py-4 px-4 hover:bg-gray-100">Logout</a>
+          {% else %}
+            <hr className="align-middle border-gray-500 my-3 w-[50%] overflow-x-hidden m-auto"/>
+            <a href="{{ url_for('auth.login') }}" class="block py-4 px-4 hover:bg-gray-100">Login</a>
+            <a href="{{ url_for('auth.register') }}" class="block py-4 px-4 hover:bg-gray-100">Register</a>
+          {% endif %}
+        </div>
+      </nav>
 
-    <div class="container mx-auto px-4 py-8">
+    <div class="container mx-auto px-4 mt-10">
         <!-- {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -83,5 +103,13 @@
         {% block content %}{% endblock %}
     </div>
     <!-- <script src="{{ url_for('static', filename='js/search.js') }}"></script> -->
+    <script>
+        const menuButton = document.querySelector('.mobile-menu-button');
+        const mobileMenu = document.querySelector('.mobile-menu');
+
+        menuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+    </script>
 </body>
 </html>
