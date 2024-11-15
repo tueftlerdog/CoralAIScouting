@@ -73,7 +73,7 @@ document.getElementById('team-search').addEventListener('input', debounce(async 
     }
 
     try {
-        const response = await fetch(`/team/api/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         const data = await response.json();
 
         if (data.length > 0) {

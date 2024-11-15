@@ -9,7 +9,7 @@ from functools import partial
 from auth.models import User
 from auth.auth_utils import UserManager
 from auth.routes import create_auth_blueprint
-from team import team_bp
+from scout import scouting_bp
 
 async def init_db():
     await Tortoise.init(
@@ -55,7 +55,7 @@ async def create_app():
 
     auth_bp = create_auth_blueprint(user_manager)
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(team_bp, url_prefix='/team')
+    app.register_blueprint(scouting_bp, url_prefix='/')
 
     @app.route('/')
     def index():

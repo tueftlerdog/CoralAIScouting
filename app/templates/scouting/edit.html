@@ -2,8 +2,8 @@
 {% block content %}
 <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
     <div class="border-b pb-4 mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Add Team Data</h1>
-        <p class="text-gray-600 mt-2">Enter new team match information</p>
+        <h1 class="text-3xl font-bold text-gray-800">Edit Team Data</h1>
+        <p class="text-gray-600 mt-2">Update information for team {{ team_data.team_number }}</p>
     </div>
 
     <form method="POST" class="space-y-6" autocomplete="off">
@@ -17,26 +17,24 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Team Number</label>
                             <input type="number" 
                                    name="team_number" 
+                                   value="{{ team_data.team_number }}" 
                                    required 
-                                   min="1"
-                                   placeholder="e.g., 334"
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Event Code</label>
                             <input type="text" 
                                    name="event_code" 
+                                   value="{{ team_data.event_code }}" 
                                    required 
-                                   placeholder="e.g., NYLI"
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition duration-150">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Match Number</label>
                             <input type="number" 
                                    name="match_number" 
+                                   value="{{ team_data.match_number }}" 
                                    required 
-                                   min="1"
-                                   placeholder="e.g., 1"
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                         </div>
                     </div>
@@ -57,9 +55,8 @@
                             </label>
                             <input type="number" 
                                    name="auto_points" 
+                                   value="{{ team_data.auto_points }}" 
                                    required 
-                                   min="0"
-                                   value="0"
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                         </div>
                         <div>
@@ -71,9 +68,8 @@
                             </label>
                             <input type="number" 
                                    name="teleop_points" 
+                                   value="{{ team_data.teleop_points }}" 
                                    required 
-                                   min="0"
-                                   value="0"
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                         </div>
                         <div>
@@ -85,9 +81,8 @@
                             </label>
                             <input type="number" 
                                    name="endgame_points" 
+                                   value="{{ team_data.endgame_points }}" 
                                    required 
-                                   min="0"
-                                   value="0"
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                         </div>
                     </div>
@@ -101,10 +96,10 @@
             <textarea name="notes" 
                       rows="4" 
                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-                      placeholder="Enter any observations about the team's performance..."></textarea>
+                      placeholder="Enter any additional observations or notes about the team's performance...">{{ team_data.notes }}</textarea>
         </div>
 
-        <!-- Total Points Display -->
+        <!-- Total points -->
         <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
             <h2 class="text-lg font-semibold text-blue-800 mb-2">Total Points</h2>
             <p id="totalPoints" class="text-2xl font-bold text-blue-600">0</p>
@@ -112,13 +107,13 @@
 
         <!-- Action Buttons -->
         <div class="flex justify-end space-x-4 pt-6 border-t">
-            <a href="{{ url_for('team.list_team_data') }}" 
+            <a href="{{ url_for('scouting.list_scouting_data') }}" 
                class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition duration-150">
                 Cancel
             </a>
             <button type="submit" 
                     class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
-                Add Team Data
+                Save Changes
             </button>
         </div>
     </form>
@@ -132,14 +127,10 @@ document.addEventListener('DOMContentLoaded', function() {
         this.value = this.value.toUpperCase();
     });
 
-    // Calculate total points in real-time
     const pointInputs = ['auto_points', 'teleop_points', 'endgame_points'];
     const totalPointsDisplay = document.getElementById('totalPoints');
 
-    pointInputs.forEach(inputName => {
-        document.querySelector(`input[name="${inputName}"]`).addEventListener('input', updateTotal);
-    });
-
+    // Calculate total whenever inputs change
     function updateTotal() {
         const total = pointInputs.reduce((sum, inputName) => {
             const value = parseInt(document.querySelector(`input[name="${inputName}"]`).value) || 0;
@@ -147,6 +138,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 0);
         totalPointsDisplay.textContent = total;
     }
+
+    // Add event listeners to all point inputs
+    pointInputs.forEach(inputName => {
+        document.querySelector(`input[name="${inputName}"]`).addEventListener('input', updateTotal);
+    });
+
+    // Calculate initial total on page load
+    updateTotal();
 
     // Form submission validation
     const form = document.querySelector('form');

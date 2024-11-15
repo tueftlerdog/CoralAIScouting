@@ -21,13 +21,13 @@ def async_route(f):
     return wrapper
 
 
-team_bp = Blueprint('team', __name__)
+scouting_bp = Blueprint('scouting', __name__)
 
 
-@team_bp.route('/add', methods=['GET', 'POST'])
+@scouting_bp.route('/scouting/add', methods=['GET', 'POST'])
 @login_required
 @async_route
-async def add_team_data():
+async def add_scouting_data():
     if request.method == 'POST':
         try:
             await TeamData.create(
@@ -43,22 +43,22 @@ async def add_team_data():
                 notes=request.form['notes'],
                 scouter=current_user
             )
-            return redirect(url_for('team.list_team_data'))
+            return redirect(url_for('scouting.list_scouting_data'))
         except Exception as e:
             return str(e), 400
             
-    return render_template('team/add.html')
+    return render_template('scouting/add.html')
 
-@team_bp.route('/list')
+@scouting_bp.route('/scouting/list')
 @login_required
 @async_route
-async def list_team_data():
+async def list_scouting_data():
     team_data = await TeamData.all().prefetch_related('scouter')
-    return render_template('team/list.html', team_data=team_data)
+    return render_template('scouting/list.html', team_data=team_data)
 
-@team_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
+@scouting_bp.route('/scouting/edit/<int:id>', methods=['GET', 'POST'])
 @async_route
-async def edit_team_data(id):
+async def edit_scouting_data(id):
     team_data = await TeamData.get_or_none(id=id)
     if not team_data:
         return "Team data not found", 404
@@ -76,36 +76,36 @@ async def edit_team_data(id):
                                     int(request.form['endgame_points']))
             team_data.notes = request.form['notes']
             await team_data.save()
-            return redirect(url_for('team.list_team_data'))
+            return redirect(url_for('scouting.list_scouting_data'))
         except Exception as e:
             return str(e), 400
             
-    return render_template('team/edit.html', team_data=team_data)
+    return render_template('scouting/edit.html', team_data=team_data)
 
-@team_bp.route('/delete/<int:id>')
+@scouting_bp.route('/scouting/delete/<int:id>')
 @login_required
 @async_route
-async def delete_team_data(id):
+async def delete_scouting_data(id):
     team_data = await TeamData.get_or_none(id=id).prefetch_related('scouter')
     
     if not team_data:
         flash('Record not found.', 'error')
-        return redirect(url_for('team.list_team_data'))
+        return redirect(url_for('scouting.list_scouting_data'))
     
     if team_data.scouter.id != current_user.id:
         flash('You do not have permission to delete this record.', 'error')
-        return redirect(url_for('team.list_team_data'))
+        return redirect(url_for('scouting.list_scouting_data'))
     
     await team_data.delete()
     flash('Record deleted successfully.', 'success')
-    return redirect(url_for('team.list_team_data'))
+    return redirect(url_for('scouting.list_scouting_data'))
 
-@team_bp.route('/compare')
+@scouting_bp.route('/compare')
 @login_required
-def team_compare_page():
-    return render_template('team/compare.html')
+def compare_page():
+    return render_template('compare.html')
 
-@team_bp.route('/api/compare')
+@scouting_bp.route('/api/compare')
 @login_required
 @async_route
 async def compare_teams():
@@ -198,12 +198,12 @@ async def compare_teams():
 
 
 # @login_required
-@team_bp.route('/search')
+@scouting_bp.route('/search')
 @login_required
-def team_search_page():
-    return render_template('team/search.html')
+def search_page():
+    return render_template('/search.html')
 
-@team_bp.route('/api/search')
+@scouting_bp.route('/api/search')
 @login_required
 @async_route
 async def search_teams():

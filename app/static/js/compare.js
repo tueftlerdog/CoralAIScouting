@@ -1,5 +1,5 @@
 // Constants
-const API_ENDPOINT = '/team/api/compare';
+const API_ENDPOINT = '/api/compare';
 
 // DOM Elements
 const team1Input = document.getElementById('team1-input');

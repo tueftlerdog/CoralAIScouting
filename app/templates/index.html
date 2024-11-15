@@ -1,32 +1,89 @@
 <!-- templates/index.html -->
 {% extends "base.html" %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lamp.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="text-center">
-    <h1 class="text-4xl font-bold mb-4">Demo Scouting App</h1>
-    {% if current_user.is_authenticated %}
-        <p class="mb-4">You are logged in as {{ current_user.email }}</p>
-        <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
-            <a href="{{ url_for('team.list_team_data') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ">
-                Scout
-            </a>
-            <a href="{{ url_for('team.team_search_page') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                Search 
-            </a>
-            <a href="{{ url_for('team.team_compare_page') }}" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
-                Search 
-            </a>
+<div class="relative flex min-h-screen flex-col overflow-hidden bg-[#f6f5f3] w-full rounded-md z-0">
+    <div class="relative flex w-full flex-1 scale-y-125 items-center justify-center isolate z-0">
+        <!-- Left Lamp Gradient -->
+        <div class="animate-lamp absolute inset-auto right-1/2 h-56 overflow-visible w-[30rem] bg-gradient-conic from-blue-400 via-transparent to-transparent text-white [--conic-position:from_70deg_at_center_top]">
+            <div class="absolute w-[100%] left-0 bg-[#f6f5f3] h-40 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]"></div>
+            <div class="absolute w-40 h-[100%] left-0 bg-[#f6f5f3] bottom-0 z-20 [mask-image:linear-gradient(to_right,white,transparent)]"></div>
         </div>
-    {% else %}
-        <p class="mb-4">Please login or register to access content</p>
-        <div class="space-x-4">
-            <a href="{{ url_for('auth.login') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Login
-            </a>
-            <a href="{{ url_for('auth.register') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                Register
-            </a>
+
+        <!-- Right Lamp Gradient -->
+        <div class="animate-lamp absolute inset-auto left-1/2 h-56 w-[30rem] bg-gradient-conic from-transparent via-transparent to-blue-400 text-white [--conic-position:from_290deg_at_center_top]">
+            <div class="absolute w-40 h-[100%] right-0 bg-[#f6f5f3] bottom-0 z-20 [mask-image:linear-gradient(to_left,white,transparent)]"></div>
+            <div class="absolute w-[100%] right-0 bg-[#f6f5f3] h-40 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]"></div>
         </div>
-    {% endif %}
+
+        <!-- Background Effects -->
+        <div class="absolute top-1/2 h-48 w-full translate-y-12 scale-x-150 bg-[#f6f5f3] blur-2xl"></div>
+        <div class="absolute top-1/2 z-50 h-48 w-full bg-transparent opacity-10 backdrop-blur-md"></div>
+        <div class="absolute inset-auto z-50 h-36 w-[28rem] -translate-y-1/2 rounded-full bg-blue-400 opacity-50 blur-3xl"></div>
+        
+        <!-- Lamp Light -->
+        <div class="animate-lamp absolute inset-auto z-30 h-36 w-64 -translate-y-[6rem] rounded-full bg-blue-300 blur-2xl"></div>
+        <div class="animate-lamp absolute inset-auto z-50 h-0.5 w-[30rem] -translate-y-[7rem] bg-blue-300"></div>
+        
+        <!-- Top Cover -->
+        <div class="absolute inset-auto z-40 h-44 w-full -translate-y-[12.5rem] bg-[#f6f5f3]"></div>
+    </div>
+
+    <!-- Text Content -->
+    <div class="relative z-50 flex -translate-y-80 flex-col items-center px-5">
+        <div class="text-center">
+            <h1 class="text-6xl font-bold mb-4 bg-gradient-to-br from-gray-700 to-gray-900 bg-clip-text text-transparent">334 Scouting App</h1>
+            {% if current_user.is_authenticated %}
+                <div class="text-blue-600 text-2xl mb-4"><span id="timeGreeting"></span>, {{ current_user.username }}</div>
+                <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
+                    <a href="{{ url_for('scouting.list_scouting_data') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Scout
+                    </a>
+                    <a href="{{ url_for('scouting.search_page') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        Search
+                    </a>
+                    <a href="{{ url_for('scouting.compare_page') }}" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                        Compare
+                    </a>
+                </div>
+            {% else %}
+                <p class="mb-4 text-gray-600">Please login or register to access content</p>
+                <div class="space-x-4">
+                    <a href="{{ url_for('auth.login') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Login
+                    </a>
+                    <a href="{{ url_for('auth.register') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        Register
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<script>
+function updateGreeting() {
+    const hour = new Date().getHours();
+    const greetingEl = document.getElementById('timeGreeting');
+    
+    let greeting;
+    
+    if (hour >= 5 && hour < 12) {
+        greeting = "Good morning";
+    } else if (hour >= 12 && hour < 17) {
+        greeting = "Good afternoon";
+    } else {
+        greeting = "Good evening";
+    }
+    
+    greetingEl.textContent = greeting;
+}
+
+updateGreeting();
+setInterval(updateGreeting, 60000);
+</script>
 {% endblock %}

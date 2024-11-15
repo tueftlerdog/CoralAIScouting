@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function performSearch(query) {
-        fetch(`/team/api/search?q=${encodeURIComponent(query)}`)
+        fetch(`/api/search?q=${encodeURIComponent(query)}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

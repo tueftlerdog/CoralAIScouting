@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Team 334 Scouting App{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+    {% block head %}{% endblock %}
 
     <link rel="icon" href="{{ url_for('static', filename='/logo.png') }}" type="image/png"/>
     <link rel="shortcut icon" href="{{ url_for('static', filename='/logo.png') }}" type="image/png"/>
@@ -41,14 +42,14 @@
                 <!--TODO: Logo soon -->
                 <div class="flex space-x-4">
                     <a href="{{ url_for('index') }}" class="py-4 px-2 hover:text-blue-500">Home</a>                    
-                    <a href="{{ url_for('team.list_team_data') }}" class="py-4 px-2 hover:text-blue-500">Scout</a>
-                    <a href="{{ url_for('team.team_search_page') }}" class="py-4 px-2 hover:text-blue-500">Search</a>
-                    <a href="{{ url_for('team.team_compare_page') }}" class="py-4 px-2 hover:text-purple-500">Compare</a>
+                    <a href="{{ url_for('scouting.list_scouting_data') }}" class="py-4 px-2 hover:text-blue-500">Scout</a>
+                    <a href="{{ url_for('scouting.search_page') }}" class="py-4 px-2 hover:text-blue-500">Search</a>
+                    <a href="{{ url_for('scouting.compare_page') }}" class="py-4 px-2 hover:text-purple-500">Compare</a>
                 </div>
                 <div className="mx-2"></div> <!-- Seperation -->
                 <div class="flex space-x-4">
                     {% if current_user.is_authenticated %}
-                        <span class="py-4 px-2">{{ current_user.email }}</span>
+                        <span class="py-4 px-2">{{ current_user.username }}</span>
                         <a href="{{ url_for('auth.logout') }}" class="py-4 px-2 hover:text-blue-500">Logout</a>
                     {% else %}
                         <a href="{{ url_for('auth.login') }}" class="py-4 px-2 hover:text-blue-500">Login</a>
@@ -74,12 +75,12 @@
         </div>
         <div class="mobile-menu hidden bg-white border-t rounded-xl">
           <a href="{{ url_for('index') }}" class="block py-4 px-4 hover:bg-gray-100">Home</a>
-          <a href="{{ url_for('team.list_team_data') }}" class="block py-4 px-4 hover:bg-gray-100">Scout</a>
-          <a href="{{ url_for('team.team_search_page') }}" class="block py-4 px-4 hover:bg-gray-100">Search</a>
-          <a href="{{ url_for('team.team_compare_page') }}" class="block py-4 px-4 hover:bg-gray-100">Compare</a>
+          <a href="{{ url_for('scouting.list_scouting_data') }}" class="block py-4 px-4 hover:bg-gray-100">Scout</a>
+          <a href="{{ url_for('scouting.search_page') }}" class="block py-4 px-4 hover:bg-gray-100">Search</a>
+          <a href="{{ url_for('scouting.compare_page') }}" class="block py-4 px-4 hover:bg-gray-100">Compare</a>
           {% if current_user.is_authenticated %}
             <hr className="align-middle border-gray-500 my-3 w-[50%] overflow-x-hidden m-auto"/>
-            <span class="block py-4 px-4">{{ current_user.email }}</span>
+            <span class="block py-4 px-4">{{ current_user.username }}</span>
             <a href="{{ url_for('auth.logout') }}" class="block py-4 px-4 hover:bg-gray-100">Logout</a>
           {% else %}
             <hr className="align-middle border-gray-500 my-3 w-[50%] overflow-x-hidden m-auto"/>
@@ -89,7 +90,7 @@
         </div>
       </nav>
 
-    <div class="container mx-auto px-4 mt-10">
+    <div class="container mx-auto px-4 my-5">
         <!-- {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
