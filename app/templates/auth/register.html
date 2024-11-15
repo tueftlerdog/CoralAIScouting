@@ -119,7 +119,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirm_password');
     const registerButton = document.getElementById('register-button');
-    
+    const strengthBar = document.querySelector('.strength-bar');
+
     function checkPasswordStrength(password) {
         const checks = {
             length: password.length >= 8,
@@ -145,7 +146,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Calculate strength
         const passedChecks = Object.values(checks).filter(Boolean).length;
+
+        strengthBar.className = 'strength-bar';
         
+        if (password.length === 0) {
+            strengthBar.className = 'strength-bar';
+        } else if (password.length >= 2 && password.length < 4) {
+            strengthBar.classList.add('weak');
+        } else if (password.length >= 4 && password.length < 6) {
+            strengthBar.classList.add('fair');
+        } else if (password.length >= 6 && password.length < 8) {
+            strengthBar.classList.add('good');
+        } else if (password.length >= 8) {
+            strengthBar.classList.add('strong');
+        }
+
 
         return Object.values(checks).every(Boolean);
     }
