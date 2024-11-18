@@ -39,19 +39,21 @@ function displayComparisonResults(teamsData) {
     // Update team information for both teams
     for (const [teamNum, teamData] of Object.entries(teamsData)) {
         const teamPrefix = `team${teamNum === Object.keys(teamsData)[0] ? '1' : '2'}`;
+        const teamNumber = teamData.team_number;
         
-        // Update team info
+        document.getElementById(`${teamPrefix}-header`).textContent = `Team ${teamNumber}`;
+        document.getElementById(`${teamPrefix}-history-header`).textContent = 
+            `Team's ${teamNumber} Match History`;
+        
         document.getElementById(`${teamPrefix}-number-name`).textContent = 
-            `#${teamData.team_number} - ${teamData.nickname}`;
+            `#${teamNumber} - ${teamData.nickname}`;
         
         document.getElementById(`${teamPrefix}-location`).textContent = 
             formatLocation(teamData);
         
-        // Update statistics
         const statsContainer = document.getElementById(`${teamPrefix}-stats`);
         statsContainer.innerHTML = formatStats(teamData.stats);
         
-        // Update match history
         const matchesContainer = document.getElementById(`${teamPrefix}-matches`);
         matchesContainer.innerHTML = formatMatchHistory(teamData.scouting_data);
     }
