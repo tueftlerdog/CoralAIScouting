@@ -59,18 +59,24 @@ def list_scouting_data():
 @login_required
 def edit_scouting_data(id):
     try:
+        team_data = scouting_manager.get_team_data(id, current_user.get_id())
+        
+        if not team_data:
+            flash('Team data not found or you do not have permission to edit it', 'error')
+            return redirect(url_for('scouting.list_scouting_data'))
+        
+        if not team_data.is_owner:
+            flash('You do not have permission to edit this entry', 'error')
+            return redirect(url_for('scouting.list_scouting_data'))
+        
         if request.method == 'POST':
-            if scouting_manager.update_team_data(id, request.form):
+            if scouting_manager.update_team_data(id, request.form, current_user.get_id()):
                 flash('Data updated successfully', 'success')
                 return redirect(url_for('scouting.list_scouting_data'))
             else:
                 flash('Error updating data', 'error')
         
-        team_data = scouting_manager.get_team_data(id)
-        if team_data:
-            return render_template('scouting/edit.html', team_data=team_data)
-        flash('Team data not found', 'error')
-        return redirect(url_for('scouting.list_scouting_data'))
+        return render_template('scouting/edit.html', team_data=team_data)
     except Exception as e:
         flash(f'Error: {str(e)}', 'error')
         return redirect(url_for('scouting.list_scouting_data'))

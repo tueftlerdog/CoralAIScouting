@@ -124,21 +124,40 @@ class ScoutingManager:
             return []
 
     @with_mongodb_retry(retries=3, delay=2)
-    def get_team_data(self, team_id):
-        """Get specific team data"""
+    def get_team_data(self, team_id, scouter_id=None):
+        """Get specific team data with optional scouter verification"""
         self.ensure_connected()
         try:
-            data = self.db.team_data.find_one({'_id': ObjectId(team_id)})
-            return TeamData.create_from_db(data) if data else None
+            query = {'_id': ObjectId(team_id)}
+            if scouter_id:  # If scouter_id provided, verify ownership
+                query['scouter_id'] = ObjectId(scouter_id)
+            
+            data = self.db.team_data.find_one(query)
+            if not data:
+                return None
+            
+            # Add an is_owner field to the response
+            data['is_owner'] = str(data['scouter_id']) == str(scouter_id) if scouter_id else False
+            return TeamData.create_from_db(data)
         except Exception as e:
             logger.error(f"Error fetching team data: {str(e)}")
             return None
 
     @with_mongodb_retry(retries=3, delay=2)
-    def update_team_data(self, team_id, data):
-        """Update existing team data"""
+    def update_team_data(self, team_id, data, scouter_id):
+        """Update existing team data if user is the owner"""
         self.ensure_connected()
         try:
+            # First verify ownership
+            existing_data = self.db.team_data.find_one({
+                '_id': ObjectId(team_id),
+                'scouter_id': ObjectId(scouter_id)
+            })
+            
+            if not existing_data:
+                logger.warning(f"Update attempted by non-owner scouter_id: {scouter_id}")
+                return False
+            
             updated_data = {
                 'team_number': int(data['team_number']),
                 'event_code': data['event_code'],
@@ -153,7 +172,7 @@ class ScoutingManager:
             }
             
             result = self.db.team_data.update_one(
-                {'_id': ObjectId(team_id)},
+                {'_id': ObjectId(team_id), 'scouter_id': ObjectId(scouter_id)},
                 {'$set': updated_data}
             )
             return result.modified_count > 0
