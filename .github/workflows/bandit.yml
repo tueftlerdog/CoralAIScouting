@@ -1,144 +1,29 @@
-name: Bandit by PyCQA
-description: The official Bandit Action developed by PyCQA
-author: '@PyCQA'
+name: Bandit Code Security
 
-branding:
-  icon: 'shield'
-  color: 'black'
+on: [push, pull_request]
 
-inputs: 
-  configfile:
-    description: |
-      Optional config file to use for selecting plugins and overriding defaults
-    required: false
-    default: 'DEFAULT'
-  profile:
-    description: |
-      Profile to use (defaults to executing all tests)
-    required: false
-    default: 'DEFAULT'
-  tests:
-    description: |
-      Comma-separated list of test IDs to run
-    required: false
-    default: 'DEFAULT'
-  skips:
-    description: |
-      Comma-separated list of test IDs to skip
-    required: false
-    default: 'DEFAULT'
-  severity:
-    description: |
-      Report only issues of a given severity level or higher. "all" and "low"
-      are likely to produce the same results, but it is possible for rules to
-      be undefined which will not be listed in "low". Options include:
-      {all, high, medium, low}
-    required: false
-    default: 'DEFAULT'
-  confidence:
-    description: |
-      Report only issues of a given confidence level or higher. "all" and "low"
-      are likely to produce the same results, but it is possible for rules to
-      be undefined which will not be listed in "low". Options include:
-      {all, high, medium, low}
-    required: false
-    default: 'DEFAULT'
-  exclude:
-    description: |
-      Comma-separated list of paths (glob patterns supported) to exclude from
-      scan (note that these are in addition to the excluded paths provided in
-      the config file)
-    required: false
-    default: '.svn,CVS,.bzr,.hg,.git,__pycache__,.tox,.eggs,*.egg'
-  baseline:
-    description: |
-      Path of a baseline report to compare against (only JSON-formatted files
-      are accepted)
-    required: false
-    default: 'DEFAULT'
-  ini:
-    description: |
-      Path to a .bandit file that supplies command line arguments
-    required: false
-    default: 'DEFAULT'
-  targets:
-    description: |
-      Source file(s) or directory(s) to be tested
-    required: true
-    default: '.'
+jobs:
+  bandit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python 3.9
+          uses: actions/setup-python@v5
+          with:
+            python-version: 3.9
+      - name: Install Bandit
+        shell: bash
+        run: pip install bandit[sarif]
 
-runs:
-  using: composite
-  steps:
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.9
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install Bandit
-      shell: bash
-      run: pip install bandit[sarif]
+      - name: Scan
+        shell: bash
+        run: bandit -c bandit.yml -r -f sarif -o resulat.sarif .
 
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
 
-    - name: Run Bandit
-      shell: bash
-      run: |
-        if [ "$INPUT_CONFIGFILE" == "DEFAULT" ]; then
-            CONFIGFILE=""
-        else
-            CONFIGFILE="-c $INPUT_CONFIGFILE"
-        fi
-        if [ "$INPUT_PROFILE" == "DEFAULT" ]; then
-            PROFILE=""
-        else
-            PROFILE="-p $INPUT_PROFILE"
-        fi
-        if [ "$INPUT_TESTS" == "DEFAULT" ]; then
-            TESTS=""
-        else
-            TESTS="-t $INPUT_TESTS"
-        fi
-        if [ "$INPUT_SKIPS" == "DEFAULT" ]; then
-            SKIPS=""
-        else
-            SKIPS="-s $INPUT_SKIPS"
-        fi
-        if [ "$INPUT_SEVERITY" == "DEFAULT" ]; then
-            SEVERITY=""
-        else
-            SEVERITY="--severity-level $INPUT_SEVERITY"
-        fi
-        if [ "$INPUT_CONFIDENCE" == "DEFAULT" ]; then
-            CONFIDENCE=""
-        else
-            CONFIDENCE="--confidence-level $INPUT_CONFIDENCE"
-        fi
-        if [ "$INPUT_BASELINE" == "DEFAULT" ]; then
-            BASELINE=""
-        else
-            BASELINE="-b $INPUT_BASELINE"
-        fi
-        if [ "$INPUT_INI" == "DEFAULT" ]; then
-            INI=""
-        else
-            INI="--ini $INPUT_INI"
-        fi
-        bandit $CONFIGFILE $PROFILE $TESTS $SKIPS $SEVERITY $CONFIDENCE -x $INPUT_EXCLUDE $BASELINE $INI -r $INPUT_TARGETS -f sarif -o results.sarif || true
-      env:
-        INPUT_CONFIGFILE: ${{ inputs.configfile }}
-        INPUT_PROFILE: ${{ inputs.profile }}
-        INPUT_TESTS: ${{ inputs.tests }}
-        INPUT_SKIPS: ${{ inputs.skips }}
-        INPUT_SEVERITY: ${{ inputs.severity }}
-        INPUT_CONFIDENCE: ${{ inputs.confidence }}
-        INPUT_EXCLUDE: ${{ inputs.exclude }}
-        INPUT_BASELINE: ${{ inputs.baseline }}
-        INPUT_INI: ${{ inputs.ini }}
-        INPUT_TARGETS: ${{ inputs.targets }}
-
-    - name: Upload SARIF file
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: results.sarif
+    

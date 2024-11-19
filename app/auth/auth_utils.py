@@ -10,6 +10,7 @@ from functools import wraps
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def with_mongodb_retry(retries=3, delay=2):
     def decorator(f):
         @wraps(f)
@@ -21,13 +22,16 @@ def with_mongodb_retry(retries=3, delay=2):
                 except (ServerSelectionTimeoutError, ConnectionFailure) as e:
                     last_error = e
                     if attempt < retries - 1:  # don't sleep on last attempt
-                        logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying...")
+                        logger.warning(
+                            f"Attempt {attempt + 1} failed: {str(e)}. Retrying...")
                         time.sleep(delay)
                     else:
-                        logger.error(f"All {retries} attempts failed: {str(e)}")
+                        logger.error(
+                            f"All {retries} attempts failed: {str(e)}")
             raise last_error
         return wrapper
     return decorator
+
 
 async def check_password_strength(password):
     """
@@ -37,6 +41,7 @@ async def check_password_strength(password):
     if len(password) < 8:
         return False, "Password must be at least 8 characters long"
     return True, "Password meets all requirements"
+
 
 class UserManager:
     def __init__(self, mongo_uri):
@@ -49,7 +54,8 @@ class UserManager:
         """Establish connection to MongoDB with basic error handling"""
         try:
             if self.client is None:
-                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
+                self.client = MongoClient(
+                    self.mongo_uri, serverSelectionTimeoutMS=5000)
                 # Test the connection
                 self.client.server_info()
                 self.db = self.client.get_default_database()
@@ -72,7 +78,8 @@ class UserManager:
                 # Test if connection is still alive
                 self.client.server_info()
         except Exception:
-            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
+            logger.warning(
+                "Lost connection to MongoDB, attempting to reconnect...")
             self.connect()
 
     @with_mongodb_retry(retries=3, delay=2)

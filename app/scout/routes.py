@@ -10,6 +10,7 @@ from .TBA import TBAInterface
 scouting_bp = Blueprint('scouting', __name__)
 scouting_manager = None
 
+
 @scouting_bp.record
 def on_blueprint_init(state):
     global scouting_manager
@@ -22,6 +23,7 @@ def async_route(f):
     def wrapper(*args, **kwargs):
         return asyncio.run(f(*args, **kwargs))
     return wrapper
+
 
 @scouting_bp.route('/scouting/add', methods=['GET', 'POST'])
 @login_required
@@ -44,6 +46,7 @@ def add_scouting_data():
 
     return render_template('scouting/add.html')
 
+
 @scouting_bp.route('/scouting/list')
 @scouting_bp.route('/scouting')
 @login_required
@@ -55,31 +58,33 @@ def list_scouting_data():
         flash(f'Error fetching data: {str(e)}', 'error')
         return render_template('scouting/list.html', team_data=[])
 
+
 @scouting_bp.route('/scouting/edit/<string:id>', methods=['GET', 'POST'])
 @login_required
 def edit_scouting_data(id):
     try:
         team_data = scouting_manager.get_team_data(id, current_user.get_id())
-        
+
         if not team_data:
             flash('Team data not found or you do not have permission to edit it', 'error')
             return redirect(url_for('scouting.list_scouting_data'))
-        
+
         if not team_data.is_owner:
             flash('You do not have permission to edit this entry', 'error')
             return redirect(url_for('scouting.list_scouting_data'))
-        
+
         if request.method == 'POST':
             if scouting_manager.update_team_data(id, request.form, current_user.get_id()):
                 flash('Data updated successfully', 'success')
                 return redirect(url_for('scouting.list_scouting_data'))
             else:
                 flash('Error updating data', 'error')
-        
+
         return render_template('scouting/edit.html', team_data=team_data)
     except Exception as e:
         flash(f'Error: {str(e)}', 'error')
         return redirect(url_for('scouting.list_scouting_data'))
+
 
 @scouting_bp.route('/scouting/delete/<string:id>')
 @login_required
@@ -98,6 +103,7 @@ def delete_scouting_data(id):
 @login_required
 def compare_page():
     return render_template('compare.html')
+
 
 @scouting_bp.route('/api/compare')
 @login_required
@@ -142,13 +148,18 @@ async def compare_teams():
                 }
             ]
 
-            team_scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
+            team_scouting_data = list(
+                scouting_manager.db.team_data.aggregate(pipeline))
 
             # Calculate statistics
-            auto_points = [entry['auto_points'] for entry in team_scouting_data]
-            teleop_points = [entry['teleop_points'] for entry in team_scouting_data]
-            endgame_points = [entry['endgame_points'] for entry in team_scouting_data]
-            total_points = [entry['total_points'] for entry in team_scouting_data]
+            auto_points = [entry['auto_points']
+                           for entry in team_scouting_data]
+            teleop_points = [entry['teleop_points']
+                             for entry in team_scouting_data]
+            endgame_points = [entry['endgame_points']
+                              for entry in team_scouting_data]
+            total_points = [entry['total_points']
+                            for entry in team_scouting_data]
 
             stats = {
                 "matches_played": len(team_scouting_data),
@@ -207,10 +218,12 @@ async def compare_teams():
         print(f"Error comparing teams: {e}")
         return jsonify({"error": "Failed to fetch team data"}), 500
 
+
 @scouting_bp.route('/search')
 @login_required
 def search_page():
     return render_template('search.html')
+
 
 @scouting_bp.route('/api/search')
 @login_required
@@ -248,8 +261,9 @@ async def search_teams():
                 '$unwind': '$scouter'
             }
         ]
-        
-        team_scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
+
+        team_scouting_data = list(
+            scouting_manager.db.team_data.aggregate(pipeline))
 
         scouting_entries = [
             {

@@ -11,16 +11,18 @@ from auth.auth_utils import UserManager
 mongo = PyMongo()
 login_manager = LoginManager()
 
+
 def create_app():
     app = Flask(__name__, static_folder='static', template_folder='templates')
-    
+
     # Load config
     load_dotenv()
     app.config.update(
         SECRET_KEY=os.getenv('SECRET_KEY', 'team334'),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SECURE=True,
-        MONGO_URI=os.getenv('MONGO_URI', 'mongodb://localhost:27017/scouting_app')
+        MONGO_URI=os.getenv(
+            'MONGO_URI', 'mongodb://localhost:27017/scouting_app')
     )
 
     mongo.init_app(app)
@@ -61,9 +63,10 @@ def create_app():
     @app.route('/')
     def index():
         return render_template('index.html')
-        
+
     return app
+
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)
+    app.run()

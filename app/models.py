@@ -18,7 +18,8 @@ class User(UserMixin):
         try:
             return str(self._id)
         except AttributeError as e:
-            raise NotImplementedError('No `_id` attribute - override `get_id`') from e
+            raise NotImplementedError(
+                'No `_id` attribute - override `get_id`') from e
 
     def is_authenticated(self):
         return True
@@ -54,6 +55,7 @@ class User(UserMixin):
             'created_at': self.created_at
         }
 
+
 class TeamData:
     def __init__(self, data):
         self._id = data.get('_id')
@@ -67,7 +69,7 @@ class TeamData:
         self.notes = data.get('notes', '')
         self.scouter_id = data.get('scouter_id')
         self.created_at = data.get('created_at')
-        
+
         # Handle the nested scouter data
         scouter_data = data.get('scouter', {})
         self.scouter = {
@@ -85,15 +87,15 @@ class TeamData:
     def create_from_db(data):
         if not data:
             return None
-            
+
         # Ensure _id is ObjectId
         if '_id' in data and not isinstance(data['_id'], ObjectId):
             data['_id'] = ObjectId(data['_id'])
-            
+
         # Ensure scouter_id is ObjectId
         if 'scouter_id' in data and not isinstance(data['scouter_id'], ObjectId):
             data['scouter_id'] = ObjectId(data['scouter_id'])
-            
+
         return TeamData(data)
 
     def to_dict(self):
