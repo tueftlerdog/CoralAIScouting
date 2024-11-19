@@ -1,9 +1,10 @@
 import asyncio
 from functools import wraps
 import aiohttp
-from flask import Blueprint, flash, render_template, request, redirect, url_for, jsonify
+from flask import (
+    Blueprint, flash, render_template, request, redirect, url_for, jsonify
+)
 from flask_login import login_required, current_user
-from datetime import datetime, timezone
 from scout.scouting_utils import ScoutingManager
 from .TBA import TBAInterface
 
@@ -67,7 +68,8 @@ def edit_scouting_data(id):
 
         if not team_data:
             flash(
-                "Team data not found or you do not have permission to edit it", "error"
+                "Team data not found or you do not have permission to edit it",
+                "error"
             )
             return redirect(url_for("scouting.list_scouting_data"))
 
@@ -131,7 +133,8 @@ async def compare_teams():
             async with aiohttp.ClientSession(headers=tba.headers) as session:
                 async with session.get(url) as response:
                     if response.status != 200:
-                        return jsonify({"error": f"Team {team_num} not found"}), 404
+                        return jsonify(
+                            {"error": f"Team {team_num} not found"}), 404
                     team = await response.json()
 
             # Fetch all scouting data for this team from MongoDB
@@ -148,25 +151,39 @@ async def compare_teams():
                 {"$unwind": "$scouter"},
             ]
 
-            team_scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
+            team_scouting_data = list(
+                scouting_manager.db.team_data.aggregate(pipeline))
 
             # Calculate statistics
-            auto_points = [entry["auto_points"] for entry in team_scouting_data]
-            teleop_points = [entry["teleop_points"] for entry in team_scouting_data]
-            endgame_points = [entry["endgame_points"] for entry in team_scouting_data]
-            total_points = [entry["total_points"] for entry in team_scouting_data]
+            auto_points = [
+                entry["auto_points"] for entry in team_scouting_data
+            ]
+            teleop_points = [
+                entry["teleop_points"] for entry in team_scouting_data
+            ]
+            endgame_points = [
+                entry["endgame_points"] for entry in team_scouting_data
+            ]
+            total_points = [
+                entry["total_points"] for entry in team_scouting_data
+            ]
 
             stats = {
                 "matches_played": len(team_scouting_data),
-                "avg_auto": (sum(auto_points) / len(auto_points) if auto_points else 0),
+                "avg_auto": (
+                    sum(auto_points) / len(auto_points) if auto_points else 0
+                ),
                 "avg_teleop": (
-                    sum(teleop_points) / len(teleop_points) if teleop_points else 0
+                    sum(teleop_points) / len(teleop_points)
+                    if teleop_points else 0
                 ),
                 "avg_endgame": (
-                    sum(endgame_points) / len(endgame_points) if endgame_points else 0
+                    sum(endgame_points) / len(endgame_points)
+                    if endgame_points else 0
                 ),
                 "avg_total": (
-                    sum(total_points) / len(total_points) if total_points else 0
+                    sum(total_points) / len(total_points)
+                    if total_points else 0
                 ),
                 "max_total": max(total_points, default=0),
                 "min_total": min(total_points, default=0),
@@ -243,7 +260,8 @@ async def search_teams():
             {"$unwind": "$scouter"},
         ]
 
-        team_scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
+        team_scouting_data = list(
+            scouting_manager.db.team_data.aggregate(pipeline))
 
         scouting_entries = [
             {

@@ -18,7 +18,8 @@ class User(UserMixin):
         try:
             return str(self._id)
         except AttributeError as e:
-            raise NotImplementedError("No `_id` attribute - override `get_id`") from e
+            raise NotImplementedError(
+                "No `_id` attribute - override `get_id`") from e
 
     def is_authenticated(self):
         return True
@@ -92,7 +93,9 @@ class TeamData:
             data["_id"] = ObjectId(data["_id"])
 
         # Ensure scouter_id is ObjectId
-        if "scouter_id" in data and not isinstance(data["scouter_id"], ObjectId):
+        if "scouter_id" in data and not isinstance(
+                                                data["scouter_id"], ObjectId
+                                                ):
             data["scouter_id"] = ObjectId(data["scouter_id"])
 
         return TeamData(data)

@@ -22,11 +22,12 @@ def with_mongodb_retry(retries=3, delay=2):
                     last_error = e
                     if attempt < retries - 1:
                         logger.warning(
-                            f"Attempt {attempt + 1} failed: {str(e)}. Retrying..."
+                            f"Attempt {attempt + 1} failed: {str(e)}."
                         )
                         time.sleep(delay)
                     else:
-                        logger.error(f"All {retries} attempts failed: {str(e)}")
+                        logger.error(
+                            f"All {retries} attempts failed: {str(e)}")
             raise last_error
 
         return wrapper
@@ -45,7 +46,8 @@ class ScoutingManager:
         """Establish connection to MongoDB with basic error handling"""
         try:
             if self.client is None:
-                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
+                self.client = MongoClient(self.mongo_uri,
+                                          serverSelectionTimeoutMS=5000)
                 # Test the connection
                 self.client.server_info()
                 self.db = self.client.get_default_database()
@@ -71,7 +73,8 @@ class ScoutingManager:
                 # Test if connection is still alive
                 self.client.server_info()
         except Exception:
-            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
+            logger.warning(
+                "Lost connection to MongoDB, attempting to reconnect.")
             self.connect()
 
     @with_mongodb_retry(retries=3, delay=2)
@@ -96,7 +99,7 @@ class ScoutingManager:
                 "created_at": datetime.now(timezone.utc),
             }
 
-            result = self.db.team_data.insert_one(team_data)
+            self.db.team_data.insert_one(team_data)
             logger.info(
                 f"Added new scouting data for team {
                         data['team_number']}"
@@ -120,7 +123,11 @@ class ScoutingManager:
                         "as": "scouter",
                     }
                 },
-                {"$unwind": {"path": "$scouter", "preserveNullAndEmptyArrays": True}},
+                {"$unwind":
+                 {"path": "$scouter",
+                  "preserveNullAndEmptyArrays": True
+                  }
+                 },
             ]
 
             team_data = list(self.db.team_data.aggregate(pipeline))
@@ -144,7 +151,8 @@ class ScoutingManager:
 
             # Add an is_owner field to the response
             data["is_owner"] = (
-                str(data["scouter_id"]) == str(scouter_id) if scouter_id else False
+                str(data["scouter_id"]) == str(scouter_id)
+                if scouter_id else False
             )
             return TeamData.create_from_db(data)
         except Exception as e:

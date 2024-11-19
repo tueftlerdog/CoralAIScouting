@@ -1,4 +1,3 @@
-from bson import ObjectId
 from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_pymongo import PyMongo
@@ -21,7 +20,9 @@ def create_app():
         SECRET_KEY=os.getenv("SECRET_KEY", "team334"),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SECURE=True,
-        MONGO_URI=os.getenv("MONGO_URI", "mongodb://localhost:27017/scouting_app"),
+        MONGO_URI=os.getenv(
+            "MONGO_URI", "mongodb://localhost:27017/scouting_app"
+        ),
     )
 
     mongo.init_app(app)

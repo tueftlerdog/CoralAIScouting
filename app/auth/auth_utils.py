@@ -23,11 +23,12 @@ def with_mongodb_retry(retries=3, delay=2):
                     last_error = e
                     if attempt < retries - 1:  # don't sleep on last attempt
                         logger.warning(
-                            f"Attempt {attempt + 1} failed: {str(e)}. Retrying..."
+                            f"Attempt {attempt + 1} failed: {str(e)}."
                         )
                         time.sleep(delay)
                     else:
-                        logger.error(f"All {retries} attempts failed: {str(e)}")
+                        logger.error(
+                            f"All {retries} attempts failed: {str(e)}")
             raise last_error
 
         return wrapper
@@ -56,7 +57,8 @@ class UserManager:
         """Establish connection to MongoDB with basic error handling"""
         try:
             if self.client is None:
-                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
+                self.client = MongoClient(
+                    self.mongo_uri, serverSelectionTimeoutMS=5000)
                 # Test the connection
                 self.client.server_info()
                 self.db = self.client.get_default_database()
@@ -79,11 +81,14 @@ class UserManager:
                 # Test if connection is still alive
                 self.client.server_info()
         except Exception:
-            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
+            logger.warning(
+                "Lost connection to MongoDB, attempting to reconnect...")
             self.connect()
 
     @with_mongodb_retry(retries=3, delay=2)
-    async def create_user(self, email, username, password, team_number, role="user"):
+    async def create_user(
+                        self, email, username, password, team_number,
+                        role="user"):
         """Create a new user with retry mechanism"""
         self.ensure_connected()
         try:
@@ -111,7 +116,7 @@ class UserManager:
                 "last_login": None,
             }
 
-            result = self.db.users.insert_one(user_data)
+            self.db.users.insert_one(user_data)
             logger.info(f"Created new user: {username}")
             return True, "User created successfully"
 

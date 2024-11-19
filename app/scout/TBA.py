@@ -1,9 +1,16 @@
 import aiohttp
 import asyncio
+import os
 from typing import Optional, List, Dict
 from dataclasses import dataclass
+from dotenv import load_dotenv
 
-from flask import jsonify
+load_dotenv()
+
+"""
+Credits to PAWNAGERobitics for the original code:
+https://github.com/PWNAGERobotics/ScoutingPASS/blob/main/resources/js/TBAInterface.js
+"""
 
 
 @dataclass
@@ -12,7 +19,7 @@ class TBAInterface:
 
     def __init__(
         self,
-        auth_key: str = "uTHeEfPigDp9huQCpLNkWK7FBQIb01Qrzvt4MAjh9z2WQDkrsvNE77ch6bOPvPb6",
+        auth_key: str = os.getenv("TBA_AUTH_KEY"),
     ):
         self.auth_key = auth_key
         self.base_url = "https://www.thebluealliance.com/api/v3"
@@ -31,12 +38,15 @@ class TBAInterface:
         if self.session:
             await self.session.close()
 
-    async def get_teams_at_event(self, event_code: str) -> Optional[List[Dict]]:
+    async def get_teams_at_event(
+        self, event_code: str
+    ) -> Optional[List[Dict]]:
         """
         Get list of teams in event
 
         Args:
-            event_code (str): The event code (i.e. 2020caln) to pull the team list
+            event_code (str): The event code (i.e. 2020caln) to pull
+            the team list
 
         Returns:
             Optional[List[Dict]]: List of team data or None if request fails
@@ -63,7 +73,8 @@ class TBAInterface:
         Get schedule for event
 
         Args:
-            event_code (str): The event code (i.e. 2020caln) to pull the schedule
+            event_code (str): The event code (i.e. 2020caln)
+            to pull the schedule
 
         Returns:
             Optional[List[Dict]]: List of match data or None if request fails
@@ -95,10 +106,14 @@ class TBAInterface:
             event_code (str): The event code (i.e. 2020caln)
 
         Returns:
-            tuple[Optional[List[Dict]], Optional[List[Dict]]]: Tuple of (teams, schedule) data
+            tuple[
+                Optional[List[Dict]],
+                Optional[List[Dict]]
+            ]: Tuple of (teams, schedule) data
         """
         async with self:
-            teams_task = asyncio.create_task(self.get_teams_at_event(event_code))
+            teams_task = asyncio.create_task(
+                self.get_teams_at_event(event_code))
             schedule_task = asyncio.create_task(self.get_schedule(event_code))
 
             teams, schedule = await asyncio.gather(teams_task, schedule_task)

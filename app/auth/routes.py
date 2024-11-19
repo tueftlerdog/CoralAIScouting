@@ -1,6 +1,5 @@
 from flask import (
     Blueprint,
-    current_app,
     render_template,
     redirect,
     url_for,
@@ -59,7 +58,8 @@ async def login():
             return render_template("auth/login.html", form_data=form_data)
 
         try:
-            success, user = await user_manager.authenticate_user(login, password)
+            success, user = await user_manager.authenticate_user(
+                login, password)
             if success and user:
                 login_user(user, remember=remember)
                 next_page = request.args.get("next")
@@ -89,7 +89,9 @@ async def register():
         confirm_password = request.form.get("confirm_password", "").strip()
         team_number = request.form.get("teamNumber", 0)
 
-        form_data = {"email": email, "username": username, "team_number": team_number}
+        form_data = {
+            "email": email, "username": username, "team_number": team_number
+        }
 
         if not all([email, username, password, confirm_password]):
             flash("All fields are required", "error")
