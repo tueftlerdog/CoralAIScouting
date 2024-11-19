@@ -97,7 +97,7 @@ class UserManager:
             user_data = {
                 'email': email,
                 'username': username,
-                'team_number': int(team_number) if team_number else None,
+                'team_number': int(team_number),
                 'password_hash': generate_password_hash(password),
                 'role': role,
                 'created_at': datetime.now(timezone.utc),

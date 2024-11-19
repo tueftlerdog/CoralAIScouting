@@ -64,10 +64,19 @@ class TeamData:
         self.teleop_points = data.get('teleop_points')
         self.endgame_points = data.get('endgame_points')
         self.total_points = data.get('total_points')
-        self.notes = data.get('notes')
+        self.notes = data.get('notes', '')
         self.scouter_id = data.get('scouter_id')
-        self.scouter = data.get('scouter')
         self.created_at = data.get('created_at')
+        
+        # Handle the nested scouter data
+        scouter_data = data.get('scouter', {})
+        print(scouter_data)
+        self.scouter = {
+            'username': scouter_data.get('username', 'Unknown'),
+            'team_number': scouter_data.get('team_number'),
+            'email': scouter_data.get('email'),
+            'role': scouter_data.get('role', 'user')
+        }
 
     @property
     def id(self):
@@ -90,6 +99,7 @@ class TeamData:
 
     def to_dict(self):
         return {
+            'id': self.id,
             'team_number': self.team_number,
             'event_code': self.event_code,
             'match_number': self.match_number,
@@ -98,12 +108,21 @@ class TeamData:
             'endgame_points': self.endgame_points,
             'total_points': self.total_points,
             'notes': self.notes,
-            'scouter_id': self.scouter_id,
-            'created_at': self.created_at
+            'scouter_id': str(self.scouter_id),
+            'created_at': self.created_at,
+            'scouter': self.scouter
         }
 
     @property
     def scouter_name(self):
-        if self.scouter:
-            return f"{self.scouter.get('username')} ({self.scouter.get('teamNumber')})"
-        return "Unknown"
+        """Returns formatted scouter name with team number if available"""
+        username = self.scouter.get('username', 'Unknown')
+        team_number = self.scouter.get('team_number')
+        return f"{username} ({team_number})"
+
+    @property
+    def formatted_date(self):
+        """Returns formatted creation date"""
+        if self.created_at:
+            return self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        return 'N/A'

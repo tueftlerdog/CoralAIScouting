@@ -75,7 +75,7 @@ async def register():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         confirm_password = request.form.get('confirm_password', '').strip()
-        team_number = request.form.get('team_number', 0)
+        team_number = request.form.get('teamNumber', 0)
         
         form_data = {
             'email': email,
