@@ -22,13 +22,15 @@ def with_mongodb_retry(retries=3, delay=2):
                     last_error = e
                     if attempt < retries - 1:
                         logger.warning(
-                            f"Attempt {attempt + 1} failed: {str(e)}. Retrying...")
+                            f"Attempt {attempt + 1} failed: {str(e)}. Retrying..."
+                        )
                         time.sleep(delay)
                     else:
-                        logger.error(
-                            f"All {retries} attempts failed: {str(e)}")
+                        logger.error(f"All {retries} attempts failed: {str(e)}")
             raise last_error
+
         return wrapper
+
     return decorator
 
 
@@ -43,19 +45,18 @@ class ScoutingManager:
         """Establish connection to MongoDB with basic error handling"""
         try:
             if self.client is None:
-                self.client = MongoClient(
-                    self.mongo_uri, serverSelectionTimeoutMS=5000)
+                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
                 # Test the connection
                 self.client.server_info()
                 self.db = self.client.get_default_database()
                 logger.info("Successfully connected to MongoDB")
 
                 # Ensure team_data collection exists
-                if 'team_data' not in self.db.list_collection_names():
-                    self.db.create_collection('team_data')
+                if "team_data" not in self.db.list_collection_names():
+                    self.db.create_collection("team_data")
                     # Create indexes
-                    self.db.team_data.create_index([('team_number', 1)])
-                    self.db.team_data.create_index([('scouter_id', 1)])
+                    self.db.team_data.create_index([("team_number", 1)])
+                    self.db.team_data.create_index([("scouter_id", 1)])
                     logger.info("Created team_data collection and indexes")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {str(e)}")
@@ -70,8 +71,7 @@ class ScoutingManager:
                 # Test if connection is still alive
                 self.client.server_info()
         except Exception:
-            logger.warning(
-                "Lost connection to MongoDB, attempting to reconnect...")
+            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
             self.connect()
 
     @with_mongodb_retry(retries=3, delay=2)
@@ -80,23 +80,27 @@ class ScoutingManager:
         self.ensure_connected()
         try:
             team_data = {
-                'team_number': int(data['team_number']),
-                'event_code': data['event_code'],
-                'match_number': int(data['match_number']),
-                'auto_points': int(data['auto_points']),
-                'teleop_points': int(data['teleop_points']),
-                'endgame_points': int(data['endgame_points']),
-                'total_points': (int(data['auto_points']) +
-                                 int(data['teleop_points']) +
-                                 int(data['endgame_points'])),
-                'notes': data['notes'],
-                'scouter_id': ObjectId(scouter_id),
-                'created_at': datetime.now(timezone.utc),
+                "team_number": int(data["team_number"]),
+                "event_code": data["event_code"],
+                "match_number": int(data["match_number"]),
+                "auto_points": int(data["auto_points"]),
+                "teleop_points": int(data["teleop_points"]),
+                "endgame_points": int(data["endgame_points"]),
+                "total_points": (
+                    int(data["auto_points"])
+                    + int(data["teleop_points"])
+                    + int(data["endgame_points"])
+                ),
+                "notes": data["notes"],
+                "scouter_id": ObjectId(scouter_id),
+                "created_at": datetime.now(timezone.utc),
             }
 
             result = self.db.team_data.insert_one(team_data)
-            logger.info(f"Added new scouting data for team {
-                        data['team_number']}")
+            logger.info(
+                f"Added new scouting data for team {
+                        data['team_number']}"
+            )
             return True, "Data added successfully"
         except Exception as e:
             logger.error(f"Error adding scouting data: {str(e)}")
@@ -109,19 +113,14 @@ class ScoutingManager:
         try:
             pipeline = [
                 {
-                    '$lookup': {
-                        'from': 'users',
-                        'localField': 'scouter_id',
-                        'foreignField': '_id',
-                        'as': 'scouter'
+                    "$lookup": {
+                        "from": "users",
+                        "localField": "scouter_id",
+                        "foreignField": "_id",
+                        "as": "scouter",
                     }
                 },
-                {
-                    '$unwind': {
-                        'path': '$scouter',
-                        'preserveNullAndEmptyArrays': True
-                    }
-                }
+                {"$unwind": {"path": "$scouter", "preserveNullAndEmptyArrays": True}},
             ]
 
             team_data = list(self.db.team_data.aggregate(pipeline))
@@ -135,17 +134,18 @@ class ScoutingManager:
         """Get specific team data with optional scouter verification"""
         self.ensure_connected()
         try:
-            query = {'_id': ObjectId(team_id)}
+            query = {"_id": ObjectId(team_id)}
             if scouter_id:  # If scouter_id provided, verify ownership
-                query['scouter_id'] = ObjectId(scouter_id)
+                query["scouter_id"] = ObjectId(scouter_id)
 
             data = self.db.team_data.find_one(query)
             if not data:
                 return None
 
             # Add an is_owner field to the response
-            data['is_owner'] = str(data['scouter_id']) == str(
-                scouter_id) if scouter_id else False
+            data["is_owner"] = (
+                str(data["scouter_id"]) == str(scouter_id) if scouter_id else False
+            )
             return TeamData.create_from_db(data)
         except Exception as e:
             logger.error(f"Error fetching team data: {str(e)}")
@@ -157,32 +157,34 @@ class ScoutingManager:
         self.ensure_connected()
         try:
             # First verify ownership
-            existing_data = self.db.team_data.find_one({
-                '_id': ObjectId(team_id),
-                'scouter_id': ObjectId(scouter_id)
-            })
+            existing_data = self.db.team_data.find_one(
+                {"_id": ObjectId(team_id), "scouter_id": ObjectId(scouter_id)}
+            )
 
             if not existing_data:
                 logger.warning(
-                    f"Update attempted by non-owner scouter_id: {scouter_id}")
+                    f"Update attempted by non-owner scouter_id: {scouter_id}"
+                )
                 return False
 
             updated_data = {
-                'team_number': int(data['team_number']),
-                'event_code': data['event_code'],
-                'match_number': int(data['match_number']),
-                'auto_points': int(data['auto_points']),
-                'teleop_points': int(data['teleop_points']),
-                'endgame_points': int(data['endgame_points']),
-                'total_points': (int(data['auto_points']) +
-                                 int(data['teleop_points']) +
-                                 int(data['endgame_points'])),
-                'notes': data['notes']
+                "team_number": int(data["team_number"]),
+                "event_code": data["event_code"],
+                "match_number": int(data["match_number"]),
+                "auto_points": int(data["auto_points"]),
+                "teleop_points": int(data["teleop_points"]),
+                "endgame_points": int(data["endgame_points"]),
+                "total_points": (
+                    int(data["auto_points"])
+                    + int(data["teleop_points"])
+                    + int(data["endgame_points"])
+                ),
+                "notes": data["notes"],
             }
 
             result = self.db.team_data.update_one(
-                {'_id': ObjectId(team_id), 'scouter_id': ObjectId(scouter_id)},
-                {'$set': updated_data}
+                {"_id": ObjectId(team_id), "scouter_id": ObjectId(scouter_id)},
+                {"$set": updated_data},
             )
             return result.modified_count > 0
         except Exception as e:
@@ -194,10 +196,9 @@ class ScoutingManager:
         """Delete team data if scouter has permission"""
         self.ensure_connected()
         try:
-            result = self.db.team_data.delete_one({
-                '_id': ObjectId(team_id),
-                'scouter_id': ObjectId(scouter_id)
-            })
+            result = self.db.team_data.delete_one(
+                {"_id": ObjectId(team_id), "scouter_id": ObjectId(scouter_id)}
+            )
             return result.deleted_count > 0
         except Exception as e:
             logger.error(f"Error deleting team data: {str(e)}")

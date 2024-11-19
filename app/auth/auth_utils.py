@@ -23,13 +23,15 @@ def with_mongodb_retry(retries=3, delay=2):
                     last_error = e
                     if attempt < retries - 1:  # don't sleep on last attempt
                         logger.warning(
-                            f"Attempt {attempt + 1} failed: {str(e)}. Retrying...")
+                            f"Attempt {attempt + 1} failed: {str(e)}. Retrying..."
+                        )
                         time.sleep(delay)
                     else:
-                        logger.error(
-                            f"All {retries} attempts failed: {str(e)}")
+                        logger.error(f"All {retries} attempts failed: {str(e)}")
             raise last_error
+
         return wrapper
+
     return decorator
 
 
@@ -54,16 +56,15 @@ class UserManager:
         """Establish connection to MongoDB with basic error handling"""
         try:
             if self.client is None:
-                self.client = MongoClient(
-                    self.mongo_uri, serverSelectionTimeoutMS=5000)
+                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
                 # Test the connection
                 self.client.server_info()
                 self.db = self.client.get_default_database()
                 logger.info("Successfully connected to MongoDB")
 
                 # Ensure users collection exists
-                if 'users' not in self.db.list_collection_names():
-                    self.db.create_collection('users')
+                if "users" not in self.db.list_collection_names():
+                    self.db.create_collection("users")
                     logger.info("Created users collection")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {str(e)}")
@@ -78,21 +79,20 @@ class UserManager:
                 # Test if connection is still alive
                 self.client.server_info()
         except Exception:
-            logger.warning(
-                "Lost connection to MongoDB, attempting to reconnect...")
+            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
             self.connect()
 
     @with_mongodb_retry(retries=3, delay=2)
-    async def create_user(self, email, username, password, team_number, role='user'):
+    async def create_user(self, email, username, password, team_number, role="user"):
         """Create a new user with retry mechanism"""
         self.ensure_connected()
         try:
             # Check for existing email
-            if self.db.users.find_one({'email': email}):
+            if self.db.users.find_one({"email": email}):
                 return False, "Email already registered"
 
             # Check for existing username
-            if self.db.users.find_one({'username': username}):
+            if self.db.users.find_one({"username": username}):
                 return False, "Username already taken"
 
             # Check password strength
@@ -102,13 +102,13 @@ class UserManager:
 
             # Create user document
             user_data = {
-                'email': email,
-                'username': username,
-                'team_number': int(team_number),
-                'password_hash': generate_password_hash(password),
-                'role': role,
-                'created_at': datetime.now(timezone.utc),
-                'last_login': None,
+                "email": email,
+                "username": username,
+                "team_number": int(team_number),
+                "password_hash": generate_password_hash(password),
+                "role": role,
+                "created_at": datetime.now(timezone.utc),
+                "last_login": None,
             }
 
             result = self.db.users.insert_one(user_data)
@@ -125,14 +125,14 @@ class UserManager:
         self.ensure_connected()
         try:
             if user_data := self.db.users.find_one(
-                {'$or': [{'email': login}, {'username': login}]}
+                {"$or": [{"email": login}, {"username": login}]}
             ):
                 user = User.create_from_db(user_data)
                 if user and user.check_password(password):
                     # Update last login
                     self.db.users.update_one(
-                        {'_id': user._id},
-                        {'$set': {'last_login': datetime.now(timezone.utc)}},
+                        {"_id": user._id},
+                        {"$set": {"last_login": datetime.now(timezone.utc)}},
                     )
                     logger.info(f"Successful login: {login}")
                     return True, user
@@ -147,7 +147,8 @@ class UserManager:
         self.ensure_connected()
         try:
             from bson.objectid import ObjectId
-            user_data = self.db.users.find_one({'_id': ObjectId(user_id)})
+
+            user_data = self.db.users.find_one({"_id": ObjectId(user_id)})
             return User.create_from_db(user_data) if user_data else None
         except Exception as e:
             logger.error(f"Error loading user: {str(e)}")

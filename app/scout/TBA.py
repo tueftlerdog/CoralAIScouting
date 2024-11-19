@@ -10,7 +10,10 @@ from flask import jsonify
 class TBAInterface:
     """Async interface for The Blue Alliance API"""
 
-    def __init__(self, auth_key: str = "uTHeEfPigDp9huQCpLNkWK7FBQIb01Qrzvt4MAjh9z2WQDkrsvNE77ch6bOPvPb6"):
+    def __init__(
+        self,
+        auth_key: str = "uTHeEfPigDp9huQCpLNkWK7FBQIb01Qrzvt4MAjh9z2WQDkrsvNE77ch6bOPvPb6",
+    ):
         self.auth_key = auth_key
         self.base_url = "https://www.thebluealliance.com/api/v3"
         self.headers = {"X-TBA-Auth-Key": self.auth_key}
@@ -82,7 +85,9 @@ class TBAInterface:
         except aiohttp.ClientError as e:
             raise e
 
-    async def get_event_data(self, event_code: str) -> tuple[Optional[List[Dict]], Optional[List[Dict]]]:
+    async def get_event_data(
+        self, event_code: str
+    ) -> tuple[Optional[List[Dict]], Optional[List[Dict]]]:
         """
         Get both teams and schedule data for an event concurrently
 
@@ -93,8 +98,7 @@ class TBAInterface:
             tuple[Optional[List[Dict]], Optional[List[Dict]]]: Tuple of (teams, schedule) data
         """
         async with self:
-            teams_task = asyncio.create_task(
-                self.get_teams_at_event(event_code))
+            teams_task = asyncio.create_task(self.get_teams_at_event(event_code))
             schedule_task = asyncio.create_task(self.get_schedule(event_code))
 
             teams, schedule = await asyncio.gather(teams_task, schedule_task)

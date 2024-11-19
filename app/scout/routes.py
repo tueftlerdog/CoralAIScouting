@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from scout.scouting_utils import ScoutingManager
 from .TBA import TBAInterface
 
-scouting_bp = Blueprint('scouting', __name__)
+scouting_bp = Blueprint("scouting", __name__)
 scouting_manager = None
 
 
@@ -22,95 +22,99 @@ def async_route(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         return asyncio.run(f(*args, **kwargs))
+
     return wrapper
 
 
-@scouting_bp.route('/scouting/add', methods=['GET', 'POST'])
+@scouting_bp.route("/scouting/add", methods=["GET", "POST"])
 @login_required
 def add_scouting_data():
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
             success, message = scouting_manager.add_scouting_data(
-                request.form,
-                current_user.get_id()
+                request.form, current_user.get_id()
             )
             if success:
-                flash('Data added successfully', 'success')
-                return redirect(url_for('scouting.list_scouting_data'))
+                flash("Data added successfully", "success")
+                return redirect(url_for("scouting.list_scouting_data"))
             else:
-                flash(f'Error adding data: {message}', 'error')
-                return redirect(url_for('scouting.add_scouting_data'))
+                flash(f"Error adding data: {message}", "error")
+                return redirect(url_for("scouting.add_scouting_data"))
         except Exception as e:
-            flash(f'Error: {str(e)}', 'error')
-            return redirect(url_for('scouting.add_scouting_data'))
+            flash(f"Error: {str(e)}", "error")
+            return redirect(url_for("scouting.add_scouting_data"))
 
-    return render_template('scouting/add.html')
+    return render_template("scouting/add.html")
 
 
-@scouting_bp.route('/scouting/list')
-@scouting_bp.route('/scouting')
+@scouting_bp.route("/scouting/list")
+@scouting_bp.route("/scouting")
 @login_required
 def list_scouting_data():
     try:
         team_data = scouting_manager.get_all_scouting_data()
-        return render_template('scouting/list.html', team_data=team_data)
+        return render_template("scouting/list.html", team_data=team_data)
     except Exception as e:
-        flash(f'Error fetching data: {str(e)}', 'error')
-        return render_template('scouting/list.html', team_data=[])
+        flash(f"Error fetching data: {str(e)}", "error")
+        return render_template("scouting/list.html", team_data=[])
 
 
-@scouting_bp.route('/scouting/edit/<string:id>', methods=['GET', 'POST'])
+@scouting_bp.route("/scouting/edit/<string:id>", methods=["GET", "POST"])
 @login_required
 def edit_scouting_data(id):
     try:
         team_data = scouting_manager.get_team_data(id, current_user.get_id())
 
         if not team_data:
-            flash('Team data not found or you do not have permission to edit it', 'error')
-            return redirect(url_for('scouting.list_scouting_data'))
+            flash(
+                "Team data not found or you do not have permission to edit it", "error"
+            )
+            return redirect(url_for("scouting.list_scouting_data"))
 
         if not team_data.is_owner:
-            flash('You do not have permission to edit this entry', 'error')
-            return redirect(url_for('scouting.list_scouting_data'))
+            flash("You do not have permission to edit this entry", "error")
+            return redirect(url_for("scouting.list_scouting_data"))
 
-        if request.method == 'POST':
-            if scouting_manager.update_team_data(id, request.form, current_user.get_id()):
-                flash('Data updated successfully', 'success')
-                return redirect(url_for('scouting.list_scouting_data'))
+        if request.method == "POST":
+            if scouting_manager.update_team_data(
+                id, request.form, current_user.get_id()
+            ):
+                flash("Data updated successfully", "success")
+                return redirect(url_for("scouting.list_scouting_data"))
             else:
-                flash('Error updating data', 'error')
+                flash("Error updating data", "error")
 
-        return render_template('scouting/edit.html', team_data=team_data)
+        return render_template("scouting/edit.html", team_data=team_data)
     except Exception as e:
-        flash(f'Error: {str(e)}', 'error')
-        return redirect(url_for('scouting.list_scouting_data'))
+        flash(f"Error: {str(e)}", "error")
+        return redirect(url_for("scouting.list_scouting_data"))
 
 
-@scouting_bp.route('/scouting/delete/<string:id>')
+@scouting_bp.route("/scouting/delete/<string:id>")
 @login_required
 def delete_scouting_data(id):
     try:
         if scouting_manager.delete_team_data(id, current_user.get_id()):
-            flash('Record deleted successfully', 'success')
+            flash("Record deleted successfully", "success")
         else:
-            flash('Error deleting record or permission denied', 'error')
+            flash("Error deleting record or permission denied", "error")
     except Exception as e:
-        flash(f'Error: {str(e)}', 'error')
-    return redirect(url_for('scouting.list_scouting_data'))
+        flash(f"Error: {str(e)}", "error")
+    return redirect(url_for("scouting.list_scouting_data"))
 
 
-@scouting_bp.route('/compare')
+@scouting_bp.route("/compare")
 @login_required
 def compare_page():
-    return render_template('compare.html')
+    return render_template("compare.html")
 
 
-@scouting_bp.route('/api/compare')
+@scouting_bp.route("/api/compare")
 @login_required
 @async_route
 async def compare_teams():
-    team1 = request.args.get('team1', '').strip()
-    team2 = request.args.get('team2', '').strip()
+    team1 = request.args.get("team1", "").strip()
+    team2 = request.args.get("team2", "").strip()
 
     if not team1 or not team2:
         return jsonify({"error": "Both team numbers are required"}), 400
@@ -132,56 +136,37 @@ async def compare_teams():
 
             # Fetch all scouting data for this team from MongoDB
             pipeline = [
+                {"$match": {"team_number": int(team_num)}},
                 {
-                    '$match': {'team_number': int(team_num)}
-                },
-                {
-                    '$lookup': {
-                        'from': 'users',
-                        'localField': 'scouter_id',
-                        'foreignField': '_id',
-                        'as': 'scouter'
+                    "$lookup": {
+                        "from": "users",
+                        "localField": "scouter_id",
+                        "foreignField": "_id",
+                        "as": "scouter",
                     }
                 },
-                {
-                    '$unwind': '$scouter'
-                }
+                {"$unwind": "$scouter"},
             ]
 
-            team_scouting_data = list(
-                scouting_manager.db.team_data.aggregate(pipeline))
+            team_scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
 
             # Calculate statistics
-            auto_points = [entry['auto_points']
-                           for entry in team_scouting_data]
-            teleop_points = [entry['teleop_points']
-                             for entry in team_scouting_data]
-            endgame_points = [entry['endgame_points']
-                              for entry in team_scouting_data]
-            total_points = [entry['total_points']
-                            for entry in team_scouting_data]
+            auto_points = [entry["auto_points"] for entry in team_scouting_data]
+            teleop_points = [entry["teleop_points"] for entry in team_scouting_data]
+            endgame_points = [entry["endgame_points"] for entry in team_scouting_data]
+            total_points = [entry["total_points"] for entry in team_scouting_data]
 
             stats = {
                 "matches_played": len(team_scouting_data),
-                "avg_auto": (
-                    sum(auto_points) / len(auto_points)
-                    if auto_points
-                    else 0
-                ),
+                "avg_auto": (sum(auto_points) / len(auto_points) if auto_points else 0),
                 "avg_teleop": (
-                    sum(teleop_points) / len(teleop_points)
-                    if teleop_points
-                    else 0
+                    sum(teleop_points) / len(teleop_points) if teleop_points else 0
                 ),
                 "avg_endgame": (
-                    sum(endgame_points) / len(endgame_points)
-                    if endgame_points
-                    else 0
+                    sum(endgame_points) / len(endgame_points) if endgame_points else 0
                 ),
                 "avg_total": (
-                    sum(total_points) / len(total_points)
-                    if total_points
-                    else 0
+                    sum(total_points) / len(total_points) if total_points else 0
                 ),
                 "max_total": max(total_points, default=0),
                 "min_total": min(total_points, default=0),
@@ -189,14 +174,14 @@ async def compare_teams():
 
             scouting_entries = [
                 {
-                    "event_code": entry['event_code'],
-                    "match_number": entry['match_number'],
-                    "auto_points": entry['auto_points'],
-                    "teleop_points": entry['teleop_points'],
-                    "endgame_points": entry['endgame_points'],
-                    "total_points": entry['total_points'],
-                    "notes": entry['notes'],
-                    "scouter": entry['scouter']['username'],
+                    "event_code": entry["event_code"],
+                    "match_number": entry["match_number"],
+                    "auto_points": entry["auto_points"],
+                    "teleop_points": entry["teleop_points"],
+                    "endgame_points": entry["endgame_points"],
+                    "total_points": entry["total_points"],
+                    "notes": entry["notes"],
+                    "scouter": entry["scouter"]["username"],
                 }
                 for entry in team_scouting_data
             ]
@@ -209,7 +194,7 @@ async def compare_teams():
                 "state_prov": team.get("state_prov"),
                 "country": team.get("country"),
                 "stats": stats,
-                "scouting_data": scouting_entries
+                "scouting_data": scouting_entries,
             }
 
         return jsonify(teams_data)
@@ -219,17 +204,17 @@ async def compare_teams():
         return jsonify({"error": "Failed to fetch team data"}), 500
 
 
-@scouting_bp.route('/search')
+@scouting_bp.route("/search")
 @login_required
 def search_page():
-    return render_template('search.html')
+    return render_template("search.html")
 
 
-@scouting_bp.route('/api/search')
+@scouting_bp.route("/api/search")
 @login_required
 @async_route
 async def search_teams():
-    query = request.args.get('q', '').strip()
+    query = request.args.get("q", "").strip()
     if not query:
         return jsonify([])
 
@@ -246,49 +231,48 @@ async def search_teams():
 
         # Fetch all scouting data for this team
         pipeline = [
+            {"$match": {"team_number": int(query)}},
             {
-                '$match': {'team_number': int(query)}
-            },
-            {
-                '$lookup': {
-                    'from': 'users',
-                    'localField': 'scouter_id',
-                    'foreignField': '_id',
-                    'as': 'scouter'
+                "$lookup": {
+                    "from": "users",
+                    "localField": "scouter_id",
+                    "foreignField": "_id",
+                    "as": "scouter",
                 }
             },
-            {
-                '$unwind': '$scouter'
-            }
+            {"$unwind": "$scouter"},
         ]
 
-        team_scouting_data = list(
-            scouting_manager.db.team_data.aggregate(pipeline))
+        team_scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
 
         scouting_entries = [
             {
-                "id": str(entry['_id']),
-                "event_code": entry['event_code'],
-                "match_number": entry['match_number'],
-                "auto_points": entry['auto_points'],
-                "teleop_points": entry['teleop_points'],
-                "endgame_points": entry['endgame_points'],
-                "total_points": entry['total_points'],
-                "notes": entry['notes'],
-                "scouter": entry['scouter']['username'],
+                "id": str(entry["_id"]),
+                "event_code": entry["event_code"],
+                "match_number": entry["match_number"],
+                "auto_points": entry["auto_points"],
+                "teleop_points": entry["teleop_points"],
+                "endgame_points": entry["endgame_points"],
+                "total_points": entry["total_points"],
+                "notes": entry["notes"],
+                "scouter": entry["scouter"]["username"],
             }
             for entry in team_scouting_data
         ]
 
-        return jsonify([{
-            "team_number": team["team_number"],
-            "nickname": team["nickname"],
-            "school_name": team.get("school_name"),
-            "city": team.get("city"),
-            "state_prov": team.get("state_prov"),
-            "country": team.get("country"),
-            "scouting_data": scouting_entries
-        }])
+        return jsonify(
+            [
+                {
+                    "team_number": team["team_number"],
+                    "nickname": team["nickname"],
+                    "school_name": team.get("school_name"),
+                    "city": team.get("city"),
+                    "state_prov": team.get("state_prov"),
+                    "country": team.get("country"),
+                    "scouting_data": scouting_entries,
+                }
+            ]
+        )
 
     except Exception as e:
         print(f"Error searching teams: {e}")
