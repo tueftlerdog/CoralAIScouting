@@ -1,0 +1,86 @@
+name: Bug Report
+description: File a bug report
+labels: ["bug"]
+
+body:
+  - type: input
+    attributes:
+      label: Summary
+      description: >
+        A short summary of what your feature request is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-result
+    attributes:
+      label: What happened? What did you expect to happen?
+      description: What did you expect compared to reality?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: What did you do to make this happened?
+      description: List your reproductive steps
+    validations:
+      required: true
+
+  - type: textarea
+    id: images
+    attributes:
+      label: If possible can you provide some images?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      multiple: false
+      options:
+        - Windows 10/11
+        - MacOS
+        - Linux
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: sys-info
+    attributes:
+      label: Add your python version
+      value: >
+        Add your python version here if you don't know, open a command line and run python as shell and you will see it
+    validations:
+      required: true
+
+  - type: textarea
+    id: package-info
+    attributes:
+      label: Add your package info
+      value: >
+        Add your package versions here if you don't know, open a command line in your project and run `pip freeze` and paste everything here
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: I've search for duplicated
+          required: true
+        - label: I have shown the entire traceback, if possible.
+          required: true
+        - label: I have provided all information about this bug.
+          required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: If there is something you like to add or say please add it here
+      description: Add here
+    validations:
+      required: false

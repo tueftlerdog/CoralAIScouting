@@ -70,7 +70,6 @@ class TeamData:
         
         # Handle the nested scouter data
         scouter_data = data.get('scouter', {})
-        print(scouter_data)
         self.scouter = {
             'username': scouter_data.get('username', 'Unknown'),
             'team_number': scouter_data.get('team_number'),
