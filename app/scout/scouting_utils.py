@@ -101,8 +101,7 @@ class ScoutingManager:
 
             self.db.team_data.insert_one(team_data)
             logger.info(
-                f"Added new scouting data for team {
-                        data['team_number']}"
+                f"Added new scouting data for team {data['team_number']}"
             )
             return True, "Data added successfully"
         except Exception as e:
