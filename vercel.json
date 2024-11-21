@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "app/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/app/static/(.*)",
+      "headers": {
+        "cache-control": "max-age=31536000, immutable"
+      },
+      "dest": "/app/static/$1"
+    },
+    {
+      "src": "/app/scouting/(.*)",
+      "dest": "app/main.py"
+    },
+    {
+      "src": "/app/auth/(.*)",
+      "dest": "app/main.py"
+    },
+    {
+      "src": "/(.*)",   
+      "dest": "app/main.py"
+    }
+  ]
+}

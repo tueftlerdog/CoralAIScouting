@@ -129,3 +129,8 @@ class TeamData:
         if self.created_at:
             return self.created_at.strftime("%Y-%m-%d %H:%M:%S")
         return "N/A"
+
+    @property
+    def is_owner(self):
+        """Returns whether the current user is the owner of the data"""
+        return str(self.scouter_id) != str(self.scouter.get("team_number"))

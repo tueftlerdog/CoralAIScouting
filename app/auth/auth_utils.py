@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timezone
-from models import User
+from app.models import User
 import logging
 import time
 from functools import wraps

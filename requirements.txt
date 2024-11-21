@@ -4,3 +4,4 @@ python-dotenv
 aiohttp
 pymongo
 flask_pymongo
+waitress

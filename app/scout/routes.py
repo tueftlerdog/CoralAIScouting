@@ -5,7 +5,7 @@ from flask import (
     Blueprint, flash, render_template, request, redirect, url_for, jsonify
 )
 from flask_login import login_required, current_user
-from scout.scouting_utils import ScoutingManager
+from app.scout.scouting_utils import ScoutingManager
 from .TBA import TBAInterface
 
 scouting_bp = Blueprint("scouting", __name__)

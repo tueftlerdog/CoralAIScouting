@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 from bson import ObjectId
 from datetime import datetime, timezone
-from models import TeamData
+from app.models import TeamData
 import logging
 import time
 from functools import wraps

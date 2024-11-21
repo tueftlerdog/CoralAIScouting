@@ -4,7 +4,7 @@ from flask_pymongo import PyMongo
 import os
 from dotenv import load_dotenv
 
-from auth.auth_utils import UserManager
+from app.auth.auth_utils import UserManager
 
 
 mongo = PyMongo()
@@ -54,8 +54,8 @@ def create_app():
     user_manager = UserManager(app.config["MONGO_URI"])
 
     # Import blueprints inside create_app to avoid circular imports
-    from auth.routes import auth_bp
-    from scout.routes import scouting_bp
+    from app.auth.routes import auth_bp
+    from app.scout.routes import scouting_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(scouting_bp, url_prefix="/")

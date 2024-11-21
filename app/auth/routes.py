@@ -7,7 +7,7 @@ from flask import (
     flash,
 )
 from flask_login import login_required, login_user, current_user, logout_user
-from auth.auth_utils import UserManager
+from app.auth.auth_utils import UserManager
 import asyncio
 from functools import wraps
 
