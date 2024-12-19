@@ -132,7 +132,8 @@ class TeamManager:
 
             # Add user to team
             self.db.teams.update_one(
-                {"_id": team_data["_id"]}, {"$addToSet": {"users": user_id}}
+                {"_id": team_data["_id"]}, 
+                {"$addToSet": {"users": user_id}}
             )
 
             # Update user's team number
@@ -141,8 +142,14 @@ class TeamManager:
                 {"$set": {"teamNumber": team_data["team_number"]}}
             )
 
-            logger.info(f"User {user_id} joined team {team_data['team_number']}")
-            return True, Team.create_from_db(team_data)
+            # Get updated user data
+            updated_user = self.db.users.find_one({"_id": ObjectId(user_id)})
+            if updated_user:
+                user = User.create_from_db(updated_user)
+                logger.info(f"User {user_id} joined team {team_data['team_number']}")
+                return True, (Team.create_from_db(team_data), user)
+            
+            return False, "Error updating user data"
 
         except Exception as e:
             logger.error(f"Error joining team: {str(e)}")
@@ -237,40 +244,82 @@ class TeamManager:
             logger.error(f"Error adding admin: {str(e)}")
             return False, f"Error adding admin: {str(e)}"
 
+    @with_mongodb_retry(retries=3, delay=2)
+    async def remove_admin(self, team_number: int, user_id: str, admin_id: str) -> Tuple[bool, str]:
+        """Remove an admin from the team"""
+        self.ensure_connected()
+        try:
+            # Get the team to check owner status
+            team = await self.get_team_by_number(team_number)
+            if not team:
+                return False, "Team not found"
+            
+            # Check if the requesting user is the owner
+            if not team.is_owner(admin_id):
+                return False, "Only team owner can remove admins"
+
+            # Can't remove the owner from admin status
+            if team.is_owner(user_id):
+                return False, "Cannot remove admin status from team owner"
+
+            # Check if the user is actually an admin
+            if user_id not in team.admins:
+                return False, "User is not an admin"
+
+            # Remove the user from admins
+            result = self.db.teams.update_one(
+                {"team_number": team_number},
+                {"$pull": {"admins": user_id}}
+            )
+
+            if result.modified_count > 0:
+                return True, "Admin removed successfully"
+            return False, "Failed to remove admin"
+
+        except Exception as e:
+            logger.error(f"Error removing admin: {str(e)}")
+            return False, f"Error removing admin: {str(e)}"
 
     @with_mongodb_retry(retries=3, delay=2)
     async def remove_user(self, team_number: int, user_id: str, admin_id: str):
-        """Remove a user from the team"""
+        """Remove a user from a team (admin action)"""
         self.ensure_connected()
         try:
             team = await self.get_team_by_number(team_number)
             if not team:
                 return False, "Team not found"
-            
+
+            # Check if admin has permission
             if not team.is_admin(admin_id):
                 return False, "Only team admins can remove users"
 
-            if user_id == team.created_by:
-                return False, "Cannot remove the team creator"
+            # Can't remove the owner
+            if team.is_owner(user_id):
+                return False, "Cannot remove the team owner"
 
             # Remove user from team
-            self.db.teams.update_one(
+            result = self.db.teams.update_one(
                 {"team_number": team_number},
-                {
-                    "$pull": {
-                        "users": user_id,
-                        "admins": user_id
-                    }
-                }
+                {"$pull": {"users": user_id, "admins": user_id}}
             )
 
-            # Remove team number from user
+            if result.modified_count == 0:
+                return False, "User not found in team"
+
+            # Update user's team number to None
             self.db.users.update_one(
                 {"_id": ObjectId(user_id)},
                 {"$unset": {"teamNumber": ""}}
             )
 
-            return True, "User removed successfully"
+            # Get updated user data
+            updated_user = self.db.users.find_one({"_id": ObjectId(user_id)})
+            if updated_user:
+                user = User.create_from_db(updated_user)
+                return True, user
+
+            return True, None
+
         except Exception as e:
             logger.error(f"Error removing user: {str(e)}")
             return False, f"Error removing user: {str(e)}"
@@ -376,7 +425,7 @@ class TeamManager:
 
     @with_mongodb_retry(retries=3, delay=2)
     async def delete_team(self, team_number: int, user_id: str) -> Tuple[bool, str]:
-        """Delete a team if user is owner"""
+        """Delete a team and all associated data if user is owner"""
         try:
             self.ensure_connected()
             
@@ -389,15 +438,29 @@ class TeamManager:
             if not team.is_owner(user_id):
                 return False, "Only the team owner can delete the team"
             
+            # Delete team logo from GridFS if it exists
+            if team.logo_id:
+                from gridfs import GridFS
+                fs = GridFS(self.db)
+                try:
+                    # Delete the file and its chunks
+                    fs.delete(team.logo_id)
+                except Exception as e:
+                    logger.error(f"Error deleting team logo: {str(e)}")
+            
+            # Get all team members before deletion
+            team_members = team.users
+
             # Delete all team data
             self.db.teams.delete_one({"team_number": team_number})
             self.db.assignments.delete_many({"team_number": team_number})
             
             # Update all team members to remove team number
-            self.db.users.update_many(
-                {"teamNumber": team_number},
-                {"$unset": {"teamNumber": ""}}
-            )
+            for member_id in team_members:
+                self.db.users.update_one(
+                    {"_id": ObjectId(member_id)},
+                    {"$set": {"teamNumber": None}}
+                )
             
             return True, "Team deleted successfully"
             
@@ -434,6 +497,47 @@ class TeamManager:
         except Exception as e:
             logging.error(f"Error deleting assignment: {str(e)}")
             return False, "An error occurred while deleting the assignment"
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def update_assignment(self, assignment_id: str, user_id: str, assignment_data: Dict) -> Tuple[bool, str]:
+        """Update an existing assignment"""
+        self.ensure_connected()
+        try:
+            # Get the assignment and team
+            assignment = self.db.assignments.find_one({"_id": ObjectId(assignment_id)})
+            if not assignment:
+                return False, "Assignment not found"
+            
+            team = await self.get_team_by_number(assignment['team_number'])
+            if not team:
+                return False, "Team not found"
+            
+            # Check if user has permission (must be admin)
+            if not team.is_admin(user_id):
+                return False, "Only team admins can edit assignments"
+
+            # Update the assignment
+            update_data = {
+                "title": assignment_data.get("title"),
+                "description": assignment_data.get("description"),
+                "assigned_to": assignment_data.get("assigned_to"),
+                "due_date": assignment_data.get("due_date"),
+                "updated_at": datetime.now(timezone.utc),
+                "updated_by": ObjectId(user_id)
+            }
+
+            result = self.db.assignments.update_one(
+                {"_id": ObjectId(assignment_id)},
+                {"$set": update_data}
+            )
+
+            if result.modified_count > 0:
+                return True, "Assignment updated successfully"
+            return False, "No changes made to assignment"
+
+        except Exception as e:
+            logger.error(f"Error updating assignment: {str(e)}")
+            return False, f"Error updating assignment: {str(e)}"
 
     def __del__(self):
         """Cleanup MongoDB connection"""

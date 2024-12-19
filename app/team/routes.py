@@ -53,11 +53,14 @@ async def join_team_page():
         success, result = await team_manager.join_team(current_user.get_id(), join_code)
 
         if success:
-            flash('Successfully joined team!', 'success')
-            return redirect(url_for('team.manage_team'))
+            team, updated_user = result
+            # Update the current_user object with new team number
+            current_user.teamNumber = updated_user.teamNumber
+            flash(f"Successfully joined team {team.team_number}", "success")
+            return redirect(url_for("team.manage_team", team_number=team.team_number))
         else:
-            flash(result, 'error')
-            return redirect(url_for('team.join_team_page'))
+            flash(f"Failed to join team: {result}", "error")
+            return redirect(url_for("team.join_team_page"))
 
     return render_template('team/join.html')
 
@@ -124,7 +127,14 @@ async def leave_team(team_number):
     team_manager = TeamManager(current_app.config['MONGO_URI'])
     success, message = await team_manager.leave_team(current_user.get_id(), team_number)
 
-    return jsonify({'success': success, 'message': message}), 200 if success else 400
+    if success:
+        # Update the current user's team number to None
+        current_user.teamNumber = None
+        flash("Successfully left the team", "success")
+        return redirect(url_for("team.join_team"))
+    else:
+        flash(f"Failed to leave team: {message}", "error")
+        return redirect(url_for("team.manage_team", team_number=team_number))
 
 @team_bp.route('/<int:team_number>/members', methods=['GET'])
 @login_required
@@ -152,6 +162,22 @@ async def add_admin(team_number):
 
     team_manager = TeamManager(current_app.config['MONGO_URI'])
     success, message = await team_manager.add_admin(team_number, user_id, current_user.get_id())
+
+    return jsonify({'success': success, 'message': message}), 200 if success else 400
+
+@team_bp.route('/<int:team_number>/admin/remove', methods=['POST'])
+@login_required
+@async_route
+async def remove_admin(team_number):
+    """Remove an admin from the team"""
+    data = request.get_json()
+    user_id = data.get('user_id')
+    
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is required'}), 400
+
+    team_manager = TeamManager(current_app.config['MONGO_URI'])
+    success, message = await team_manager.remove_admin(team_number, user_id, current_user.get_id())
 
     return jsonify({'success': success, 'message': message}), 200 if success else 400
 
@@ -229,7 +255,6 @@ async def manage_team(team_number=None):
     # If the team doesn't exist, reset the user's teamNumber
     if not team:
         current_app.logger.warning("User's teamNumber does not correspond to an existing team.")
-        # Reset user's teamNumber to prevent looping
         team_manager.db.users.update_one(
             {"_id": ObjectId(current_user.get_id())},
             {"$unset": {"teamNumber": ""}}
@@ -242,15 +267,21 @@ async def manage_team(team_number=None):
     assignments = await team_manager.get_team_assignments(team.team_number)
     
     # Create a dictionary of user IDs to usernames for easier lookup
-    user_dict = {str(member.id): member for member in team_members}
+    # Convert ObjectId to string for dictionary keys
+    user_dict = {str(member.get_id()): member for member in team_members}
+    
+    # Ensure assignment.assigned_to contains string IDs
+    for assignment in assignments:
+        if hasattr(assignment, 'assigned_to'):
+            assignment.assigned_to = [str(user_id) for user_id in assignment.assigned_to]
     
     return render_template(
         'team/manage.html', 
         team=team,
+        current_user=current_user,
         team_members=team_members,
         user_dict=user_dict,
         assignments=assignments,
-        timezone=timezone,
         is_admin=team.is_admin(current_user.get_id())
     )
 
@@ -267,6 +298,8 @@ async def remove_user(team_number, user_id):
         return jsonify({'success': success, 'message': message}), 200 if success else 400
     
     if success:
+        if user_id == current_user.get_id():
+            current_user.teamNumber = None
         flash('User removed successfully', 'success')
     else:
         flash(message, 'error')
@@ -335,3 +368,23 @@ async def team_logo(team_number):
     except Exception as e:
         current_app.logger.error(f"Error in team_logo route: {str(e)}")
         return send_file('static/images/default_team_logo.png', mimetype='image/png')
+
+@team_bp.route('/assignments/<assignment_id>/edit', methods=['PUT'])
+@login_required
+@async_route
+async def edit_assignment(assignment_id):
+    """Edit an existing assignment"""
+    try:
+        data = request.get_json()
+        team_manager = TeamManager(current_app.config['MONGO_URI'])
+        success, result = await team_manager.update_assignment(
+            assignment_id=assignment_id,
+            user_id=current_user.get_id(),
+            assignment_data=data
+        )
+
+        return jsonify({'success': success, 'message': result}), 200 if success else 400
+
+    except Exception as e:
+        current_app.logger.error(f"Error editing assignment: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500

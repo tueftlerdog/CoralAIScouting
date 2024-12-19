@@ -1,16 +1,16 @@
 // Initialize offline storage
 const offlineStorage = {
-    async saveTeamData(data) {
+    saveTeamData(data) {
         try {
-            await localStorage.setItem('teamData', JSON.stringify(data));
+            localStorage.setItem('teamData', JSON.stringify(data));
         } catch (error) {
             console.error('Error saving team data:', error);
         }
     },
 
-    async getPendingRequests() {
+    getPendingRequests() {
         try {
-            const requests = await localStorage.getItem('pendingRequests');
+            const requests = localStorage.getItem('pendingRequests');
             return requests ? JSON.parse(requests) : [];
         } catch (error) {
             console.error('Error getting pending requests:', error);
@@ -18,21 +18,21 @@ const offlineStorage = {
         }
     },
 
-    async savePendingRequest(request) {
+    savePendingRequest(request) {
         try {
-            const requests = await this.getPendingRequests();
+            const requests = this.getPendingRequests();
             requests.push({ ...request, id: Date.now() });
-            await localStorage.setItem('pendingRequests', JSON.stringify(requests));
+            localStorage.setItem('pendingRequests', JSON.stringify(requests));
         } catch (error) {
             console.error('Error saving pending request:', error);
         }
     },
 
-    async removePendingRequest(requestId) {
+    removePendingRequest(requestId) {
         try {
-            const requests = await this.getPendingRequests();
+            const requests = this.getPendingRequests();
             const updatedRequests = requests.filter(req => req.id !== requestId);
-            await localStorage.setItem('pendingRequests', JSON.stringify(updatedRequests));
+            localStorage.setItem('pendingRequests', JSON.stringify(updatedRequests));
         } catch (error) {
             console.error('Error removing pending request:', error);
         }
@@ -62,7 +62,11 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeSearch();
     initializeAssignmentForm();
     initializeStatusHandlers();
-    initializeOfflineSupport();
+    initializeEditAssignment();
+    const teamData = document.getElementById('teamData');
+    if (teamData) {
+        currentUserId = teamData.dataset.currentUserId;
+    }
 });
 
 // Initialize search functionality
@@ -145,26 +149,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Handle assignment form submission
 async function handleAssignmentSubmit(e) {
+    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
     e.preventDefault();
     
-    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+    // Get the selected users' names
+    const assignedToSelect = document.getElementById('assigned_to');
+    const assignedToNames = Array.from(assignedToSelect.selectedOptions).map(option => option.text);
+    
     const formData = {
         title: document.getElementById('title').value,
         description: document.getElementById('description').value,
         assigned_to: Array.from(document.getElementById('assigned_to').selectedOptions).map(option => option.value),
-        due_date: document.getElementById('due_date').value
+        assigned_to_names: assignedToNames,
+        due_date: document.getElementById('due_date').value,
+        id: Date.now() // Temporary ID for offline assignments
     };
 
     try {
         if (!navigator.onLine) {
-            await offlineStorage.savePendingRequest({
+            // Save to pending requests
+            offlineStorage.savePendingRequest({
                 type: 'create_assignment',
                 url: `/team/${teamNumber}/assignments`,
                 method: 'POST',
                 data: formData
             });
+
+            // Add the new row to the table
+            const assignmentsTable = document.querySelector('table tbody');
+            const newRow = createAssignmentRow(formData);
+            assignmentsTable.insertBefore(newRow, assignmentsTable.firstChild);
+
+            // Remove "No assignments found" row if it exists
+            const noAssignmentsRow = assignmentsTable.querySelector('td[colspan="6"]');
+            if (noAssignmentsRow) {
+                noAssignmentsRow.closest('tr').remove();
+            }
+
             showOfflineNotification('Assignment will be created when online');
             document.getElementById('createAssignmentModal').classList.add('hidden');
+            document.getElementById('createAssignmentForm').reset();
             return;
         }
 
@@ -178,7 +202,6 @@ async function handleAssignmentSubmit(e) {
         });
 
         const data = await response.json();
-        
         if (data.success) {
             window.location.reload();
         } else {
@@ -190,35 +213,11 @@ async function handleAssignmentSubmit(e) {
     }
 }
 
-// Cache current team data
-async function cacheCurrentTeamData() {
-    const teamData = {
-        team_number: document.querySelector('[data-team-number]')?.dataset.teamNumber,
-        team_join_code: document.querySelector('[data-team-join-code]')?.dataset.teamJoinCode,
-        members: Array.from(document.querySelectorAll('.member-row')).map(row => ({
-            username: row.children[0].textContent,
-            email: row.children[1].textContent,
-            role: row.children[2].textContent.trim()
-        })),
-        assignments: Array.from(document.querySelectorAll('.assignment-row')).map(row => ({
-            id: row.dataset.assignmentId,
-            title: row.querySelector('td:nth-child(1)').textContent,
-            description: row.querySelector('td:nth-child(2)').textContent,
-            assigned_to: row.querySelector('td:nth-child(3)').textContent.split(',').map(s => s.trim()),
-            due_date: row.querySelector('td:nth-child(4)').textContent,
-            status: row.querySelector('select[name="status"]')?.value || 
-                   row.querySelector('.status-badge').textContent.trim()
-        }))
-    };
-
-    await offlineStorage.saveTeamData(teamData);
-}
-
 // Sync pending actions
 async function syncPendingTeamActions() {
     if (!navigator.onLine) return;
 
-    const pendingRequests = await offlineStorage.getPendingRequests();
+    const pendingRequests = offlineStorage.getPendingRequests();
     if (pendingRequests.length === 0) return;
 
     let successfulSyncs = 0;
@@ -273,7 +272,7 @@ async function updateAssignmentStatus(selectElement, assignmentId) {
     
     try {
         if (!navigator.onLine) {
-            await offlineStorage.savePendingRequest({
+            offlineStorage.savePendingRequest({
                 type: 'status_update',
                 url: `/team/assignments/${assignmentId}/status`,
                 method: 'PUT',
@@ -307,14 +306,24 @@ async function updateAssignmentStatus(selectElement, assignmentId) {
 
 // Helper functions
 function updateStatusBadge(selectElement, newStatus) {
-    const statusCell = selectElement.closest('tr').querySelector('.status-badge');
+    const row = selectElement.closest('tr');
+    const statusCell = row.querySelector('.status-badge');
+    const dueDateCell = row.querySelector('td:nth-child(4)').textContent;
+    
+    let isLate = false;
+    if (dueDateCell && dueDateCell !== 'No due date') {
+        const dueDate = new Date(dueDateCell);
+        isLate = dueDate < new Date() && newStatus !== 'completed';
+    }
+    
     const statusClasses = {
         'completed': 'bg-green-100 text-green-800',
         'in_progress': 'bg-yellow-100 text-yellow-800',
-        'pending': 'bg-gray-100 text-gray-800'
+        'pending': isLate ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
     };
     
-    const statusText = newStatus === 'in_progress' ? 'In Progress' : 
+    const statusText = isLate ? 'Late' :
+                      newStatus === 'in_progress' ? 'In Progress' : 
                       newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
     
     statusCell.textContent = statusText;
@@ -328,7 +337,7 @@ async function deleteAssignment(assignmentId) {
 
     try {
         if (!navigator.onLine) {
-            await offlineStorage.savePendingRequest({
+            offlineStorage.savePendingRequest({
                 type: 'delete_assignment',
                 url: `/team/assignments/${assignmentId}/delete`,
                 method: 'DELETE'
@@ -409,4 +418,189 @@ async function deleteTeam() {
         console.error('Error:', error);
         alert('An error occurred while deleting the team');
     }
+}
+
+async function updateAdminStatus(userId, action) {
+    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+    const url = action === 'add' 
+        ? `/team/${teamNumber}/admin/add`
+        : `/team/${teamNumber}/admin/remove`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ user_id: userId })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            // Reload the page to reflect changes
+            window.location.reload();
+        } else {
+            alert(data.message || 'Failed to update admin status');
+        }
+    } catch (error) {
+        console.error('Error updating admin status:', error);
+        alert('Failed to update admin status');
+    }
+}
+
+function openEditAssignmentModal(assignmentId) {
+    try {
+        const row = document.querySelector(`tr[data-assignment-id="${assignmentId}"]`);
+        if (!row) {
+            console.error('Row not found for assignment:', assignmentId);
+            return;
+        }
+
+        const modal = document.getElementById('editAssignmentModal');
+        if (!modal) {
+            console.error('Edit modal not found');
+            return;
+        }
+
+        // Fill the form with current values
+        document.getElementById('edit_assignment_id').value = assignmentId;
+        
+        // Get the cells by their position
+        const titleCell = row.querySelector('td:nth-child(1)');
+        const descriptionCell = row.querySelector('td:nth-child(2)');
+        const assignedToCell = row.querySelector('td:nth-child(3)');
+        const dueDateCell = row.querySelector('td:nth-child(4)');
+
+        if (titleCell) document.getElementById('edit_title').value = titleCell.textContent.trim();
+        if (descriptionCell) document.getElementById('edit_description').value = descriptionCell.textContent.trim();
+
+        // Handle assigned users
+        if (assignedToCell) {
+            const assignedUsers = assignedToCell.textContent
+                .split(',')
+                .map(u => u.trim());
+
+            const selectElement = document.getElementById('edit_assigned_to');
+            if (selectElement) {
+                Array.from(selectElement.options).forEach(option => {
+                    option.selected = assignedUsers.includes(option.text.trim());
+                });
+            }
+        }
+
+        // Handle due date
+        if (dueDateCell) {
+            const dueDateText = dueDateCell.textContent.trim();
+            if (dueDateText && dueDateText !== 'No due date') {
+                const dueDate = new Date(dueDateText);
+                if (!isNaN(dueDate.getTime())) {
+                    // Format the date to the required format for datetime-local input
+                    const formattedDate = dueDate.toISOString().slice(0, 16);
+                    document.getElementById('edit_due_date').value = formattedDate;
+                }
+            } else {
+                document.getElementById('edit_due_date').value = '';
+            }
+        }
+
+        // Show the modal
+        modal.classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error opening edit modal:', error);
+        alert('Error opening edit modal');
+    }
+}
+
+async function handleEditAssignmentSubmit(e) {
+    e.preventDefault();
+    
+    const assignmentId = document.getElementById('edit_assignment_id').value;
+    const formData = {
+        title: document.getElementById('edit_title').value,
+        description: document.getElementById('edit_description').value,
+        assigned_to: Array.from(document.getElementById('edit_assigned_to').selectedOptions).map(option => option.value),
+        due_date: document.getElementById('edit_due_date').value
+    };
+
+    try {
+        if (!navigator.onLine) {
+            offlineStorage.savePendingRequest({
+                type: 'edit_assignment',
+                url: `/team/assignments/${assignmentId}/edit`,
+                method: 'PUT',
+                data: formData
+            });
+            showOfflineNotification('Assignment will be updated when online');
+            document.getElementById('editAssignmentModal').classList.add('hidden');
+            return;
+        }
+
+        const response = await fetch(`/team/assignments/${assignmentId}/edit`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            window.location.reload();
+        } else {
+            throw new Error(data.message || 'Failed to update assignment');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || 'An error occurred while updating the assignment');
+    }
+}
+
+// Add this new function
+function initializeEditAssignment() {
+    // Initialize edit form submit handler
+    const editForm = document.getElementById('editAssignmentForm');
+    if (editForm) {
+        editForm.addEventListener('submit', handleEditAssignmentSubmit);
+    }
+
+    // Check for late assignments on page load
+    document.querySelectorAll('.assignment-row').forEach(row => {
+        const statusSelect = row.querySelector('select[name="status"]');
+        if (statusSelect) {
+            updateStatusBadge(statusSelect, statusSelect.value);
+        }
+    });
+}
+
+// Add this new function to render a single assignment row
+function createAssignmentRow(assignment) {
+    const isCurrentUserAssigned = assignment.assigned_to.includes(currentUserId);
+    const row = document.createElement('tr');
+    row.className = `assignment-row ${isCurrentUserAssigned ? 'bg-blue-50' : ''} hover:bg-gray-50`;
+    
+    // Format the date if it exists
+    const formattedDate = assignment.due_date ? 
+        new Date(assignment.due_date).toLocaleString() : 
+        'No due date';
+
+    row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap">${assignment.title}</td>
+        <td class="px-6 py-4 whitespace-normal">${assignment.description}</td>
+        <td class="px-6 py-4 whitespace-nowrap">${assignment.assigned_to_names.join(', ')}</td>
+        <td class="px-6 py-4 whitespace-nowrap">${formattedDate}</td>
+        <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge bg-gray-100 text-gray-800">
+                Pending (Offline)
+            </span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm">
+            <span class="text-gray-500">Pending sync...</span>
+        </td>
+    `;
+    
+    return row;
 }

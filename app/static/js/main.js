@@ -1,3 +1,25 @@
+// Add this at the top of your file
+const offlineStorage = {
+    getPendingRequests() {
+        const requests = localStorage.getItem('pendingRequests');
+        return requests ? JSON.parse(requests) : [];
+    },
+
+    savePendingRequest(request) {
+        const requests = this.getPendingRequests();
+        request.id = Date.now().toString();
+        requests.push(request);
+        localStorage.setItem('pendingRequests', JSON.stringify(requests));
+        return request.id;
+    },
+
+    removePendingRequest(requestId) {
+        const requests = this.getPendingRequests();
+        const filtered = requests.filter(r => r.id !== requestId);
+        localStorage.setItem('pendingRequests', JSON.stringify(filtered));
+    }
+};
+
 // Register service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -12,25 +34,6 @@ if ('serviceWorker' in navigator) {
 }
 
 
-// Handle offline status
-let syncTimeout;
-function updateOfflineStatus() {
-  const offlineAlert = document.getElementById('offlineAlert');
-  const syncAlert = document.getElementById('syncAlert');
-  
-  if (!navigator.onLine) {
-    offlineAlert.classList.remove('hidden');
-    syncAlert.classList.add('hidden');
-  } else {
-    offlineAlert.classList.add('hidden');
-    // Debounce the sync call
-    clearTimeout(syncTimeout);
-    syncTimeout = setTimeout(() => {
-      syncPendingScoutingData();
-    }, 1000); // Wait 1 second before syncing
-  }
-}
-
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -43,18 +46,3 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('offline', updateOfflineStatus);
   updateOfflineStatus();
 }); 
-
-
-// In the syncPendingScoutingData function, update the fetch response handling:
-if (response.ok) {
-    const result = await response.json();
-    await offlineStorage.removePendingRequest(request.id);
-    console.log(`Successfully synced request ${request.id}`);
-    syncSuccessful = true;
-    
-    // If the server provides a redirect URL, use it
-    if (result.redirect) {
-        window.location.href = result.redirect;
-        return; // Stop processing other requests
-    }
-} 

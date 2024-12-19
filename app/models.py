@@ -12,7 +12,6 @@ class User(UserMixin):
         self.email = data.get("email")
         self.teamNumber = data.get("teamNumber")
         self.password_hash = data.get("password_hash")
-        self.role = data.get("role", "user")
         self.last_login = data.get("last_login")
         self.created_at = data.get("created_at")
 
@@ -52,10 +51,14 @@ class User(UserMixin):
             "username": self.username,
             "teamNumber": self.teamNumber,
             "password_hash": self.password_hash,
-            "role": self.role,
             "last_login": self.last_login,
             "created_at": self.created_at,
         }
+
+    def update_team_number(self, team_number):
+        """Update the user's team number"""
+        self.teamNumber = team_number
+        return self
 
 
 class TeamData:
@@ -78,7 +81,6 @@ class TeamData:
             "username": scouter_data.get("username", "Unknown"),
             "team_number": scouter_data.get("team_number"),
             "email": scouter_data.get("email"),
-            "role": scouter_data.get("role", "user"),
         }
 
     @property
@@ -206,13 +208,13 @@ class Team:
             "logo_id": str(self.logo_id) if self.logo_id else None,
         }
 
+    def is_admin(self, user_id: str) -> bool:
+        """Check if a user is an admin or owner of the team"""
+        return str(user_id) in self.admins or self.is_owner(user_id)
+
     def is_owner(self, user_id: str) -> bool:
         """Check if a user is the owner of the team"""
-        return str(self.owner_id) == user_id
-
-    def is_admin(self, user_id: str) -> bool:
-        """Check if a user is an admin of the team"""
-        return user_id in self.admins or self.is_owner(user_id)
+        return str(self.owner_id) == str(user_id)
 
     @property
     def id(self):
