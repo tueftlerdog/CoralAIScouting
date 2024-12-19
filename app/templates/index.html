@@ -39,17 +39,29 @@
             <h1 class="text-6xl font-bold mb-4 bg-gradient-to-br from-gray-700 to-gray-900 bg-clip-text text-transparent">334 Scouting App</h1>
             {% if current_user.is_authenticated %}
                 <div class="text-blue-600 text-2xl mb-4"><span id="timeGreeting"></span>, {{ current_user.username }}</div>
-                <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
-                    <a href="{{ url_for('scouting.list_scouting_data') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                        Scout
-                    </a>
-                    <a href="{{ url_for('scouting.search_page') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                        Search
-                    </a>
-                    <a href="{{ url_for('scouting.compare_page') }}" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
-                        Compare
-                    </a>
-                </div>
+                {% if current_user.teamNumber %}
+                    <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
+                        <a href="{{ url_for('scouting.list_scouting_data') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Scout
+                        </a>
+                        <a href="{{ url_for('scouting.search_page') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                            Search
+                        </a>
+                        <a href="{{ url_for('scouting.compare_page') }}" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                            Compare
+                        </a>
+                        <a href="{{ url_for('team.manage_team') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Team
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-gray-600 mb-4">Join a team to start scouting!</div>
+                    <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
+                        <a href="{{ url_for('team.join_team_page') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                            Join Team
+                        </a>
+                    </div>
+                {% endif %}
             {% else %}
                 <p class="mb-4 text-gray-600">Please login or register to access content</p>
                 <div class="space-x-4">

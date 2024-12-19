@@ -20,6 +20,7 @@ def create_app():
         SECRET_KEY=os.getenv("SECRET_KEY", "team334"),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SECURE=True,
+        WTF_CSRF_ENABLED=True,
         MONGO_URI=os.getenv(
             "MONGO_URI", "mongodb://localhost:27017/scouting_app"
         ),
@@ -56,9 +57,11 @@ def create_app():
     # Import blueprints inside create_app to avoid circular imports
     from app.auth.routes import auth_bp
     from app.scout.routes import scouting_bp
+    from app.team.routes import team_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(scouting_bp, url_prefix="/")
+    app.register_blueprint(team_bp, url_prefix="/team")
 
     @app.route("/")
     def index():

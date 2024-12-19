@@ -87,10 +87,9 @@ async def register():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
-        team_number = request.form.get("teamNumber", 0)
 
         form_data = {
-            "email": email, "username": username, "team_number": team_number
+            "email": email, "username": username, "team_number": None
         }
 
         if not all([email, username, password, confirm_password]):
@@ -103,7 +102,7 @@ async def register():
 
         try:
             success, message = await user_manager.create_user(
-                email, username, password, team_number
+                email, username, password, None
             )
             if success:
                 flash("Registration successful! Please login.", "success")

@@ -87,7 +87,7 @@ class UserManager:
 
     @with_mongodb_retry(retries=3, delay=2)
     async def create_user(
-                        self, email, username, password, team_number,
+                        self, email, username, password,
                         role="user"):
         """Create a new user with retry mechanism"""
         self.ensure_connected()
@@ -109,7 +109,7 @@ class UserManager:
             user_data = {
                 "email": email,
                 "username": username,
-                "team_number": int(team_number),
+                "team_number": None,
                 "password_hash": generate_password_hash(password),
                 "role": role,
                 "created_at": datetime.now(timezone.utc),
