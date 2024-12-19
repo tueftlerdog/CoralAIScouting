@@ -313,18 +313,24 @@ function updateStatusBadge(selectElement, newStatus) {
     let isLate = false;
     if (dueDateCell && dueDateCell !== 'No due date') {
         const dueDate = new Date(dueDateCell);
-        isLate = dueDate < new Date() && newStatus !== 'completed';
+        isLate = dueDate < new Date();
     }
     
     const statusClasses = {
-        'completed': 'bg-green-100 text-green-800',
-        'in_progress': 'bg-yellow-100 text-yellow-800',
+        'completed': isLate ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800',
+        'in_progress': isLate ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800',
         'pending': isLate ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
     };
     
-    const statusText = isLate ? 'Late' :
-                      newStatus === 'in_progress' ? 'In Progress' : 
-                      newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+    let statusText = '';
+    if (isLate) {
+        statusText = newStatus === 'in_progress' ? 'In Progress (Late)' : 
+                    newStatus === 'completed' ? 'Completed (Late)' : 
+                    'Pending (Late)';
+    } else {
+        statusText = newStatus === 'in_progress' ? 'In Progress' : 
+                    newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+    }
     
     statusCell.textContent = statusText;
     statusCell.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge ${statusClasses[newStatus]}`;
@@ -468,10 +474,11 @@ function openEditAssignmentModal(assignmentId) {
         document.getElementById('edit_assignment_id').value = assignmentId;
         
         // Get the cells by their position
-        const titleCell = row.querySelector('td:nth-child(1)');
-        const descriptionCell = row.querySelector('td:nth-child(2)');
-        const assignedToCell = row.querySelector('td:nth-child(3)');
-        const dueDateCell = row.querySelector('td:nth-child(4)');
+        const cells = row.getElementsByTagName('td');
+        const titleCell = cells[0];
+        const descriptionCell = cells[1];
+        const assignedToCell = cells[2];
+        const dueDateCell = cells[3];
 
         if (titleCell) document.getElementById('edit_title').value = titleCell.textContent.trim();
         if (descriptionCell) document.getElementById('edit_description').value = descriptionCell.textContent.trim();
@@ -522,6 +529,7 @@ async function handleEditAssignmentSubmit(e) {
         title: document.getElementById('edit_title').value,
         description: document.getElementById('edit_description').value,
         assigned_to: Array.from(document.getElementById('edit_assigned_to').selectedOptions).map(option => option.value),
+        assigned_to_names: Array.from(document.getElementById('edit_assigned_to').selectedOptions).map(option => option.text),
         due_date: document.getElementById('edit_due_date').value
     };
 
@@ -533,6 +541,25 @@ async function handleEditAssignmentSubmit(e) {
                 method: 'PUT',
                 data: formData
             });
+
+            // Update the row in the table immediately
+            const row = document.querySelector(`tr[data-assignment-id="${assignmentId}"]`);
+            if (row) {
+                const cells = row.getElementsByTagName('td');
+                cells[0].textContent = formData.title;
+                cells[1].textContent = formData.description;
+                cells[2].textContent = formData.assigned_to_names.join(', ');
+                cells[3].textContent = formData.due_date ? 
+                    new Date(formData.due_date).toLocaleString() : 
+                    'No due date';
+                
+                // Add an indicator that this is pending sync (if not already present)
+                const statusBadge = row.querySelector('.status-badge');
+                if (statusBadge && !statusBadge.textContent.includes('(Pending Sync)')) {
+                    statusBadge.textContent += ' (Pending Sync)';
+                }
+            }
+
             showOfflineNotification('Assignment will be updated when online');
             document.getElementById('editAssignmentModal').classList.add('hidden');
             return;

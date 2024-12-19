@@ -209,7 +209,8 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for assignment in assignments %}
-                    <tr class="assignment-row {% if current_user.get_id() in assignment.assigned_to %}bg-blue-50{% endif %} hover:bg-gray-50">
+                    <tr class="assignment-row {% if current_user.get_id() in assignment.assigned_to %}bg-blue-50{% endif %} hover:bg-gray-50"
+                        data-assignment-id="{{ assignment.id }}">
                         <td class="px-6 py-4 whitespace-nowrap">{{ assignment.title }}</td>
                         <td class="px-6 py-4 whitespace-normal">{{ assignment.description }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
