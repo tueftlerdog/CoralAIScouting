@@ -8,4 +8,11 @@ load_dotenv()
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True) if os.getenv("DEBUG") == "True" else serve(app, host="0.0.0.0", port=5000)
+    debug_mode = os.getenv("DEBUG", "False") == "True"
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", 5000))
+
+    if debug_mode:
+        app.run(debug=True, host=host, port=port)
+    else:
+        serve(app, host=host, port=port)

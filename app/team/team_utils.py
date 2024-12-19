@@ -70,7 +70,7 @@ class TeamManager:
     def generate_join_code(self):
         """Generate a unique 6-character join code"""
         while True:
-            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
             if not self.db.teams.find_one({"team_join_code": code}):
                 return code
 

@@ -24,6 +24,8 @@ SECRET_KEY=your_secret_key
 MONGO_URI=mongodb://localhost:27017/scouting_app
 TBA_AUTH_KEY=your_tba_api_key
 DEBUG=False
+HOST=localhost
+PORT=5000
 ```
 4. Make a virtual environment: `python -m venv venv`
   - To activate (type into command line):
