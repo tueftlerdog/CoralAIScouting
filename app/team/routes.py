@@ -119,7 +119,7 @@ async def create_team():
             
     return render_template('team/create.html', form=form)
 
-@team_bp.route('/leave/<int:team_number>', methods=['POST'])
+@team_bp.route('/<int:team_number>/leave', methods=['POST'])
 @login_required
 @async_route
 async def leave_team(team_number):
@@ -127,11 +127,13 @@ async def leave_team(team_number):
     team_manager = TeamManager(current_app.config['MONGO_URI'])
     success, message = await team_manager.leave_team(current_user.get_id(), team_number)
 
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': success, 'message': message})
+
     if success:
-        # Update the current user's team number to None
         current_user.teamNumber = None
         flash("Successfully left the team", "success")
-        return redirect(url_for("team.join_team"))
+        return redirect(url_for("team.join_team_page"))
     else:
         flash(f"Failed to leave team: {message}", "error")
         return redirect(url_for("team.manage_team", team_number=team_number))
@@ -248,18 +250,21 @@ async def delete_assignment(assignment_id):
 async def manage_team(team_number=None):
     """Manage team"""
     team_manager = TeamManager(current_app.config['MONGO_URI'])
-    team = None
-    if current_user.teamNumber:
-        team = await team_manager.get_team_by_number(current_user.teamNumber)
     
-    # If the team doesn't exist, reset the user's teamNumber
-    if not team:
-        current_app.logger.warning("User's teamNumber does not correspond to an existing team.")
-        team_manager.db.users.update_one(
-            {"_id": ObjectId(current_user.get_id())},
-            {"$unset": {"teamNumber": ""}}
+    # If user has a team number, validate it
+    if current_user.teamNumber:
+        success, result = await team_manager.validate_user_team(
+            current_user.get_id(), 
+            current_user.teamNumber
         )
-        flash("The team you were assigned to no longer exists. Please join or create a team.", "error")
+        
+        if not success:
+            current_user.teamNumber = None
+            flash(result, "warning")
+            return redirect(url_for('team.join_team_page'))
+        
+        team = result  # result is the team object if validation succeeded
+    else:
         return redirect(url_for('team.join_team_page'))
     
     # Get team members and assignments
@@ -267,7 +272,6 @@ async def manage_team(team_number=None):
     assignments = await team_manager.get_team_assignments(team.team_number)
     
     # Create a dictionary of user IDs to usernames for easier lookup
-    # Convert ObjectId to string for dictionary keys
     user_dict = {str(member.get_id()): member for member in team_members}
     
     # Ensure assignment.assigned_to contains string IDs

@@ -56,11 +56,16 @@
                     <!-- Team Number -->
                     <h2 class="text-2xl font-semibold">Team {{ team.team_number }}</h2>
                     
-                    <!-- Delete Team Button -->
+                    <!-- Delete/Leave Team Button -->
                     {% if team.is_owner(current_user.get_id()) %}
                     <button onclick="deleteTeam()"
                             class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md">
                         Delete Team
+                    </button>
+                    {% else %}
+                    <button onclick="leaveTeam()"
+                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md">
+                        Leave Team
                     </button>
                     {% endif %}
                 </div>
@@ -110,46 +115,72 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
+                    {% set members_by_role = {
+                        'owner': [],
+                        'admin': [],
+                        'member': []
+                    } %}
+                    
                     {% for member in team_members %}
+                        {% if team.owner_id and team.owner_id|string == member.get_id()|string %}
+                            {% set _ = members_by_role['owner'].append(member) %}
+                        {% elif member.get_id() in team.admins %}
+                            {% set _ = members_by_role['admin'].append(member) %}
+                        {% else %}
+                            {% set _ = members_by_role['member'].append(member) %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for member in members_by_role['owner']|sort(attribute='username') %}
                     <tr class="member-row">
                         <td class="px-6 py-4 whitespace-nowrap">{{ member.username }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ member.email }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% if team.owner_id and team.owner_id|string == member.get_id()|string %}
-                                Owner
-                            {% elif member.get_id() in team.admins %}
-                                Admin
-                            {% else %}
-                                Member
-                            {% endif %}
-                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">Owner</td>
+                        {% if team.is_admin(current_user.get_id()) %}
+                        <td class="px-6 py-4 whitespace-nowrap"></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                    
+                    {% for member in members_by_role['admin']|sort(attribute='username') %}
+                    <tr class="member-row">
+                        <td class="px-6 py-4 whitespace-nowrap">{{ member.username }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ member.email }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">Admin</td>
                         {% if team.is_admin(current_user.get_id()) %}
                         <td class="px-6 py-4 whitespace-nowrap">
-                            {% if not team.owner_id or team.owner_id|string != member.get_id()|string %}
-                                {% if team.is_admin(current_user.get_id()) %}
-                                <form method="POST" action="{{ url_for('team.remove_user', team_number=team.team_number, user_id=member.get_id()) }}"
-                                      class="inline-block"
-                                      onsubmit="return confirm('Are you sure you want to remove this user from the team?');">
-                                    <button type="submit" 
-                                            class="text-red-600 hover:text-red-800 font-medium">
-                                        Remove
-                                    </button>
-                                </form>
-                                {% endif %}
-                                
-                                {% if team.owner_id and team.owner_id|string == current_user.get_id()|string %}
-                                    {% if member.get_id() not in team.admins %}
-                                    <button onclick="updateAdminStatus('{{ member.get_id() }}', 'add')"
-                                            class="text-blue-600 hover:text-blue-900 ml-4">
-                                        Make Admin
-                                    </button>
-                                    {% else %}
-                                    <button onclick="updateAdminStatus('{{ member.get_id() }}', 'remove')"
-                                            class="text-red-600 hover:text-red-900 ml-4">
-                                        Remove Admin
-                                    </button>
-                                    {% endif %}
-                                {% endif %}
+                            {% if team.owner_id and team.owner_id|string == current_user.get_id()|string %}
+                            <button onclick="updateAdminStatus('{{ member.get_id() }}', 'remove')"
+                                    class="text-red-600 hover:text-red-900">
+                                Remove Admin
+                            </button>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                    
+                    {% for member in members_by_role['member']|sort(attribute='username') %}
+                    <tr class="member-row">
+                        <td class="px-6 py-4 whitespace-nowrap">{{ member.username }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ member.email }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">Member</td>
+                        {% if team.is_admin(current_user.get_id()) %}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <form method="POST" action="{{ url_for('team.remove_user', team_number=team.team_number, user_id=member.get_id()) }}"
+                                  class="inline-block"
+                                  onsubmit="return confirm('Are you sure you want to remove this user from the team?');">
+                                <button type="submit" 
+                                        class="text-red-600 hover:text-red-800 font-medium">
+                                    Remove
+                                </button>
+                            </form>
+                            
+                            {% if team.owner_id and team.owner_id|string == current_user.get_id()|string %}
+                            <button onclick="updateAdminStatus('{{ member.get_id() }}', 'add')"
+                                    class="text-blue-600 hover:text-blue-900 ml-4">
+                                Make Admin
+                            </button>
                             {% endif %}
                         </td>
                         {% endif %}

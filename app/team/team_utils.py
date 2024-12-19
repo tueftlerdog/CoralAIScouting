@@ -157,12 +157,27 @@ class TeamManager:
 
     @with_mongodb_retry(retries=3, delay=2)
     async def leave_team(self, user_id: str, team_number: int):
-        """Remove a user from a team"""
+        """Remove a user from a team and remove their admin status"""
         self.ensure_connected()
         try:
-            # Remove user from team
+            # Get team to check if user is owner
+            team = await self.get_team_by_number(team_number)
+            if not team:
+                return False, "Team not found"
+            
+            # Don't allow owner to leave (they must delete the team)
+            if team.is_owner(user_id):
+                return False, "Team owner cannot leave. Please delete the team instead."
+
+            # Remove user from team's users and admins lists
             result = self.db.teams.update_one(
-                {"team_number": team_number}, {"$pull": {"users": user_id}}
+                {"team_number": team_number}, 
+                {
+                    "$pull": {
+                        "users": user_id,
+                        "admins": user_id
+                    }
+                }
             )
 
             if result.modified_count == 0:
@@ -186,8 +201,16 @@ class TeamManager:
         """Get team by team number"""
         self.ensure_connected()
         try:
+            if team_number is None:
+                logger.warning("get_team_by_number called with None team_number")
+                return None
+            
             team_data = self.db.teams.find_one({"team_number": team_number})
-            return Team.create_from_db(team_data) if team_data else None
+            if team_data is None:
+                logger.warning(f"No team found with team_number: {team_number}")
+                return None
+            
+            return Team.create_from_db(team_data)
         except Exception as e:
             logger.error(f"Error getting team: {str(e)}")
             return None
@@ -538,6 +561,42 @@ class TeamManager:
         except Exception as e:
             logger.error(f"Error updating assignment: {str(e)}")
             return False, f"Error updating assignment: {str(e)}"
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def reset_user_team(self, user_id: str):
+        """Reset user's team number to None"""
+        self.ensure_connected()
+        try:
+            result = self.db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$unset": {"teamNumber": ""}}
+            )
+            if result.modified_count > 0:
+                logger.info(f"Reset team number for user {user_id}")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error resetting user team: {str(e)}")
+            return False
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def validate_user_team(self, user_id: str, team_number: int):
+        """Validate that a user's team exists and update if it doesn't"""
+        self.ensure_connected()
+        try:
+            # Get the user's current team
+            team = await self.get_team_by_number(team_number)
+            
+            # If team doesn't exist or user is not in the team
+            if not team or user_id not in team.users:
+                logger.warning(f"User {user_id} has invalid team number {team_number}")
+                await self.reset_user_team(user_id)
+                return False, "Your team membership needs to be updated. Please join or create a team."
+            
+            return True, team
+        except Exception as e:
+            logger.error(f"Error validating user team: {str(e)}")
+            return False, f"Error validating team membership: {str(e)}"
 
     def __del__(self):
         """Cleanup MongoDB connection"""

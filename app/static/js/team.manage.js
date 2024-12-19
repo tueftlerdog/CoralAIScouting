@@ -631,3 +631,31 @@ function createAssignmentRow(assignment) {
     
     return row;
 }
+
+async function leaveTeam() {
+    if (!confirm('Are you sure you want to leave this team?')) {
+        return;
+    }
+
+    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+
+    try {
+        const response = await fetch(`/team/${teamNumber}/leave`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            window.location.href = '/team/join';
+        } else {
+            throw new Error(data.message || 'Failed to leave team');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || 'An error occurred while leaving the team');
+    }
+}
