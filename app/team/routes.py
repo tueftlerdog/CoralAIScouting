@@ -159,51 +159,23 @@ async def add_admin(team_number):
 @login_required
 @async_route
 async def create_assignment(team_number):
-    """Create a new assignment for the team"""
-    if request.is_json:
+    """Create a new assignment"""
+    try:
         data = request.get_json()
-    else:
-        # Handle form data
-        data = {
-            'title': request.form.get('title'),
-            'description': request.form.get('description'),
-            'assigned_to': request.form.getlist('assigned_to'),
-            'due_date': request.form.get('due_date')
-        }
-    
-    # Validate required fields
-    if not data.get('title'):
-        return jsonify({'success': False, 'message': 'Title is required'}), 400
-    
-    if not data.get('assigned_to'):
-        return jsonify({'success': False, 'message': 'Must assign to at least one team member'}), 400
+        team_manager = TeamManager(current_app.config['MONGO_URI'])
+        success, result = await team_manager.create_assignment(
+            team_number=team_number,
+            creator_id=current_user.get_id(),
+            assignment_data=data
+        )
 
-    # Convert due_date string to datetime if provided
-    if data.get('due_date'):
-        try:
-            # Parse datetime-local format and convert to UTC
-            local_dt = datetime.strptime(data['due_date'], '%Y-%m-%dT%H:%M')
-            # Assume local timezone (or you could get it from user preferences)
-            local_tz = pytz.timezone('America/New_York')  # Or your preferred timezone
-            local_dt = local_tz.localize(local_dt)
-            # Convert to UTC for storage
-            data['due_date'] = local_dt.astimezone(timezone.utc)
-        except ValueError:
-            return jsonify({'success': False, 'message': 'Invalid date/time format'}), 400
-
-    team_manager = TeamManager(current_app.config['MONGO_URI'])
-    success, result = await team_manager.create_assignment(team_number, current_user.get_id(), data)
-
-    if success:
-        if request.is_json:
-            return jsonify({'success': True, 'assignment': result.to_dict()}), 201
-        flash('Assignment created successfully', 'success')
-        return redirect(url_for('team.manage_team'))
-    
-    if request.is_json:
+        if success:
+            return jsonify({'success': True, 'message': 'Assignment created successfully'}), 200
         return jsonify({'success': False, 'message': result}), 400
-    flash(result, 'error')
-    return redirect(url_for('team.manage_team'))
+
+    except Exception as e:
+        current_app.logger.error(f"Error creating assignment: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @team_bp.route('/assignments/<assignment_id>/status', methods=['PUT'])
 @login_required
@@ -242,9 +214,9 @@ async def delete_assignment(assignment_id):
     success, message = await team_manager.delete_assignment(assignment_id, current_user.get_id())
     return jsonify({'success': success, 'message': message}), 200 if success else 400
 
-@team_bp.route('/manage', methods=['GET'])
-@team_bp.route('/manage/<int:team_number>', methods=['GET'])
-@team_bp.route('/', methods=['GET'])
+@team_bp.route('/manage', methods=['GET', 'POST'])
+@team_bp.route('/manage/<int:team_number>', methods=['GET', 'POST'])
+@team_bp.route('/', methods=['GET', 'POST'])
 @login_required
 @async_route
 async def manage_team(team_number=None):
@@ -321,7 +293,7 @@ async def clear_assignments(team_number):
 @login_required
 @async_route
 async def delete_team(team_number):
-    """Delete team (admin only)"""
+    """Delete team (owner only)"""
     team_manager = TeamManager(current_app.config['MONGO_URI'])
     success, message = await team_manager.delete_team(team_number, current_user.get_id())
 
@@ -346,17 +318,18 @@ async def team_logo(team_number):
         if team and team.logo_id:
             fs = GridFS(team_manager.db)
             try:
-                # Convert string ID back to ObjectId
-                logo_file = fs.get(ObjectId(team.logo_id))
+                # team.logo_id should already be ObjectId from the model
+                logo_file = fs.get(team.logo_id)
                 return send_file(
                     BytesIO(logo_file.read()),
                     mimetype=logo_file.content_type,
-                    max_age=3600  # Cache for 1 hour
+                    download_name=logo_file.filename,  # Add this for better browser handling
+                    as_attachment=False
                 )
             except Exception as e:
                 current_app.logger.error(f"Error retrieving logo from GridFS: {str(e)}")
                 
-        # If no logo found or error occurred, return default logo
+        # Return default logo path relative to the application root
         return send_file('static/images/default_team_logo.png', mimetype='image/png')
         
     except Exception as e:

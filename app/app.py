@@ -1,12 +1,13 @@
-from flask import Flask, render_template
+from flask import Flask, make_response, render_template, send_from_directory
 from flask_login import LoginManager
 from flask_pymongo import PyMongo
 import os
 from dotenv import load_dotenv
+from flask_wtf.csrf import CSRFProtect
 
 from app.auth.auth_utils import UserManager
 
-
+csrf = CSRFProtect()
 mongo = PyMongo()
 login_manager = LoginManager()
 
@@ -66,6 +67,13 @@ def create_app():
     @app.route("/")
     def index():
         return render_template("index.html")
+    
+    @app.route('/static/js/service-worker.js')
+    def serve_service_worker():
+        response = make_response(send_from_directory('static/js', 'service-worker.js'))
+        response.headers['Content-Type'] = 'application/javascript'
+        response.headers['Service-Worker-Allowed'] = '/'
+        return response 
 
     return app
 

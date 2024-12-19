@@ -31,19 +31,18 @@ def async_route(f):
 @login_required
 def add_scouting_data():
     if request.method == "POST":
-        try:
-            success, message = scouting_manager.add_scouting_data(
-                request.form, current_user.get_id()
-            )
-            if success:
-                flash("Data added successfully", "success")
-                return redirect(url_for("scouting.list_scouting_data"))
-            else:
-                flash(f"Error adding data: {message}", "error")
-                return redirect(url_for("scouting.add_scouting_data"))
-        except Exception as e:
-            flash(f"Error: {str(e)}", "error")
-            return redirect(url_for("scouting.add_scouting_data"))
+        data = request.get_json() if request.is_json else request.form
+        success, message = scouting_manager.add_scouting_data(
+            data, current_user.get_id()
+        )
+        
+        if success:
+            flash("Team data added successfully", "success")
+        else:
+            flash(f"Error adding data: {message}", "error")
+            
+        return redirect(url_for('scouting.list_scouting_data'))
+        
 
     return render_template("scouting/add.html")
 
@@ -295,3 +294,31 @@ async def search_teams():
     except Exception as e:
         print(f"Error searching teams: {e}")
         return jsonify({"error": "Failed to fetch team data"}), 500
+
+
+@scouting_bp.route("/scouting/sync", methods=["POST"])
+@login_required
+def sync_scouting_data():
+    try:
+        data = request.json
+        success, message = scouting_manager.add_scouting_data(
+            data, current_user.get_id()
+        )
+        
+        if success:
+            flash("Data synced successfully", "success")
+        else:
+            flash(f"Sync error: {message}", "error")
+            
+        return jsonify({
+            "success": success,
+            "message": message,
+            "redirect": url_for('scouting.list_scouting_data')
+        })
+    except Exception as e:
+        flash(f"Error during sync: {str(e)}", "error")
+        return jsonify({
+            "success": False,
+            "message": str(e),
+            "redirect": url_for('scouting.list_scouting_data')
+        }), 500

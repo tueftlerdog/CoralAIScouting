@@ -56,3 +56,18 @@ input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
 }
+
+.tippy-box[data-theme~='success'] {
+    background-color: #10B981;
+    color: white;
+}
+
+.tippy-box[data-theme~='warning'] {
+    background-color: #F59E0B;
+    color: white;
+}
+
+.tippy-box[data-theme~='error'] {
+    background-color: #EF4444;
+    color: white;
+}

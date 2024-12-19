@@ -6,7 +6,7 @@
         <p class="text-gray-600 mt-2">Update information for team {{ team_data.team_number }}</p>
     </div>
 
-    <form method="POST" class="space-y-6" autocomplete="off">
+    <form method="POST" class="space-y-6" autocomplete="off" id="scoutingForm">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Team & Event Info Section -->
             <div class="space-y-6">
@@ -105,6 +105,14 @@
             <p id="totalPoints" class="text-2xl font-bold text-blue-600">0</p>
         </div>
 
+        <!-- Add offline status indicators -->
+        <div id="offlineAlert" class="hidden mb-4 p-4 bg-yellow-50 text-yellow-700 rounded-md">
+            You are currently offline. Changes will be saved locally and synced when you're back online.
+        </div>
+        <div id="syncAlert" class="hidden mb-4 p-4 bg-blue-100 text-blue-800 rounded-md">
+            Syncing data...
+        </div>
+
         <!-- Action Buttons -->
         <div class="flex justify-end space-x-4 pt-6 border-t">
             <a href="{{ url_for('scouting.list_scouting_data') }}" 
@@ -146,19 +154,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Calculate initial total on page load
     updateTotal();
-
-    // Form submission validation
-    const form = document.querySelector('form');
-    form.addEventListener('submit', function(e) {
-        const inputs = form.querySelectorAll('input[type="number"]');
-        inputs.forEach(input => {
-            if (input.value < 0) {
-                e.preventDefault();
-                alert('Points cannot be negative values.');
-                input.focus();
-            }
-        });
-    });
 });
 </script>
 {% endblock %}

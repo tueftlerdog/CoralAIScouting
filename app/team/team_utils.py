@@ -1,3 +1,5 @@
+from functools import wraps
+import secrets
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 from bson.objectid import ObjectId
@@ -7,7 +9,7 @@ import logging
 import time
 import random
 import string
-from functools import wraps
+
 from typing import Dict, Tuple
 
 logging.basicConfig(level=logging.INFO)
@@ -77,32 +79,26 @@ class TeamManager:
     @with_mongodb_retry(retries=3, delay=2)
     async def create_team(self, team_number: int, creator_id: str, team_name: str = None, 
                      description: str = None, logo_id: str = None):
-        """
-        Create a new team with the given parameters
-        """
+        """Create a new team with the given parameters"""
         self.ensure_connected()
         try:
-            if existing_team := self.db.teams.find_one(
-                {"team_number": team_number}
-            ):
+            if existing_team := self.db.teams.find_one({"team_number": team_number}):
                 return False, "Team number already exists"
 
-            # Check if creator already has a team
-            creator = self.db.users.find_one({"_id": ObjectId(creator_id)})
-            if creator and creator.get("teamNumber"):
-                return False, "User already belongs to a team"
+            # Convert logo_id to ObjectId if provided
+            logo_object_id = ObjectId(logo_id) if logo_id else None
 
             team_data = {
                 "team_number": team_number,
                 "team_join_code": self.generate_join_code(),
                 "users": [creator_id],
                 "admins": [creator_id],
-                "owner_id": creator_id,  # Set the owner_id
+                "owner_id": creator_id,
                 "created_at": datetime.now(timezone.utc),
                 "created_by": creator_id,
                 "team_name": team_name,
                 "description": description,
-                "logo_id": logo_id
+                "logo_id": logo_object_id
             }
 
             result = self.db.teams.insert_one(team_data)

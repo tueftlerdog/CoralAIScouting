@@ -2,6 +2,7 @@ from typing import Dict
 from bson import ObjectId
 from werkzeug.security import check_password_hash
 from flask_login import UserMixin
+from datetime import datetime
 
 
 class User(UserMixin):
@@ -189,7 +190,7 @@ class Team:
         self.created_at = data.get("created_at")
         self.team_name = data.get("team_name")
         self.description = data.get("description", "")
-        self.logo_id = data.get("logo_id")  # Store GridFS ID instead of URL
+        self.logo_id = data.get("logo_id")  # This should be kept as ObjectId
 
     def to_dict(self):
         return {
@@ -221,8 +222,11 @@ class Team:
     def create_from_db(data: Dict):
         if not data:
             return None
+        # Convert string ID to ObjectId if necessary
         if "_id" in data and not isinstance(data["_id"], ObjectId):
             data["_id"] = ObjectId(data["_id"])
+        if "logo_id" in data and not isinstance(data["logo_id"], ObjectId) and data["logo_id"]:
+            data["logo_id"] = ObjectId(data["logo_id"])
         return Team(data)
 
     def add_user(self, user: UserMixin):
@@ -239,29 +243,35 @@ class Team:
             raise ValueError("Expected a UserMixin instance")
 
 class Assignment:
-    def __init__(self, data: Dict):
-        self._id = data.get("_id")
-        self.team_number = data.get("team_number")
-        self.title = data.get("title")
-        self.description = data.get("description", "")
-        self.assigned_to = data.get("assigned_to", [])  # List of User IDs
-        self.status = data.get("status", "pending")  # pending, in_progress, completed
-        self.due_date = data.get("due_date")
-        self.created_by = data.get("created_by")
-        self.created_at = data.get("created_at")
-        self.completed_at = data.get("completed_at")
+    def __init__(self, id, title, description, team_number, creator_id, assigned_to, due_date=None, status='pending'):
+        self.id = str(id)
+        self.title = title
+        self.description = description
+        self.team_number = team_number
+        self.creator_id = creator_id
+        self.assigned_to = assigned_to
+        self.status = status
+        # Convert string to datetime if needed
+        if isinstance(due_date, str):
+            try:
+                self.due_date = datetime.fromisoformat(due_date.replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                self.due_date = None
+        else:
+            self.due_date = due_date
 
-    @property
-    def id(self):
-        return str(self._id)
-
-    @staticmethod
-    def create_from_db(data: Dict):
-        if not data:
-            return None
-        if "_id" in data and not isinstance(data["_id"], ObjectId):
-            data["_id"] = ObjectId(data["_id"])
-        return Assignment(data)
+    @classmethod
+    def create_from_db(cls, data):
+        return cls(
+            id=data['_id'],
+            title=data.get('title'),
+            description=data.get('description'),
+            team_number=data.get('team_number'),
+            creator_id=data.get('creator_id'),
+            assigned_to=data.get('assigned_to', []),
+            due_date=data.get('due_date'),
+            status=data.get('status', 'pending')
+        )
 
     def to_dict(self):
         return {
