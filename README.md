@@ -34,4 +34,4 @@ PORT=5000
       - Powershell: `venv\Scripts\Activate.ps1`
     - MacOS & Linux: `source ./venv/bin/activate`
 6. Install the dependencies: `pip install -r requirements.txt`
-7. Run the app through (in parent directory outside of app): `python app/app.py`
+7. Run the app through (in parent directory outside of app): `python -m app`

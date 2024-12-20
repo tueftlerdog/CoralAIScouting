@@ -55,7 +55,7 @@
                 </div>
                 <div class="flex space-x-4">
                     {% if current_user.is_authenticated %}
-                        <span class="py-4 px-2">{{ current_user.username }}</span>
+                        <a href="{{ url_for('auth.profile', username=current_user.username) }}" class="py-4 px-2 hover:text-blue-500">{{current_user.username}}</a>
                         <a href="{{ url_for('auth.logout') }}" class="py-4 px-2 hover:text-blue-500">Logout</a>
                     {% else %}
                         <a href="{{ url_for('auth.login') }}" class="py-4 px-2 hover:text-blue-500">Login</a>

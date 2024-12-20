@@ -38,9 +38,7 @@ class TBAInterface:
         if self.session:
             await self.session.close()
 
-    async def get_teams_at_event(
-        self, event_code: str
-    ) -> Optional[List[Dict]]:
+    async def get_teams_at_event(self, event_code: str) -> Optional[List[Dict]]:
         """
         Get list of teams in event
 
@@ -112,8 +110,7 @@ class TBAInterface:
             ]: Tuple of (teams, schedule) data
         """
         async with self:
-            teams_task = asyncio.create_task(
-                self.get_teams_at_event(event_code))
+            teams_task = asyncio.create_task(self.get_teams_at_event(event_code))
             schedule_task = asyncio.create_task(self.get_schedule(event_code))
 
             teams, schedule = await asyncio.gather(teams_task, schedule_task)

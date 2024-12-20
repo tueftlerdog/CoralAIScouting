@@ -5,5 +5,4 @@ aiohttp
 pymongo
 flask_pymongo
 waitress
-pytz
 Flask-WTF

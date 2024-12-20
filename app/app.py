@@ -22,9 +22,7 @@ def create_app():
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SECURE=True,
         WTF_CSRF_ENABLED=True,
-        MONGO_URI=os.getenv(
-            "MONGO_URI", "mongodb://localhost:27017/scouting_app"
-        ),
+        MONGO_URI=os.getenv("MONGO_URI", "mongodb://localhost:27017/scouting_app"),
     )
 
     mongo.init_app(app)
@@ -67,13 +65,13 @@ def create_app():
     @app.route("/")
     def index():
         return render_template("index.html")
-    
-    @app.route('/static/js/service-worker.js')
+
+    @app.route("/static/js/service-worker.js")
     def serve_service_worker():
-        response = make_response(send_from_directory('static/js', 'service-worker.js'))
-        response.headers['Content-Type'] = 'application/javascript'
-        response.headers['Service-Worker-Allowed'] = '/'
-        return response 
+        response = make_response(send_from_directory("static/js", "service-worker.js"))
+        response.headers["Content-Type"] = "application/javascript"
+        response.headers["Service-Worker-Allowed"] = "/"
+        return response
 
     return app
 

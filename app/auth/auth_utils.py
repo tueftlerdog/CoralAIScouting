@@ -6,6 +6,7 @@ from app.models import User
 import logging
 import time
 from functools import wraps
+from gridfs import GridFS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,13 +23,10 @@ def with_mongodb_retry(retries=3, delay=2):
                 except (ServerSelectionTimeoutError, ConnectionFailure) as e:
                     last_error = e
                     if attempt < retries - 1:  # don't sleep on last attempt
-                        logger.warning(
-                            f"Attempt {attempt + 1} failed: {str(e)}."
-                        )
+                        logger.warning(f"Attempt {attempt + 1} failed: {str(e)}.")
                         time.sleep(delay)
                     else:
-                        logger.error(
-                            f"All {retries} attempts failed: {str(e)}")
+                        logger.error(f"All {retries} attempts failed: {str(e)}")
             raise last_error
 
         return wrapper
@@ -57,8 +55,7 @@ class UserManager:
         """Establish connection to MongoDB with basic error handling"""
         try:
             if self.client is None:
-                self.client = MongoClient(
-                    self.mongo_uri, serverSelectionTimeoutMS=5000)
+                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
                 # Test the connection
                 self.client.server_info()
                 self.db = self.client.get_default_database()
@@ -81,14 +78,17 @@ class UserManager:
                 # Test if connection is still alive
                 self.client.server_info()
         except Exception:
-            logger.warning(
-                "Lost connection to MongoDB, attempting to reconnect...")
+            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
             self.connect()
 
     @with_mongodb_retry(retries=3, delay=2)
     async def create_user(
-                        self, email, username, password,
-                        ):
+        self,
+        email,
+        username,
+        password,
+        team_number=None
+    ):
         """Create a new user with retry mechanism"""
         self.ensure_connected()
         try:
@@ -109,10 +109,12 @@ class UserManager:
             user_data = {
                 "email": email,
                 "username": username,
-                "team_number": None,
+                "teamNumber": team_number,
                 "password_hash": generate_password_hash(password),
                 "created_at": datetime.now(timezone.utc),
                 "last_login": None,
+                "description": "",
+                "profile_picture_id": None,
             }
 
             self.db.users.insert_one(user_data)
@@ -156,6 +158,94 @@ class UserManager:
             return User.create_from_db(user_data) if user_data else None
         except Exception as e:
             logger.error(f"Error loading user: {str(e)}")
+            return None
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def update_user_profile(self, user_id, updates):
+        """Update user profile information"""
+        self.ensure_connected()
+        try:
+            from bson.objectid import ObjectId
+
+            # Filter out None values and empty strings
+            valid_updates = {k: v for k, v in updates.items() if v is not None and v != ""}
+
+            # Check if username is being updated and is unique
+            if 'username' in valid_updates:
+                if existing_user := self.db.users.find_one(
+                    {
+                        "username": valid_updates['username'],
+                        "_id": {"$ne": ObjectId(user_id)},
+                    }
+                ):
+                    return False, "Username already taken"
+
+            result = self.db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": valid_updates}
+            )
+
+            if result.modified_count > 0:
+                return True, "Profile updated successfully"
+            return False, "No changes made"
+
+        except Exception as e:
+            logger.error(f"Error updating profile: {str(e)}")
+            return False, f"Error updating profile: {str(e)}"
+
+    def get_user_profile(self, username):
+        """Get user profile by username"""
+        self.ensure_connected()
+        try:
+            user_data = self.db.users.find_one({"username": username})
+            return User.create_from_db(user_data) if user_data else None
+        except Exception as e:
+            logger.error(f"Error loading profile: {str(e)}")
+            return None
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def update_profile_picture(self, user_id, file_id):
+        """Update user's profile picture and clean up old one"""
+        self.ensure_connected()
+        try:
+            from bson.objectid import ObjectId
+            from gridfs import GridFS
+            
+            # Get the old profile picture ID first
+            user_data = self.db.users.find_one({"_id": ObjectId(user_id)})
+            old_picture_id = user_data.get('profile_picture_id') if user_data else None
+            
+            # Update the profile picture ID
+            result = self.db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"profile_picture_id": file_id}}
+            )
+            
+            # If update was successful and there was an old picture, delete it
+            if result.modified_count > 0 and old_picture_id:
+                try:
+                    fs = GridFS(self.db)
+                    if fs.exists(ObjectId(old_picture_id)):
+                        fs.delete(ObjectId(old_picture_id))
+                        logger.info(f"Deleted old profile picture: {old_picture_id}")
+                except Exception as e:
+                    logger.error(f"Error deleting old profile picture: {str(e)}")
+            
+            return True, "Profile picture updated successfully"
+            
+        except Exception as e:
+            logger.error(f"Error updating profile picture: {str(e)}")
+            return False, f"Error updating profile picture: {str(e)}"
+
+    def get_profile_picture(self, user_id):
+        """Get user's profile picture ID"""
+        self.ensure_connected()
+        try:
+            from bson.objectid import ObjectId
+            user_data = self.db.users.find_one({"_id": ObjectId(user_id)})
+            return user_data.get('profile_picture_id') if user_data else None
+        except Exception as e:
+            logger.error(f"Error getting profile picture: {str(e)}")
             return None
 
     def __del__(self):

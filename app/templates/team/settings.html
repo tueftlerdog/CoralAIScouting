@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-900">Team Settings</h1>
+                <a href="{{ url_for('team.manage_team', team_number=team.team_number) }}" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Back to Team
+                </a>
+            </div>
+        </div>
+
+        <!-- Team Settings Form -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6">
+                <form action="{{ url_for('team.update_team_info', team_number=team.team_number) }}"
+                      method="POST"
+                      enctype="multipart/form-data"
+                      id="teamSettingsForm"
+                      class="space-y-6">
+                    
+                    <!-- Team Logo Section -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Team Logo</h3>
+                        <div class="flex items-start space-x-6">
+                            <div class="flex-shrink-0">
+                                <img src="{{ url_for('team.team_logo', team_number=team.team_number) }}"
+                                     alt="Team Logo"
+                                     class="h-32 w-32 object-cover rounded-lg"
+                                     id="team-logo-preview">
+                            </div>
+                            <div class="flex-grow">
+                                <label class="block text-sm font-medium text-gray-700">Update Team Logo</label>
+                                <div class="mt-1">
+                                    <label class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                        Choose File
+                                        <input type="file"
+                                               id="team_logo"
+                                               name="team_logo"
+                                               accept="image/*"
+                                               class="hidden"
+                                               onchange="handleLogoChange(this)">
+                                    </label>
+                                </div>
+                                <p class="mt-2 text-sm text-gray-500">
+                                    Recommended size: 400x400 pixels. Supported formats: PNG, JPG, JPEG
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Team Description Section -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Team Description</h3>
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <div class="mt-1">
+                                <textarea id="description"
+                                        name="description"
+                                        rows="4"
+                                        class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                        placeholder="Describe your team...">{{ team.description or '' }}</textarea>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">
+                                Brief description of your team that will be visible to everyone.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Single Save Button for All Changes -->
+                    <div class="flex justify-end pt-4">
+                        <button type="submit"
+                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function handleLogoChange(input) {
+    const preview = document.getElementById('team-logo-preview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %} 

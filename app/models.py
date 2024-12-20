@@ -14,6 +14,8 @@ class User(UserMixin):
         self.password_hash = data.get("password_hash")
         self.last_login = data.get("last_login")
         self.created_at = data.get("created_at")
+        self.description = data.get("description", "")
+        self.profile_picture_id = data.get("profile_picture_id")
 
     @property
     def id(self):
@@ -53,6 +55,8 @@ class User(UserMixin):
             "password_hash": self.password_hash,
             "last_login": self.last_login,
             "created_at": self.created_at,
+            "description": self.description,
+            "profile_picture_id": str(self.profile_picture_id) if self.profile_picture_id else None,
         }
 
     def update_team_number(self, team_number):
@@ -210,11 +214,11 @@ class Team:
 
     def is_admin(self, user_id: str) -> bool:
         """Check if a user is an admin or owner of the team"""
-        return str(user_id) in self.admins or self.is_owner(user_id)
+        return user_id in self.admins or self.is_owner(user_id)
 
     def is_owner(self, user_id: str) -> bool:
         """Check if a user is the owner of the team"""
-        return str(self.owner_id) == str(user_id)
+        return str(self.owner_id) == user_id
 
     @property
     def id(self):
