@@ -50,7 +50,7 @@
                                     </label>
                                 </div>
                                 <p class="mt-2 text-sm text-gray-500">
-                                    Recommended size: 400x400 pixels. Supported formats: PNG, JPG, JPEG
+                                    Recommended size: 400x400 pixels. Maximum file size: 6MB. Supported formats: PNG, JPG, JPEG
                                 </p>
                             </div>
                         </div>
@@ -93,12 +93,22 @@
 <script>
 function handleLogoChange(input) {
     const preview = document.getElementById('team-logo-preview');
-    if (input.files && input.files[0]) {
+    const file = input.files[0];
+    
+    // Check file size (6MB = 6 * 1024 * 1024 bytes)
+    const maxSize = 6 * 1024 * 1024;
+    if (file && file.size > maxSize) {
+        alert('File size must be less than 6MB');
+        input.value = ''; // Clear the file input
+        return;
+    }
+
+    if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
             preview.src = e.target.result;
         }
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
     }
 }
 </script>

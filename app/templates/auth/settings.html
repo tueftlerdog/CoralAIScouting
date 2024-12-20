@@ -36,7 +36,7 @@
                         </div>
                         <div class="mt-2">
                             <p id="upload-info" class="text-sm text-gray-500"></p>
-                            <p class="text-xs text-gray-400 mt-1">Supported formats: PNG, JPG, JPEG</p>
+                            <p class="text-xs text-gray-400 mt-1">Supported formats: PNG, JPG, JPEG. Maximum file size: 6MB</p>
                         </div>
                     </div>
 
@@ -120,6 +120,16 @@
 <script>
 document.getElementById('profile_picture').addEventListener('change', function(e) {
     const file = e.target.files[0];
+    
+    // Check file size (6MB = 6 * 1024 * 1024 bytes)
+    const maxSize = 6 * 1024 * 1024;
+    if (file && file.size > maxSize) {
+        alert('File size must be less than 6MB');
+        this.value = ''; // Clear the file input
+        document.getElementById('upload-info').textContent = '';
+        return;
+    }
+    
     if (file) {
         // Update file name display
         document.getElementById('upload-info').textContent = file.name;

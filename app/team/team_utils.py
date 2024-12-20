@@ -1,23 +1,26 @@
-from __future__ import annotations
-
 from functools import wraps
+import secrets
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 from bson.objectid import ObjectId
 from datetime import datetime, timezone
 from app.models import Team, User, Assignment
-import secrets
 import logging
 import time
 import string
-
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, List, Any, Union
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Type aliases for better readability
+TeamResult = Tuple[bool, Union[str, Team, Tuple[Team, User]]]
+UserResult = Tuple[bool, Union[str, User]]
+AssignmentResult = Tuple[bool, str]
+DatabaseID = Union[str, ObjectId]
 
 def with_mongodb_retry(retries=3, delay=2):
+    """Decorator for retrying MongoDB operations"""
     def decorator(f):
         @wraps(f)
         async def wrapper(*args, **kwargs):
@@ -33,38 +36,31 @@ def with_mongodb_retry(retries=3, delay=2):
                     else:
                         logger.error(f"All {retries} attempts failed: {str(e)}")
             raise last_error
-
         return wrapper
-
     return decorator
 
-
-class TeamManager:
-    def __init__(self, mongo_uri):
+class DatabaseManager:
+    """Base class for database operations"""
+    def __init__(self, mongo_uri: str):
         self.mongo_uri = mongo_uri
-        self.client = None
+        self.client: Optional[MongoClient] = None
         self.db = None
         self.connect()
 
-    def connect(self):
-        """Establish connection to MongoDB with basic error handling"""
+    def connect(self) -> None:
+        """Establish connection to MongoDB"""
         try:
             if self.client is None:
                 self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
                 self.client.server_info()
                 self.db = self.client.get_default_database()
                 logger.info("Successfully connected to MongoDB")
-
-                # Ensure teams collection exists
-                if "teams" not in self.db.list_collection_names():
-                    self.db.create_collection("teams")
-                    logger.info("Created teams collection")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {str(e)}")
             raise
 
-    def ensure_connected(self):
-        """Ensure we have a valid connection, reconnect if necessary"""
+    def ensure_connected(self) -> None:
+        """Ensure database connection is active"""
         try:
             if self.client is None:
                 self.connect()
@@ -74,32 +70,57 @@ class TeamManager:
             logger.warning("Lost connection to MongoDB, attempting to reconnect...")
             self.connect()
 
-    def generate_join_code(self):
+    def __del__(self):
+        """Cleanup MongoDB connection"""
+        if self.client:
+            self.client.close()
+
+class TeamManager(DatabaseManager):
+    """Handles all team-related operations"""
+    
+    def __init__(self, mongo_uri: str):
+        super().__init__(mongo_uri)
+        self._ensure_collections()
+
+    def _ensure_collections(self) -> None:
+        """Ensure required collections exist"""
+        if "teams" not in self.db.list_collection_names():
+            self.db.create_collection("teams")
+            logger.info("Created teams collection")
+
+    def generate_join_code(self) -> str:
         """Generate a unique 6-character join code"""
         while True:
-            code = "".join(
-                secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6)
-            )
+            code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
             if not self.db.teams.find_one({"team_join_code": code}):
                 return code
 
-    @with_mongodb_retry(retries=3, delay=2)
-    async def create_team(
-        self,
-        team_number: int,
-        creator_id: str,
-        team_name: str = None,
-        description: str = None,
-        logo_id: str = None,
-    ):
-        """Create a new team with the given parameters"""
+    async def _get_team(self, query: Dict) -> Optional[Team]:
+        """Internal method to fetch team data"""
+        try:
+            if team_data := self.db.teams.find_one(query):
+                return Team.create_from_db(team_data)
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching team: {str(e)}")
+            return None
+
+    @with_mongodb_retry()
+    async def get_team_by_number(self, team_number: int) -> Optional[Team]:
+        """Get team by team number"""
+        self.ensure_connected()
+        return await self._get_team({"team_number": team_number})
+
+    @with_mongodb_retry()
+    async def create_team(self, team_number: int, creator_id: str, 
+                         team_name: Optional[str] = None, 
+                         description: Optional[str] = None, 
+                         logo_id: Optional[str] = None) -> TeamResult:
+        """Create a new team"""
         self.ensure_connected()
         try:
-            if existing_team := self.db.teams.find_one({"team_number": team_number}):
+            if await self.get_team_by_number(team_number):
                 return False, "Team number already exists"
-
-            # Convert logo_id to ObjectId if provided
-            logo_object_id = ObjectId(logo_id) if logo_id else None
 
             team_data = {
                 "team_number": team_number,
@@ -111,19 +132,18 @@ class TeamManager:
                 "created_by": creator_id,
                 "team_name": team_name,
                 "description": description,
-                "logo_id": logo_object_id,
+                "logo_id": ObjectId(logo_id) if logo_id else None
             }
 
             result = self.db.teams.insert_one(team_data)
-
+            
             # Update creator's team number
             self.db.users.update_one(
-                {"_id": ObjectId(creator_id)}, {"$set": {"teamNumber": team_number}}
+                {"_id": ObjectId(creator_id)},
+                {"$set": {"teamNumber": team_number}}
             )
 
-            # Create team object with the inserted data
-            team = Team.create_from_db({"_id": result.inserted_id, **team_data})
-            return True, team
+            return True, Team.create_from_db({"_id": result.inserted_id, **team_data})
 
         except Exception as e:
             logger.error(f"Error creating team: {str(e)}")

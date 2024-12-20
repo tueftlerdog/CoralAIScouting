@@ -57,7 +57,7 @@ def send_profile_picture(file_id):
     except Exception as e:
         # Log the error and return default profile picture
         print(f"Error retrieving profile picture: {e}")
-        return send_file("static/default_profile.png")
+        return send_file("static/images/default_profile.png")
 
 
 def run_async(coro):
@@ -231,7 +231,7 @@ def profile(username):
 def profile_picture(user_id):
     user = user_manager.get_user_by_id(user_id)
     if not user or not user.profile_picture_id:
-        return send_file("static/default_profile.png")  # Create a default profile picture
+        return send_file("static/images/default_profile.png")  # Create a default profile picture
     
     # Implement this to retrieve from MongoDB GridFS
     return send_profile_picture(user.profile_picture_id)
