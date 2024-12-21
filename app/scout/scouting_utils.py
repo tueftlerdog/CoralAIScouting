@@ -112,14 +112,37 @@ class ScoutingManager:
                         "from": "users",
                         "localField": "scouter_id",
                         "foreignField": "_id",
-                        "as": "scouter",
+                        "as": "scouter"
                     }
                 },
-                {"$unwind": {"path": "$scouter", "preserveNullAndEmptyArrays": True}},
+                {"$unwind": "$scouter"},
+                {
+                    "$project": {
+                        "_id": 1,
+                        "team_number": 1,
+                        "event_code": 1,
+                        "match_number": 1,
+                        "auto_points": 1,
+                        "teleop_points": 1,
+                        "endgame_points": 1,
+                        "total_points": 1,
+                        "notes": 1,
+                        "scouter_id": 1,
+                        "scouter_name": {"$ifNull": ["$scouter.username", "Unknown"]},
+                        "created_at": 1
+                    }
+                },
+                {"$sort": {"created_at": -1}}
             ]
 
             team_data = list(self.db.team_data.aggregate(pipeline))
-            return [TeamData.create_from_db(td) for td in team_data]
+            
+            # Transform the data using create_from_db
+            transformed_data = []
+            for td in team_data:
+                transformed_data.append(TeamData.create_from_db(td))
+            
+            return transformed_data
         except Exception as e:
             logger.error(f"Error fetching scouting data: {str(e)}")
             return []

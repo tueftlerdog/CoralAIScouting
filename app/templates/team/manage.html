@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-6xl mx-auto">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -11,19 +11,18 @@
         {% endif %}
     {% endwith %}
 
-    <div class="flex justify-between items-center mb-8">
-        <h1 class="text-2xl font-bold">Team Management</h1>
-        <div class="flex items-center space-x-4">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-8 space-y-4 sm:space-y-0">
+        <h1 class="text-2xl font-bold text-center sm:text-left">Team Management</h1>
+        <div class="w-full sm:w-auto">
             <input
                 type="text"
                 id="memberSearch"
                 placeholder="Search members..."
-                class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                class="w-full sm:w-64 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             >
         </div>
     </div>
 
-    <!-- Add offline alert at the top of the page -->
     <div id="offlineAlert" class="hidden mb-4 p-4 bg-yellow-50 text-yellow-700 rounded-md">
         You are currently offline. Some actions will be queued and synced when you're back online.
     </div>
@@ -34,11 +33,9 @@
         class="hidden">
     </div>
 
-    <!-- Team Info Section -->
     <div class="bg-white shadow rounded-lg p-6 mb-8">
-        <div class="flex">
-            <!-- Left side: Logo -->
-            <div class="mr-8">
+        <div class="flex flex-col md:flex-row">
+            <div class="mb-6 md:mb-0 md:mr-8 flex justify-center md:block">
                 {% if team.logo_id %}
                     <img src="{{ url_for('team.team_logo', team_number=team.team_number) }}" 
                          alt="Team Logo" 
@@ -50,15 +47,11 @@
                 {% endif %}
             </div>
 
-            <!-- Right side: Team Info -->
             <div class="flex-1">
-                <div class="flex justify-between items-start">
-                    <!-- Team Number -->
-                    <h2 class="text-2xl font-semibold">Team {{ team.team_number }}</h2>
+                <div class="flex flex-col md:flex-row md:justify-between md:items-start">
+                    <h2 class="text-2xl font-semibold text-center md:text-left mb-4 md:mb-0">Team {{ team.team_number }}</h2>
                     
-                    <!-- Delete/Leave Team Button -->
-                    <!-- Add this next to your delete/leave button section -->
-                    <div class="flex space-x-4">
+                    <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 items-center md:items-start">
                         {% if team.is_admin(current_user.id) %}
                         <a href="{{ url_for('team.team_settings', team_number=team.team_number) }}" 
                         class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -90,14 +83,12 @@
                     </div>
                 </div>
 
-                <!-- Middle: Join Code -->
                 {% if team.is_admin(current_user.get_id()) %}
                 <div class="mt-4">
                     <p class="text-gray-600">Join Code: <span class="font-semibold">{{ team.team_join_code }}</span></p>
                 </div>
                 {% endif %}
 
-                <!-- Bottom: Description -->
                 <div class="mt-4">
                     <p class="text-gray-700">
                         {% if team.description %}
@@ -111,7 +102,6 @@
         </div>
     </div>
 
-    <!-- Team Members Section -->
     <div class="bg-white shadow rounded-lg p-6 mb-8">
         <h2 class="text-xl font-semibold mb-4">Team Members</h2>
         <div class="overflow-x-auto">
@@ -153,7 +143,14 @@
                     
                     {% for member in members_by_role['owner']|sort(attribute='username') %}
                     <tr class="member-row">
-                        <td class="px-6 py-4 whitespace-nowrap">{{ member.username }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img src="{{ url_for('auth.profile_picture', user_id=member.get_id()) }}" 
+                                     alt="Profile Picture" 
+                                     class="w-8 h-8 rounded-full mr-2">
+                                <a href="{{ url_for('auth.profile', username=member.username) }}" class="hover:text-blue-500">{{ member.username }}</a>
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ member.email }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">Owner</td>
                         {% if team.is_admin(current_user.get_id()) %}
@@ -164,7 +161,14 @@
                     
                     {% for member in members_by_role['admin']|sort(attribute='username') %}
                     <tr class="member-row">
-                        <td class="px-6 py-4 whitespace-nowrap">{{ member.username }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img src="{{ url_for('auth.profile_picture', user_id=member.get_id()) }}" 
+                                     alt="Profile Picture" 
+                                     class="w-8 h-8 rounded-full mr-2">
+                                {{ member.username }}
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ member.email }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">Admin</td>
                         {% if team.is_admin(current_user.get_id()) %}
@@ -182,7 +186,14 @@
                     
                     {% for member in members_by_role['member']|sort(attribute='username') %}
                     <tr class="member-row">
-                        <td class="px-6 py-4 whitespace-nowrap">{{ member.username }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img src="{{ url_for('auth.profile_picture', user_id=member.get_id()) }}" 
+                                     alt="Profile Picture" 
+                                     class="w-8 h-8 rounded-full mr-2">
+                                {{ member.username }}
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ member.email }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">Member</td>
                         {% if team.is_admin(current_user.get_id()) %}
@@ -211,253 +222,257 @@
         </div>
     </div>
 
-    <!-- Assignments Section -->
     <div class="bg-white shadow rounded-lg p-6">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 space-y-4 md:space-y-0">
             <h2 class="text-xl font-semibold">Team Assignments</h2>
-            <div class="flex items-center space-x-4">
+            <div class="flex flex-col md:flex-row items-stretch md:items-center space-y-2 md:space-y-0 md:space-x-4">
                 <input
                     type="text"
                     id="assignmentSearch"
                     placeholder="Search assignments..."
-                    class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full md:w-auto"
                 >
                 {% if team.is_admin(current_user.get_id()) %}
-                <button onclick="clearAllAssignments()"
-                        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                    Clear All
-                </button>
-                <button onclick="document.getElementById('createAssignmentModal').classList.remove('hidden')"
-                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                    Create Assignment
-                </button>
+                <div class="flex space-x-2">
+                    <button onclick="clearAllAssignments()"
+                            class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex-1 md:flex-none">
+                        Clear All
+                    </button>
+                    <button onclick="document.getElementById('createAssignmentModal').classList.remove('hidden')"
+                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex-1 md:flex-none">
+                        Create Assignment
+                    </button>
+                </div>
                 {% endif %}
             </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead>
-                    <tr>
-                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Title
-                        </th>
-                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Description
-                        </th>
-                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Assigned To
-                        </th>
-                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Due Date
-                        </th>
-                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                        </th>
-                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for assignment in assignments %}
-                    <tr class="assignment-row {% if current_user.get_id() in assignment.assigned_to %}bg-blue-50{% endif %} hover:bg-gray-50"
-                        data-assignment-id="{{ assignment.id }}">
-                        <td class="px-6 py-4 whitespace-nowrap">{{ assignment.title }}</td>
-                        <td class="px-6 py-4 whitespace-normal">{{ assignment.description }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% for user_id in assignment.assigned_to %}
-                                {% set user = user_dict.get(user_id) %}
-                                <span class="{% if user_id == current_user.get_id() %}font-bold text-blue-600{% endif %}">
-                                    {{ user.username if user else "Unknown" }}{% if not loop.last %}, {% endif %}
-                                </span>
-                            {% endfor %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% if assignment.due_date %}
-                                {% if assignment.due_date is string %}
-                                    {{ assignment.due_date }}
-                                {% else %}
-                                    {{ assignment.due_date.strftime('%Y-%m-%d %I:%M %p') }}
-                                {% endif %}
+
+        <div class="overflow-x-auto -mx-6">
+            <div class="inline-block min-w-full align-middle">
+                <div class="overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Title
+                                </th>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Description
+                                </th>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Assigned To
+                                </th>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Due Date
+                                </th>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for assignment in assignments %}
+                            <tr class="assignment-row {% if current_user.get_id() in assignment.assigned_to %}bg-blue-50{% endif %} hover:bg-gray-50"
+                                data-assignment-id="{{ assignment.id }}">
+                                <td class="px-6 py-4 whitespace-nowrap">{{ assignment.title }}</td>
+                                <td class="px-6 py-4 whitespace-normal">{{ assignment.description }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% for user_id in assignment.assigned_to %}
+                                        {% set user = user_dict.get(user_id) %}
+                                        <span class="{% if user_id == current_user.get_id() %}font-bold text-blue-600{% endif %}">
+                                            {{ user.username if user else "Unknown" }}{% if not loop.last %}, {% endif %}
+                                        </span>
+                                    {% endfor %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if assignment.due_date %}
+                                        {% if assignment.due_date is string %}
+                                            {{ assignment.due_date }}
+                                        {% else %}
+                                            {{ assignment.due_date.strftime('%Y-%m-%d %I:%M %p') }}
+                                        {% endif %}
+                                    {% else %}
+                                        No due date
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge
+                                        {% if assignment.status == 'completed' %}
+                                            bg-green-100 text-green-800
+                                        {% elif assignment.status == 'in_progress' %}
+                                            bg-yellow-100 text-yellow-800
+                                        {% else %}
+                                            bg-gray-100 text-gray-800
+                                        {% endif %}">
+                                        {% if assignment.status == 'in_progress' %}
+                                            In Progress
+                                        {% else %}
+                                            {{ assignment.status|title }}
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    {% if current_user.get_id() in assignment.assigned_to %}
+                                    <form method="POST" action="{{ url_for('team.update_assignment_status', assignment_id=assignment.id) }}" class="inline">
+                                        <select name="status" onchange="updateAssignmentStatus(this, '{{ assignment.id }}')" 
+                                                class="text-sm border rounded px-2 py-1">
+                                            <option value="pending" {% if assignment.status == 'pending' %}selected{% endif %}>Pending</option>
+                                            <option value="in_progress" {% if assignment.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                            <option value="completed" {% if assignment.status == 'completed' %}selected{% endif %}>Completed</option>
+                                        </select>
+                                    </form>
+                                    {% endif %}
+                                    {% if is_admin %}
+                                    <button onclick="openEditAssignmentModal('{{ assignment.id }}')"
+                                            class="text-blue-600 hover:text-blue-900 ml-2">
+                                        Edit
+                                    </button>
+                                    <button onclick="deleteAssignment('{{ assignment.id }}')"
+                                            class="text-red-600 hover:text-red-900 ml-2">
+                                        Delete
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
                             {% else %}
-                                No due date
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge
-                                {% if assignment.status == 'completed' %}
-                                    bg-green-100 text-green-800
-                                {% elif assignment.status == 'in_progress' %}
-                                    bg-yellow-100 text-yellow-800
-                                {% else %}
-                                    bg-gray-100 text-gray-800
-                                {% endif %}">
-                                {% if assignment.status == 'in_progress' %}
-                                    In Progress
-                                {% else %}
-                                    {{ assignment.status|title }}
-                                {% endif %}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            {% if current_user.get_id() in assignment.assigned_to %}
-                            <form method="POST" action="{{ url_for('team.update_assignment_status', assignment_id=assignment.id) }}" class="inline">
-                                <select name="status" onchange="updateAssignmentStatus(this, '{{ assignment.id }}')" 
-                                        class="text-sm border rounded px-2 py-1">
-                                    <option value="pending" {% if assignment.status == 'pending' %}selected{% endif %}>Pending</option>
-                                    <option value="in_progress" {% if assignment.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                                    <option value="completed" {% if assignment.status == 'completed' %}selected{% endif %}>Completed</option>
-                                </select>
-                            </form>
-                            {% endif %}
-                            {% if is_admin %}
-                            <button onclick="openEditAssignmentModal('{{ assignment.id }}')"
-                                    class="text-blue-600 hover:text-blue-900 ml-2">
-                                Edit
-                            </button>
-                            <button onclick="deleteAssignment('{{ assignment.id }}')"
-                                    class="text-red-600 hover:text-red-900 ml-2">
-                                Delete
-                            </button>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                            No assignments found
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                    No assignments found
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-<!-- Create Assignment Modal -->
-<div id="createAssignmentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Create New Assignment</h3>
-            <form id="createAssignmentForm" 
-                  action="{{ url_for('team.create_assignment', team_number=team.team_number) }}"
-                  class="space-y-4" 
-                  autocomplete="off">
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="title">
-                        Title
-                    </label>
-                    <input type="text" name="title" id="title" required
-                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
-                        Description
-                    </label>
-                    <textarea name="description" id="description"
-                              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
-                </div>
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="assigned_to">
-                        Assign To
-                    </label>
-                    <select name="assigned_to" id="assigned_to" multiple required
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                        {% for member in team_members %}
-                        <option value="{{ member.get_id() }}">{{ member.username }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
-                        Due Date
-                    </label>
-                    <input type="datetime-local" name="due_date" id="due_date"
-                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-                <div class="flex items-center justify-between mt-4">
-                    <button type="submit"
-                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        Create
-                    </button>
-                    <button type="button"
-                            onclick="document.getElementById('createAssignmentModal').classList.add('hidden')"
-                            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-                        Cancel
-                    </button>
-                </div>
-            </form>
+    <div id="createAssignmentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full p-4">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Create New Assignment</h3>
+                <form id="createAssignmentForm" 
+                      action="{{ url_for('team.create_assignment', team_number=team.team_number) }}"
+                      class="space-y-4" 
+                      autocomplete="off">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="title">
+                            Title
+                        </label>
+                        <input type="text" name="title" id="title" required
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
+                            Description
+                        </label>
+                        <textarea name="description" id="description"
+                                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="assigned_to">
+                            Assign To
+                        </label>
+                        <select name="assigned_to" id="assigned_to" multiple required
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            {% for member in team_members %}
+                            <option value="{{ member.get_id() }}">{{ member.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
+                            Due Date
+                        </label>
+                        <input type="datetime-local" name="due_date" id="due_date"
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                        <button type="submit"
+                                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                            Create
+                        </button>
+                        <button type="button"
+                                onclick="document.getElementById('createAssignmentModal').classList.add('hidden')"
+                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Edit Assignment Modal -->
-<div id="editAssignmentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Edit Assignment</h3>
-            <form id="editAssignmentForm" class="space-y-4" autocomplete="off">
-                <input type="hidden" id="edit_assignment_id">
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_title">
-                        Title
-                    </label>
-                    <input type="text" name="title" id="edit_title" required
-                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_description">
-                        Description
-                    </label>
-                    <textarea name="description" id="edit_description"
-                              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
-                </div>
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_assigned_to">
-                        Assign To
-                    </label>
-                    <select name="assigned_to" id="edit_assigned_to" multiple required
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                        {% for member in team_members %}
-                        <option value="{{ member.get_id() }}">{{ member.username }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_due_date">
-                        Due Date
-                    </label>
-                    <input type="datetime-local" name="due_date" id="edit_due_date"
-                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-                <div class="flex items-center justify-between mt-4">
-                    <button type="submit"
-                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        Save Changes
-                    </button>
-                    <button type="button"
-                            onclick="document.getElementById('editAssignmentModal').classList.add('hidden')"
-                            class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-                        Cancel
-                    </button>
-                </div>
-            </form>
+    <div id="editAssignmentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full p-4">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Edit Assignment</h3>
+                <form id="editAssignmentForm" class="space-y-4" autocomplete="off">
+                    <input type="hidden" id="edit_assignment_id">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_title">
+                            Title
+                        </label>
+                        <input type="text" name="title" id="edit_title" required
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_description">
+                            Description
+                        </label>
+                        <textarea name="description" id="edit_description"
+                                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_assigned_to">
+                            Assign To
+                        </label>
+                        <select name="assigned_to" id="edit_assigned_to" multiple required
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            {% for member in team_members %}
+                            <option value="{{ member.get_id() }}">{{ member.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_due_date">
+                            Due Date
+                        </label>
+                        <input type="datetime-local" name="due_date" id="edit_due_date"
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                        <button type="submit"
+                                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                            Save Changes
+                        </button>
+                        <button type="button"
+                                onclick="document.getElementById('editAssignmentModal').classList.add('hidden')"
+                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
-<script src="{{ url_for('static', filename='js/team.manage.js') }}"></script>
-<script>
-function confirmDeleteTeam() {
-    if (confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
-        window.location.href = "{{ url_for('team.delete_team', team_number=team.team_number) }}";
+    <script src="{{ url_for('static', filename='js/team.manage.js') }}"></script>
+    <script>
+    function confirmDeleteTeam() {
+        if (confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
+            window.location.href = "{{ url_for('team.delete_team', team_number=team.team_number) }}";
+        }
     }
-}
 
-function confirmLeaveTeam() {
-    if (confirm('Are you sure you want to leave this team?')) {
-        window.location.href = "{{ url_for('team.leave_team', team_number=team.team_number) }}";
+    function confirmLeaveTeam() {
+        if (confirm('Are you sure you want to leave this team?')) {
+            window.location.href = "{{ url_for('team.leave_team', team_number=team.team_number) }}";
+        }
     }
-}
-</script>
+    </script>
 
 {% endblock %}

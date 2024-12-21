@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-6xl mx-auto">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -29,17 +29,17 @@
         </div>
     </div>
 
-    <div class="flex justify-between items-center mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <h1 class="text-2xl font-bold">Team Data</h1>
-        <div class="flex items-center space-x-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
             <input
                 type="text"
                 id="teamSearch"
                 placeholder="Search teams..."
-                class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
             >
             <a href="{{ url_for('scouting.add_scouting_data') }}" 
-               class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+               class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-center">
                 Add New Data
             </a>
         </div>
@@ -53,66 +53,91 @@
         {% set _ = event_groups[data.event_code].append(data) %}
     {% endfor %}
 
-    <div id="teamDataContainer">
+    <div id="teamDataContainer" class="-mx-4 sm:mx-0">
         {% for event_code, teams in event_groups.items() %}
         <div class="event-section mb-8" data-event-code="{{ event_code }}">
-            <h2 class="text-xl font-semibold mb-4 bg-gray-100 rounded">
+            <h2 class="text-xl font-semibold mb-4 bg-gray-100 rounded px-4 py-2">
                 {{ event_code }}
             </h2>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto shadow-sm rounded-lg">
                 <table class="min-w-full divide-y divide-gray-200">
-                    <thead>
+                    <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Team Number
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Team #
                             </th>
-                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class=" sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Match
                             </th>
-                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Auto Points
+                            <th class=" md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Auto
                             </th>
-                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Teleop Points
+                            <th class=" md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Teleop
                             </th>
-                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Endgame Points
+                            <th class=" md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Endgame
                             </th>
-                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Total Points
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Total
                             </th>
-                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class=" lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Notes
                             </th>
-                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Scouter (Team #)
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Scouter
                             </th>
-                            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions
                             </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for data in teams %}
-                        <tr class="team-row" 
-                            data-team-number="{{ data.team_number }}"
+                        <tr class="team-row hover:bg-gray-50" 
+                            data-team-number="{{ data.team_number|string }}"
                             data-event-code="{{ data.event_code }}"
                             data-notes="{{ data.notes }}"
                             data-scouter="{{ data.scouter_name }}">  
-                            <td class="px-6 py-4 whitespace-nowrap">{{ data.team_number }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ data.match_number }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ data.auto_points }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ data.teleop_points }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ data.endgame_points }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ data.total_points }}</td>
-                            <td class="px-6 py-4 whitespace-normal ">{{ data.notes }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ data.scouter_name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <a href="{{ url_for('scouting.edit_scouting_data', id=data.id) }}" 
-                                   class="text-indigo-600 hover:text-indigo-900 mr-4">Edit</a>
-                                <a href="{{ url_for('scouting.delete_scouting_data', id=data.id) }}" 
-                                   class="text-red-600 hover:text-red-900"
-                                   onclick="return confirm('Are you sure you want to delete this?')">Delete</a>
+                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ data.team_number }}
+                                </div>
+                            </td>
+                            <td class="sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">{{ data.match_number }}</td>
+                            <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">{{ data.auto_points }}</td>
+                            <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">{{ data.teleop_points }}</td>
+                            <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">{{ data.endgame_points }}</td>
+                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap">{{ data.total_points }}</td>
+                            <td class="lg:table-cell px-3 sm:px-6 py-4 whitespace-normal max-w-xs truncate">{{ data.notes }}</td>
+                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-2">
+                                    <img src="{{ url_for('auth.profile_picture', user_id=data.scouter_id) }}" 
+                                         alt="Profile Picture" 
+                                         class="w-6 h-6 sm:w-8 sm:h-8 rounded-full">
+                                    <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-1">
+                                        <a class="text-blue-600 hover:text-blue-900 text-sm" 
+                                           href="{{ url_for('auth.profile', username=data.scouter_name) }}">
+                                            {{ data.scouter_name }}
+                                        </a>
+                                        <span class="sm:inline"><a href="{{ url_for('team.view_team', team_number=data.team_number) }}" class="hover:text-blue-500">({{ data.team_number }})</a></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                <div class="flex space-x-2">
+                                    <a href="{{ url_for('scouting.edit_scouting_data', id=data.id) }}" 
+                                       class="text-indigo-600 hover:text-indigo-900">
+                                        <span class="hidden sm:inline">Edit</span>
+                                        <span class="sm:hidden">📝</span>
+                                    </a>
+                                    <a href="{{ url_for('scouting.delete_scouting_data', id=data.id) }}" 
+                                       class="text-red-600 hover:text-red-900"
+                                       onclick="return confirm('Are you sure you want to delete this?')">
+                                        <span class="hidden sm:inline">Delete</span>
+                                        <span class="sm:hidden">🗑️</span>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

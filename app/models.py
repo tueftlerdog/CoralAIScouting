@@ -78,14 +78,9 @@ class TeamData:
         self.notes = data.get("notes", "")
         self.scouter_id = data.get("scouter_id")
         self.created_at = data.get("created_at")
-
-        # Handle the nested scouter data
-        scouter_data = data.get("scouter", {})
-        self.scouter = {
-            "username": scouter_data.get("username", "Unknown"),
-            "team_number": scouter_data.get("team_number"),
-            "email": scouter_data.get("email"),
-        }
+        
+        # Handle scouter name from the aggregation pipeline
+        self.scouter_name = data.get("scouter_name", "Unknown")
 
     @property
     def id(self):
@@ -101,9 +96,7 @@ class TeamData:
             data["_id"] = ObjectId(data["_id"])
 
         # Ensure scouter_id is ObjectId
-        if "scouter_id" in data and not isinstance(
-                                                data["scouter_id"], ObjectId
-                                                ):
+        if "scouter_id" in data and not isinstance(data["scouter_id"], ObjectId):
             data["scouter_id"] = ObjectId(data["scouter_id"])
 
         return TeamData(data)
@@ -120,16 +113,9 @@ class TeamData:
             "total_points": self.total_points,
             "notes": self.notes,
             "scouter_id": str(self.scouter_id),
+            "scouter_name": self.scouter_name,
             "created_at": self.created_at,
-            "scouter": self.scouter,
         }
-
-    @property
-    def scouter_name(self):
-        """Returns formatted scouter name with team number if available"""
-        username = self.scouter.get("username", "Unknown")
-        team_number = self.scouter.get("team_number")
-        return f"{username} ({team_number})"
 
     @property
     def formatted_date(self):
@@ -138,10 +124,6 @@ class TeamData:
             return self.created_at.strftime("%Y-%m-%d %H:%M:%S")
         return "N/A"
 
-    @property
-    def is_owner(self):
-        """Returns whether the current user is the owner of the data"""
-        return str(self.scouter_id) != str(self.scouter.get("team_number"))
 
 class PitScouting:
     def __init__(self, data: Dict):
