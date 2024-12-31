@@ -77,20 +77,75 @@ class ScoutingManager:
         """Add new scouting data with retry mechanism"""
         self.ensure_connected()
         try:
+            # Validate team number
+            team_number = int(data["team_number"])
+            if team_number <= 0:
+                return False, "Invalid team number"
+
+            if existing_entry := self.db.team_data.find_one(
+                {
+                    "event_code": data["event_code"],
+                    "match_number": int(data["match_number"]),
+                    "team_number": team_number,
+                }
+            ):
+                return False, f"Team {team_number} already exists in match {data['match_number']} for event {data['event_code']}"
+
+            # Get existing match data to validate alliance sizes and calculate scores
+            match_data = list(self.db.team_data.find({
+                "event_code": data["event_code"],
+                "match_number": int(data["match_number"])
+            }))
+
+            # Count teams per alliance
+            alliance = data.get("alliance", "red")
+            red_teams = [m for m in match_data if m["alliance"] == "red"]
+            blue_teams = [m for m in match_data if m["alliance"] == "blue"]
+
+            if (alliance == "red" and len(red_teams) >= 3) or (alliance == "blue" and len(blue_teams) >= 3):
+                return False, f"Cannot add more teams to {alliance} alliance (maximum 3)"
+
+            # Calculate alliance scores
+            red_score = sum(t["total_points"] for t in red_teams)
+            blue_score = sum(t["total_points"] for t in blue_teams)
+
+            # Add current team's points to their alliance
+            current_points = (
+                int(data["auto_points"])
+                + int(data["teleop_points"])
+                + int(data["endgame_points"])
+            )
+            if alliance == "red":
+                red_score += current_points
+                alliance_score = red_score
+                opponent_score = blue_score
+            else:
+                blue_score += current_points
+                alliance_score = blue_score
+                opponent_score = red_score
+
+            # Determine match result
+            if alliance_score > opponent_score:
+                match_result = "won"
+            elif alliance_score < opponent_score:
+                match_result = "lost"
+            else:
+                match_result = "tie"
+
             team_data = {
-                "team_number": int(data["team_number"]),
+                "team_number": team_number,
                 "event_code": data["event_code"],
                 "match_number": int(data["match_number"]),
                 "auto_points": int(data["auto_points"]),
                 "teleop_points": int(data["teleop_points"]),
                 "endgame_points": int(data["endgame_points"]),
-                "total_points": (
-                    int(data["auto_points"])
-                    + int(data["teleop_points"])
-                    + int(data["endgame_points"])
-                ),
+                "total_points": current_points,
                 "notes": data["notes"],
                 "scouter_id": ObjectId(scouter_id),
+                "alliance": alliance,
+                "alliance_score": alliance_score,
+                "opponent_score": opponent_score,
+                "match_result": match_result,
                 "created_at": datetime.now(timezone.utc),
             }
 
@@ -104,7 +159,6 @@ class ScoutingManager:
     @with_mongodb_retry(retries=3, delay=2)
     def get_all_scouting_data(self):
         """Get all scouting data with user information"""
-        self.ensure_connected()
         try:
             pipeline = [
                 {
@@ -120,31 +174,26 @@ class ScoutingManager:
                     "$project": {
                         "_id": 1,
                         "team_number": 1,
-                        "event_code": 1,
                         "match_number": 1,
+                        "event_code": 1,
                         "auto_points": 1,
                         "teleop_points": 1,
                         "endgame_points": 1,
                         "total_points": 1,
                         "notes": 1,
+                        "alliance": 1,
+                        "match_result": 1,
                         "scouter_id": 1,
-                        "scouter_name": {"$ifNull": ["$scouter.username", "Unknown"]},
-                        "created_at": 1
+                        "scouter_name": "$scouter.username",
+                        "scouter_team": "$scouter.teamNumber"
                     }
-                },
-                {"$sort": {"created_at": -1}}
+                }
             ]
-
+            
             team_data = list(self.db.team_data.aggregate(pipeline))
-            
-            # Transform the data using create_from_db
-            transformed_data = []
-            for td in team_data:
-                transformed_data.append(TeamData.create_from_db(td))
-            
-            return transformed_data
+            return [TeamData.create_from_db(data) for data in team_data]
         except Exception as e:
-            logger.error(f"Error fetching scouting data: {str(e)}")
+            print(f"Error fetching team data: {e}")
             return []
 
     @with_mongodb_retry(retries=3, delay=2)
@@ -152,18 +201,17 @@ class ScoutingManager:
         """Get specific team data with optional scouter verification"""
         self.ensure_connected()
         try:
-            query = {"_id": ObjectId(team_id)}
-            if scouter_id:  # If scouter_id provided, verify ownership
-                query["scouter_id"] = ObjectId(scouter_id)
-
-            data = self.db.team_data.find_one(query)
+            # Just get the data by ID first
+            data = self.db.team_data.find_one({"_id": ObjectId(team_id)})
             if not data:
                 return None
 
-            # Add an is_owner field to the response
-            data["is_owner"] = (
-                str(data["scouter_id"]) == str(scouter_id) if scouter_id else False
-            )
+            # Then check ownership if scouter_id is provided
+            if scouter_id:
+                data["is_owner"] = str(data["scouter_id"]) == str(scouter_id)
+            else:
+                data["is_owner"] = False
+
             return TeamData.create_from_db(data)
         except Exception as e:
             logger.error(f"Error fetching team data: {str(e)}")
@@ -198,6 +246,8 @@ class ScoutingManager:
                     + int(data["endgame_points"])
                 ),
                 "notes": data["notes"],
+                "alliance": data.get("alliance", "red"),
+                "match_result": data.get("match_result", ""),
             }
 
             result = self.db.team_data.update_one(
@@ -220,6 +270,17 @@ class ScoutingManager:
             return result.deleted_count > 0
         except Exception as e:
             logger.error(f"Error deleting team data: {str(e)}")
+            return False
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def has_team_data(self, team_number):
+        """Check if there is any scouting data for a given team number"""
+        self.ensure_connected()
+        try:
+            count = self.db.team_data.count_documents({"team_number": int(team_number)})
+            return count > 0
+        except Exception as e:
+            logger.error(f"Error checking team data: {str(e)}")
             return False
 
     def __del__(self):

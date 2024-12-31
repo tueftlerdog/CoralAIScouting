@@ -7,6 +7,7 @@ from flask import (
     flash,
     jsonify,
     send_file,
+    current_app,
 )
 from flask_login import login_required, login_user, current_user, logout_user
 from app.auth.auth_utils import UserManager
@@ -261,3 +262,25 @@ async def check_username():
             "available": False,
             "error": str(e)
         }), 500
+
+
+@auth_bp.route("/delete_account", methods=["POST"])
+@login_required
+@async_route
+async def delete_account():
+    """Delete user account"""
+    try:
+        user_manager = UserManager(current_app.config["MONGO_URI"])
+        success, message = await user_manager.delete_user(current_user.get_id())
+
+        if success:
+            logout_user()
+            flash("Your account has been successfully deleted", "success")
+            return jsonify({"success": True, "redirect": url_for("index")})
+        else:
+            flash(message, "error")
+            return jsonify({"success": False, "message": message})
+
+    except Exception as e:
+        current_app.logger.error(f"Error deleting account: {str(e)}")
+        return jsonify({"success": False, "message": "An error occurred while deleting your account"})

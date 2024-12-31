@@ -1,133 +1,29 @@
-import aiohttp
-import asyncio
 import os
-from typing import Optional, List, Dict
-from dataclasses import dataclass
-from dotenv import load_dotenv
+import requests
+import logging
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
-"""
-Credits to PAWNAGERobitics for the original code:
-https://github.com/PWNAGERobotics/ScoutingPASS/blob/main/resources/js/TBAInterface.js
-"""
-
-
-@dataclass
 class TBAInterface:
-    """Async interface for The Blue Alliance API"""
-
-    def __init__(
-        self,
-        auth_key: str = os.getenv("TBA_AUTH_KEY"),
-    ):
-        self.auth_key = auth_key
+    def __init__(self):
         self.base_url = "https://www.thebluealliance.com/api/v3"
-        self.headers = {"X-TBA-Auth-Key": self.auth_key}
-        self.teams: Optional[List[Dict]]
-        self.schedule: Optional[List[Dict]]
-        self.session: Optional[aiohttp.ClientSession]
+        self.api_key = os.getenv('TBA_AUTH_KEY')
+        if not self.api_key:
+            logger.warning("TBA_AUTH_KEY not found in environment variables")
+        
+        self.headers = {
+            "X-TBA-Auth-Key": self.api_key,
+            "accept": "application/json"
+        }
 
-    async def __aenter__(self):
-        """Async context manager entry"""
-        self.session = aiohttp.ClientSession(headers=self.headers)
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async context manager exit"""
-        if self.session:
-            await self.session.close()
-
-    async def get_teams_at_event(self, event_code: str) -> Optional[List[Dict]]:
-        """
-        Get list of teams in event
-
-        Args:
-            event_code (str): The event code (i.e. 2020caln) to pull
-            the team list
-
-        Returns:
-            Optional[List[Dict]]: List of team data or None if request fails
-        """
-        if not self.auth_key:
-            raise ValueError("No auth key provided")
-
-        url = f"{self.base_url}/event/{event_code}/teams/simple"
-
+    def get_team(self, team_key):
+        """Get team information from TBA"""
         try:
-            if not self.session:
-                self.session = aiohttp.ClientSession(headers=self.headers)
-
-            async with self.session.get(url) as response:
-                response.raise_for_status()
-                self.teams = await response.json()
-                return self.teams
-
-        except aiohttp.ClientError as e:
-            raise e
-
-    async def get_schedule(self, event_code: str) -> Optional[List[Dict]]:
-        """
-        Get schedule for event
-
-        Args:
-            event_code (str): The event code (i.e. 2020caln)
-            to pull the schedule
-
-        Returns:
-            Optional[List[Dict]]: List of match data or None if request fails
-        """
-        if not self.auth_key:
-            raise ValueError("No auth key provided")
-
-        url = f"{self.base_url}/event/{event_code}/matches/simple"
-
-        try:
-            if not self.session:
-                self.session = aiohttp.ClientSession(headers=self.headers)
-
-            async with self.session.get(url) as response:
-                response.raise_for_status()
-                self.schedule = await response.json()
-                return self.schedule
-
-        except aiohttp.ClientError as e:
-            raise e
-
-    async def get_event_data(
-        self, event_code: str
-    ) -> tuple[Optional[List[Dict]], Optional[List[Dict]]]:
-        """
-        Get both teams and schedule data for an event concurrently
-
-        Args:
-            event_code (str): The event code (i.e. 2020caln)
-
-        Returns:
-            tuple[
-                Optional[List[Dict]],
-                Optional[List[Dict]]
-            ]: Tuple of (teams, schedule) data
-        """
-        async with self:
-            teams_task = asyncio.create_task(self.get_teams_at_event(event_code))
-            schedule_task = asyncio.create_task(self.get_schedule(event_code))
-
-            teams, schedule = await asyncio.gather(teams_task, schedule_task)
-            return teams, schedule
-
-    @staticmethod
-    def teams(teams: List[Dict]):
-        """Helper method to print team information"""
-        if not teams:
-            raise ValueError("No team data to print")
-
-        return teams
-
-    @staticmethod
-    def print_schedule(schedule: List[Dict]):
-        """Helper method to print schedule information"""
-        if not schedule:
-            raise ValueError("No schedule data to print")
-
-        return schedule
+            response = requests.get(
+                f"{self.base_url}/team/{team_key}",
+                headers=self.headers
+            )
+            return response.json() if response.status_code == 200 else None
+        except Exception as e:
+            logger.error(f"Error fetching team from TBA: {e}")
+            return None

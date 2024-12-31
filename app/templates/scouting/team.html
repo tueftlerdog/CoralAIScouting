@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" id="team-container">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold">Team {{ team_number }}</h1>
+        <p class="text-gray-600" id="team-subtitle"></p>
+    </div>
+
+    <!-- First row: Radar and Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <!-- Radar Chart -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">Performance Radar</h2>
+            <canvas id="team-radar-chart" class="w-full"></canvas>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">Team Information</h2>
+            <!-- Team Info Section -->
+            <div class="mb-6 border-b pb-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="font-medium text-gray-700">Team Number</h3>
+                        <p id="team-number" class="mt-1">{{ team_number }}</p>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-700">Nickname</h3>
+                        <p id="nickname" class="mt-1">N/A</p>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-700">School</h3>
+                        <p id="school" class="mt-1">N/A</p>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-700">Location</h3>
+                        <p id="location" class="mt-1">N/A</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Stats Section -->
+            <h2 class="text-xl font-semibold mb-4">Performance Stats</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <h3 class="font-medium text-gray-700">Matches Played</h3>
+                    <p class="mt-1">{{ stats.matches_played }}</p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700">Average Points</h3>
+                    <p class="mt-1">{{ (stats.total_points / stats.matches_played) | round(1) }}</p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700">Avg Auto</h3>
+                    <p class="mt-1">{{ stats.auto_points | round(1) }}</p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700">Avg Teleop</h3>
+                    <p class="mt-1">{{ stats.teleop_points | round(1) }}</p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700">Avg Endgame</h3>
+                    <p class="mt-1">{{ stats.endgame_points | round(1) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second row: Line Chart (full width) -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-xl font-semibold mb-4">Score Progression</h2>
+        <canvas id="team-line-chart" class="w-full"></canvas>
+    </div>
+
+    <!-- Third row: Match History (full width) -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-semibold mb-4">Match History</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Match</th>
+                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auto</th>
+                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teleop</th>
+                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Endgame</th>
+                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for match in matches %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ match.event_code }} - {{ match.match_number }}</td>
+                        <td class="px-6 py-4">{{ match.auto_points }}</td>
+                        <td class="px-6 py-4">{{ match.teleop_points }}</td>
+                        <td class="px-6 py-4">{{ match.endgame_points }}</td>
+                        <td class="px-6 py-4">{{ match.total_points }}</td>
+                        <td class="px-6 py-4">{{ match.notes }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const teamNumber = "{{ team_number }}";
+    const matchesData = {{ matches|tojson|safe }};
+    
+    // Initialize all charts and data
+    try {
+        const teamData = await fetchTeamData(teamNumber);
+        updateTeamInfo(teamData);
+        initializeCharts(matchesData);
+    } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        // Show user-friendly error message
+        showErrorMessage('Failed to load team data. Please try refreshing the page.');
+    }
+});
+
+// Fetch team data from API
+async function fetchTeamData(teamNumber) {
+    const response = await fetch(`/api/search?q=${teamNumber}`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data?.[0] || null;
+}
+
+// Update team information in the UI
+function updateTeamInfo(teamData) {
+    if (!teamData) return;
+
+    const location = [teamData.city, teamData.state_prov, teamData.country]
+        .filter(Boolean)
+        .join(', ');
+
+    // Update team subtitle
+    document.getElementById('team-subtitle').textContent = 
+        `${teamData.nickname} - ${location}`;
+
+    // Update team information fields
+    const fields = {
+        'team-number': teamData.team_number,
+        'nickname': teamData.nickname,
+        'school': teamData.school_name,
+        'location': location
+    };
+
+    Object.entries(fields).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value || 'N/A';
+        }
+    });
+}
+
+// Calculate team performance consistency
+function calculateConsistency(matches) {
+    if (matches.length < 2) return 100;
+    
+    const scores = matches.map(m => m.total_points);
+    const mean = scores.reduce((a, b) => a + b) / scores.length;
+    const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / scores.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Normalize consistency score between 0 and 100
+    return Math.max(0, Math.min(100, 100 - (stdDev / mean * 100)));
+}
+
+// Initialize all charts
+function initializeCharts(matchesData) {
+    const sortedMatches = [...matchesData].sort((a, b) => {
+        return a.event_code === b.event_code ? 
+            a.match_number - b.match_number : 
+            a.event_code.localeCompare(b.event_code);
+    });
+
+    initializeRadarChart(matchesData);
+    initializeProgressionChart(sortedMatches);
+}
+
+// Initialize radar chart
+function initializeRadarChart(matchesData) {
+    const ctx = document.getElementById('team-radar-chart')?.getContext('2d');
+    if (!ctx) return;
+
+    const consistency = calculateConsistency(matchesData);
+    
+    const radarData = {
+        labels: ['Auto', 'Teleop', 'Endgame', 'Consistency', 'Overall'],
+        datasets: [{
+            data: [
+                {{ stats.auto_points|float }},
+                {{ stats.teleop_points|float }},
+                {{ stats.endgame_points|float }},
+                consistency,
+                {{ (stats.total_points / stats.matches_played)|float }}
+            ],
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgb(54, 162, 235)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgb(54, 162, 235)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgb(54, 162, 235)'
+        }]
+    };
+
+    new Chart(ctx, {
+        type: 'radar',
+        data: radarData,
+        options: createRadarChartOptions()
+    });
+}
+
+// Create radar chart options
+function createRadarChartOptions() {
+    return {
+        scales: {
+            r: {
+                beginAtZero: true,
+                min: 0,
+                max: 100,
+                ticks: { stepSize: 20 }
+            }
+        },
+        plugins: {
+            legend: { display: false }
+        }
+    };
+}
+
+// Initialize progression chart
+function initializeProgressionChart(sortedMatches) {
+    const ctx = document.getElementById('team-line-chart')?.getContext('2d');
+    if (!ctx) return;
+
+    const labels = sortedMatches.map(m => `${m.event_code} - ${m.match_number}`);
+    const datasets = createProgressionDatasets(sortedMatches);
+
+    new Chart(ctx, {
+        type: 'scatter',
+        data: { labels, datasets },
+        options: createProgressionChartOptions(labels)
+    });
+}
+
+// Create progression chart datasets
+function createProgressionDatasets(matches) {
+    const colors = {
+        auto: 'rgb(54, 162, 235)',
+        teleop: 'rgb(255, 159, 64)',
+        endgame: 'rgb(75, 192, 192)'
+    };
+
+    return Object.entries({
+        'Auto': 'auto_points',
+        'Teleop': 'teleop_points',
+        'Endgame': 'endgame_points'
+    }).map(([label, key]) => ({
+        label,
+        data: matches.map((m, index) => ({
+            x: index,
+            y: m[key]
+        })),
+        borderColor: colors[label.toLowerCase()],
+        backgroundColor: colors[label.toLowerCase()],
+        showLine: true,
+        pointRadius: 6,
+        pointStyle: 'circle',
+        borderWidth: 3,
+        tension: 0
+    }));
+}
+
+// Create progression chart options
+function createProgressionChartOptions(labels) {
+    return {
+        responsive: true,
+        interaction: {
+            mode: 'nearest',
+            intersect: true
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Points'
+                }
+            },
+            x: {
+                type: 'linear',
+                position: 'bottom',
+                ticks: {
+                    callback: value => labels[value] || '',
+                    maxRotation: 45,
+                    minRotation: 45
+                }
+            }
+        },
+        plugins: {
+            legend: { position: 'top' },
+            title: { display: false }
+        }
+    };
+}
+
+// Show error message to user
+function showErrorMessage(message) {
+    const container = document.getElementById('team-container');
+    if (!container) return;
+
+    const alert = document.createElement('div');
+    alert.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4';
+    alert.role = 'alert';
+    alert.textContent = message;
+    
+    container.insertBefore(alert, container.firstChild);
+}
+</script>
+{% endblock %} 

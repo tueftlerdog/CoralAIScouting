@@ -248,6 +248,37 @@ class UserManager:
             logger.error(f"Error getting profile picture: {str(e)}")
             return None
 
+    @with_mongodb_retry(retries=3, delay=2)
+    async def delete_user(self, user_id):
+        """Delete a user account and all associated data"""
+        self.ensure_connected()
+        try:
+            from bson.objectid import ObjectId
+
+            # Get user data first
+            user_data = self.db.users.find_one({"_id": ObjectId(user_id)})
+            if not user_data:
+                return False, "User not found"
+
+            # Delete profile picture if exists
+            if user_data.get('profile_picture_id'):
+                try:
+                    fs = GridFS(self.db)
+                    fs.delete(ObjectId(user_data['profile_picture_id']))
+                except Exception as e:
+                    logger.error(f"Error deleting profile picture: {str(e)}")
+
+            # Delete user document
+            result = self.db.users.delete_one({"_id": ObjectId(user_id)})
+            
+            if result.deleted_count > 0:
+                return True, "Account deleted successfully"
+            return False, "Failed to delete account"
+
+        except Exception as e:
+            logger.error(f"Error deleting user: {str(e)}")
+            return False, f"Error deleting account: {str(e)}"
+
     def __del__(self):
         """Cleanup MongoDB connection"""
         if self.client:

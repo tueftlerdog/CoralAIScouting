@@ -39,6 +39,17 @@
                 </div>
             </div>
 
+            <div id="team-profile-container" class="mt-4 mb-6 hidden">
+                <a id="team-profile-link" 
+                   href="#"
+                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    View Team Profile
+                    <svg class="ml-2 -mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+
             <div class="mt-10">
                 <h3 class="text-lg font-semibold mb-4">Scouting Data</h3>
                 <div class="overflow-x-auto">
@@ -91,6 +102,16 @@ function displayTeamInfo(team) {
     document.getElementById('nickname').textContent = team.nickname;
     document.getElementById('school').textContent = team.school_name || 'N/A';
     document.getElementById('location').textContent = [team.city, team.state_prov, team.country].filter(Boolean).join(', ');
+
+    const teamProfileContainer = document.getElementById('team-profile-container');
+    const teamProfileLink = document.getElementById('team-profile-link');
+    
+    if (team.has_team_page) {
+        teamProfileContainer.classList.remove('hidden');
+        teamProfileLink.href = `/team/view/${team.team_number}`;
+    } else {
+        teamProfileContainer.classList.add('hidden');
+    }
 
     const scoutingTableBody = document.getElementById('scouting-data');
     scoutingTableBody.innerHTML = '';

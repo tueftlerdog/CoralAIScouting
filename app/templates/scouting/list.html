@@ -30,14 +30,46 @@
     </div>
 
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <h1 class="text-2xl font-bold">Team Data</h1>
+        <div class="flex flex-col gap-4">
+            <h1 class="text-2xl font-bold">Team Data</h1>
+            <!-- Add navigation links -->
+            <div class="flex gap-4">
+                <a href="{{ url_for('scouting.leaderboard') }}" 
+                   class="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Leaderboard
+                </a>
+                <a href="{{ url_for('scouting.matches') }}" 
+                   class="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                    Match View
+                </a>
+            </div>
+        </div>
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
-            <input
-                type="text"
-                id="teamSearch"
-                placeholder="Search teams..."
-                class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
-            >
+            <!-- Search and Filter Container -->
+            <div class="flex gap-2">
+                <!-- Search Bar -->
+                <input type="text" 
+                       id="searchInput" 
+                       placeholder="Search..." 
+                       class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-48">
+                
+                <!-- Filter Dropdown -->
+                <select id="filterType" 
+                        class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 appearance-none bg-white pr-8">
+                    <option value="team">Team Number</option>
+                    <option value="match">Match Number</option>
+                    <option value="scouter">Scouter</option>
+                </select>
+            </div>
+
             <a href="{{ url_for('scouting.add_scouting_data') }}" 
                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-center">
                 Add New Data
@@ -88,6 +120,9 @@
                                 Scouter
                             </th>
                             <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Alliance
+                            </th>
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions
                             </th>
                         </tr>
@@ -99,10 +134,12 @@
                             data-event-code="{{ data.event_code }}"
                             data-notes="{{ data.notes }}"
                             data-scouter="{{ data.scouter_name }}">  
-                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">
+                            <!-- In the team number cell -->
+                            <td class="px-3 sm:px-6 py-4">
+                                <a href="{{ url_for('scouting.team_view', team_number=data.team_number) }}" 
+                                class="text-blue-600 hover:text-blue-900">
                                     {{ data.team_number }}
-                                </div>
+                                </a>
                             </td>
                             <td class="sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">{{ data.match_number }}</td>
                             <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">{{ data.auto_points }}</td>
@@ -125,18 +162,34 @@
                                 </div>
                             </td>
                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <span class="px-2 py-1 text-sm rounded-full 
+                                        {% if data.alliance == 'red' %}
+                                            bg-red-100 text-red-800
+                                        {% else %}
+                                            bg-blue-100 text-blue-800
+                                        {% endif %}">
+                                        {{ data.alliance|title }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                 <div class="flex space-x-2">
-                                    <a href="{{ url_for('scouting.edit_scouting_data', id=data.id) }}" 
-                                       class="text-indigo-600 hover:text-indigo-900">
-                                        <span class="hidden sm:inline">Edit</span>
-                                        <span class="sm:hidden">📝</span>
-                                    </a>
-                                    <a href="{{ url_for('scouting.delete_scouting_data', id=data.id) }}" 
-                                       class="text-red-600 hover:text-red-900"
-                                       onclick="return confirm('Are you sure you want to delete this?')">
-                                        <span class="hidden sm:inline">Delete</span>
-                                        <span class="sm:hidden">🗑️</span>
-                                    </a>
+                                    {% if data.scouter_id|string == current_user.id|string %}
+                                        <a href="{{ url_for('scouting.edit_scouting_data', id=data.id) }}" 
+                                           class="text-indigo-600 hover:text-indigo-900">
+                                            <span class="hidden sm:inline">Edit</span>
+                                            <span class="sm:hidden">📝</span>
+                                        </a>
+                                        <a href="{{ url_for('scouting.delete_scouting_data', id=data.id) }}" 
+                                           class="text-red-600 hover:text-red-900"
+                                           onclick="return confirm('Are you sure you want to delete this?')">
+                                            <span class="hidden sm:inline">Delete</span>
+                                            <span class="sm:hidden">🗑️</span>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-gray-400 text-sm">No Access</span>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -151,44 +204,46 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('teamSearch');
-        const teamRows = document.querySelectorAll('.team-row');
+        const filterType = document.getElementById('filterType');
+        const searchInput = document.getElementById('searchInput');
         const eventSections = document.querySelectorAll('.event-section');
-    
-        searchInput.addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-    
-            // Iterate through each event section
-            eventSections.forEach(section => {
-                let hasVisibleRows = false;
-                const rows = section.querySelectorAll('.team-row');
-    
-                // Check each row in the section
+
+        function filterRows() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const type = filterType.value;
+
+            Array.from(eventSections).forEach(section => {
+                const rows = Array.from(section.querySelectorAll('.team-row'));
+                
                 rows.forEach(row => {
-                    const teamNumber = row.dataset.teamNumber;
-                    const eventCode = row.dataset.eventCode;
-                    const notes = row.dataset.notes;
-                    const scouter = row.dataset.scouter;
-    
-                    const matchesSearch = 
-                        teamNumber.includes(searchTerm) ||
-                        eventCode.toLowerCase().includes(searchTerm) ||
-                        notes.toLowerCase().includes(searchTerm) ||
-                        scouter.toLowerCase().includes(searchTerm);
-    
-                    if (matchesSearch) {
+                    let searchValue = '';
+                    switch(type) {
+                        case 'team':
+                            searchValue = row.dataset.teamNumber;
+                            break;
+                        case 'match':
+                            searchValue = row.querySelector('td:nth-child(2)').textContent;
+                            break;
+                        case 'scouter':
+                            searchValue = row.dataset.scouter.toLowerCase();
+                            break;
+                    }
+
+                    if (searchValue.includes(searchTerm)) {
                         row.style.display = '';
-                        hasVisibleRows = true;
                     } else {
                         row.style.display = 'none';
                     }
                 });
-    
-                // Show/hide the entire section based on whether it has any visible rows
-                section.style.display = hasVisibleRows ? '' : 'none';
-            });
-        });
 
+                // Hide section if all rows are hidden
+                const visibleRows = Array.from(section.querySelectorAll('.team-row')).filter(row => row.style.display !== 'none');
+                section.style.display = visibleRows.length > 0 ? '' : 'none';
+            });
+        }
+
+        searchInput.addEventListener('input', filterRows);
+        filterType.addEventListener('change', filterRows);
     });
 </script>
 {% endblock %}

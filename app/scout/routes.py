@@ -5,6 +5,8 @@ from flask import Blueprint, flash, render_template, request, redirect, url_for,
 from flask_login import login_required, current_user
 from app.scout.scouting_utils import ScoutingManager
 from .TBA import TBAInterface
+from collections import defaultdict
+from bson import ObjectId
 
 scouting_bp = Blueprint("scouting", __name__)
 scouting_manager = None
@@ -267,6 +269,7 @@ async def search_teams():
                     "state_prov": team.get("state_prov"),
                     "country": team.get("country"),
                     "scouting_data": scouting_entries,
+                    "has_team_page": scouting_manager.has_team_data(team["team_number"])
                 }
             ]
         )
@@ -309,3 +312,208 @@ def sync_scouting_data():
             ),
             500,
         )
+
+
+@scouting_bp.route("/leaderboard")
+def leaderboard():
+    try:
+        MIN_MATCHES = 1  # Minimum matches required to be on leaderboard
+        
+        pipeline = [
+            # Group by team number
+            {"$group": {
+                "_id": "$team_number",
+                "matches_played": {"$sum": 1},
+                "total_points": {"$sum": "$total_points"},
+                "auto_points": {"$sum": "$auto_points"},
+                "teleop_points": {"$sum": "$teleop_points"},
+                "endgame_points": {"$sum": "$endgame_points"},
+                "wins": {
+                    "$sum": {"$cond": [{"$eq": ["$match_result", "won"]}, 1, 0]}
+                },
+                "losses": {
+                    "$sum": {"$cond": [{"$eq": ["$match_result", "lost"]}, 1, 0]}
+                },
+                "ties": {
+                    "$sum": {"$cond": [{"$eq": ["$match_result", "tie"]}, 1, 0]}
+                }
+            }},
+            # Filter teams with minimum matches
+            {"$match": {
+                "matches_played": {"$gte": MIN_MATCHES}
+            }},
+            # Calculate averages and win rate
+            {"$project": {
+                "team_number": "$_id",
+                "matches_played": 1,
+                "total_points": 1,
+                "avg_points": {"$divide": ["$total_points", "$matches_played"]},
+                "avg_auto": {"$divide": ["$auto_points", "$matches_played"]},
+                "avg_teleop": {"$divide": ["$teleop_points", "$matches_played"]},
+                "avg_endgame": {"$divide": ["$endgame_points", "$matches_played"]},
+                "wins": 1,
+                "losses": 1,
+                "ties": 1,
+                "win_rate": {
+                    "$multiply": [
+                        {"$divide": ["$wins", "$matches_played"]},
+                        100
+                    ]
+                }
+            }},
+            # Sort by win rate and average points
+            {"$sort": {
+                "win_rate": -1,
+                "avg_points": -1
+            }}
+        ]
+
+        teams = list(scouting_manager.db.team_data.aggregate(pipeline))
+        return render_template("scouting/leaderboard.html", teams=teams)
+    except Exception as e:
+        flash(f"Error loading leaderboard: {str(e)}", "error")
+        return render_template("scouting/leaderboard.html", teams=[])
+
+
+@scouting_bp.route("/scouting/matches")
+@login_required
+def matches():
+    try:
+        pipeline = [
+            {
+                "$group": {
+                    "_id": {
+                        "event": "$event_code",
+                        "match": "$match_number"
+                    },
+                    "teams": {
+                        "$push": {
+                            "number": "$team_number",
+                            "total_points": "$total_points",
+                            "alliance": "$alliance",
+                            "auto_points": "$auto_points",
+                            "teleop_points": "$teleop_points",
+                            "endgame_points": "$endgame_points"
+                        }
+                    }
+                }
+            },
+            {"$sort": {"_id.event": 1, "_id.match": 1}}
+        ]
+        
+        match_data = list(scouting_manager.db.team_data.aggregate(pipeline))
+        
+        matches = []
+        for match in match_data:
+            red_teams = [t for t in match["teams"] if t["alliance"] == "red"]
+            blue_teams = [t for t in match["teams"] if t["alliance"] == "blue"]
+            
+            matches.append({
+                "event_code": match["_id"]["event"],
+                "match_number": match["_id"]["match"],
+                "red_teams": red_teams,
+                "blue_teams": blue_teams,
+                "red_score": sum(t["total_points"] for t in red_teams),
+                "blue_score": sum(t["total_points"] for t in blue_teams)
+            })
+        
+        return render_template("scouting/matches.html", matches=matches)
+    except Exception as e:
+        flash(f"Error fetching matches: {str(e)}", "error")
+        return render_template("scouting/matches.html", matches=[])
+
+@scouting_bp.route("/scouting/team/<int:team_number>")
+@login_required
+def team_view(team_number):
+    try:
+        # Get team stats from MongoDB
+        pipeline = [
+            {"$match": {"team_number": team_number}},
+            {
+                "$group": {
+                    "_id": "$team_number",
+                    "matches_played": {"$sum": 1},
+                    "total_points": {"$sum": "$total_points"},
+                    "auto_points": {"$avg": "$auto_points"},
+                    "teleop_points": {"$avg": "$teleop_points"},
+                    "endgame_points": {"$avg": "$endgame_points"},
+                    "matches": {
+                        "$push": {
+                            "match_number": "$match_number",
+                            "event_code": "$event_code",
+                            "auto_points": "$auto_points",
+                            "teleop_points": "$teleop_points",
+                            "endgame_points": "$endgame_points",
+                            "total_points": "$total_points",
+                            "notes": {"$ifNull": ["$notes", ""]}
+                        }
+                    }
+                }
+            }
+        ]
+
+        team_data = list(scouting_manager.db.team_data.aggregate(pipeline))
+
+        if not team_data:
+            flash("No scouting data found for this team", "error")
+            return redirect(url_for("scouting.list_scouting_data"))
+
+        team_stats = team_data[0]
+
+        # Convert Decimal128 to float for JSON serialization
+        stats = {
+            "matches_played": team_stats["matches_played"],
+            "total_points": float(team_stats["total_points"]),
+            "auto_points": float(team_stats["auto_points"]),
+            "teleop_points": float(team_stats["teleop_points"]),
+            "endgame_points": float(team_stats["endgame_points"])
+        }
+
+        matches = [
+            {
+                "event_code": str(match["event_code"]),
+                "match_number": int(match["match_number"]),
+                "auto_points": float(match["auto_points"]),
+                "teleop_points": float(match["teleop_points"]),
+                "endgame_points": float(match["endgame_points"]),
+                "total_points": float(match["total_points"]),
+                "notes": str(match["notes"]),
+            }
+            for match in team_stats["matches"]
+        ]
+        return render_template(
+            "scouting/team.html",
+            team_number=team_number,
+            stats=stats,
+            matches=matches
+        )
+
+    except Exception as e:
+        print(f"Error loading team data: {str(e)}")
+        flash(f"Error loading team data: {str(e)}", "error")
+        return redirect(url_for("scouting.list_scouting_data"))
+
+@scouting_bp.route("/scouting/check_team")
+@login_required
+def check_team():
+    team_number = request.args.get('team')
+    event_code = request.args.get('event')
+    match_number = request.args.get('match')
+    current_id = request.args.get('current_id')  # ID of the entry being edited
+    
+    try:
+        query = {
+            "team_number": int(team_number),
+            "event_code": event_code,
+            "match_number": int(match_number)
+        }
+        
+        # If editing, exclude the current entry from the check
+        if current_id:
+            query["_id"] = {"$ne": ObjectId(current_id)}
+            
+        existing = scouting_manager.db.team_data.find_one(query)
+        
+        return jsonify({"exists": existing is not None})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

@@ -101,6 +101,26 @@
                         </div>
                         {% endif %}
 
+                        <div class="bg-white rounded-xl shadow-sm p-6">
+                            <h4 class="flex items-center text-lg font-semibold text-gray-900 mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Danger Zone
+                            </h4>
+                            <div class="border border-red-200 rounded-lg p-4">
+                                <h5 class="text-red-600 font-medium mb-2">Delete Account</h5>
+                                <p class="text-gray-600 text-sm mb-4">
+                                    Once you delete your account, there is no going back. Please be certain.
+                                </p>
+                                <button type="button" 
+                                        onclick="confirmDeleteAccount()"
+                                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                                    Delete Account
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="flex justify-end">
                             <button type="submit" 
                                     class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
@@ -195,6 +215,30 @@ function checkUsername(username) {
             statusDiv.innerHTML = '<span class="text-red-600">Error checking username availability</span>';
         });
     }, 500); // Wait 500ms after user stops typing before checking
+}
+
+function confirmDeleteAccount() {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        fetch('/auth/delete_account', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect;
+            } else {
+                alert(data.message || 'Failed to delete account');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting your account');
+        });
+    }
 }
 </script>
 {% endblock %}
