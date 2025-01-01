@@ -67,9 +67,9 @@
     </div>
 
     <!-- Second row: Line Chart (full width) -->
-    <div class="bg-white p-6 rounded-lg shadow mb-6">
+    <div class="bg-white p-6 rounded-lg shadow mb-6 h-[500px] md:h-[800px]">
         <h2 class="text-xl font-semibold mb-4">Score Progression</h2>
-        <canvas id="team-line-chart" class="w-full"></canvas>
+        <canvas id="team-line-chart"></canvas>
     </div>
 
     <!-- Third row: Match History (full width) -->
@@ -282,6 +282,7 @@ function createProgressionDatasets(matches) {
 function createProgressionChartOptions(labels) {
     return {
         responsive: true,
+        maintainAspectRatio: false,
         interaction: {
             mode: 'nearest',
             intersect: true
@@ -298,14 +299,29 @@ function createProgressionChartOptions(labels) {
                 type: 'linear',
                 position: 'bottom',
                 ticks: {
-                    callback: value => labels[value] || '',
+                    callback: function(value) {
+                        // Show all labels regardless of screen size
+                        return labels[value] || '';
+                    },
                     maxRotation: 45,
-                    minRotation: 45
+                    minRotation: 45,
+                    font: {
+                        size: window.innerWidth < 768 ? 10 : 12
+                    }
+                },
+                grid: {
+                    display: true
                 }
             }
         },
         plugins: {
-            legend: { position: 'top' },
+            legend: { 
+                position: 'top',
+                labels: {
+                    boxWidth: 12,
+                    padding: window.innerWidth < 768 ? 10 : 20
+                }
+            },
             title: { display: false }
         }
     };
