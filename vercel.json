@@ -8,23 +8,24 @@
   ],
   "routes": [
     {
-      "src": "/app/static/(.*)",
-      "headers": {
-        "cache-control": "max-age=31536000, immutable"
-      },
+      "src": "/static/(.*)",
       "dest": "/app/static/$1"
     },
     {
-      "src": "/app/scouting/(.*)",
-      "dest": "app/main.py"
+      "src": "/auth/(.*)",
+      "dest": "/app/main.py"
     },
     {
-      "src": "/app/auth/(.*)",
-      "dest": "app/main.py"
+      "src": "/team/(.*)",
+      "dest": "/app/main.py"
     },
     {
-      "src": "/(.*)",   
-      "dest": "app/main.py"
+      "src": "/scouting/(.*)",
+      "dest": "/app/main.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/app/main.py"
     }
   ]
 }

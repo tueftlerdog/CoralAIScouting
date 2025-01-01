@@ -6,3 +6,4 @@ pymongo
 flask_pymongo
 waitress
 Flask-WTF
+requests
