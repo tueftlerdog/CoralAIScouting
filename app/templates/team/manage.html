@@ -36,15 +36,9 @@
     <div class="bg-white shadow rounded-lg p-6 mb-8">
         <div class="flex flex-col md:flex-row">
             <div class="mb-6 md:mb-0 md:mr-8 flex justify-center md:block">
-                {% if team.logo_id %}
-                    <img src="{{ url_for('team.team_logo', team_number=team.team_number) }}" 
-                         alt="Team Logo" 
-                         class="w-32 h-32 object-cover rounded-lg">
-                {% else %}
-                    <img src="{{ url_for('team.team_logo', team_number=team.team_number) }}" 
-                         alt="Team Logo" 
-                         class="w-32 h-32 object-cover rounded-lg">
-                {% endif %}
+                <img src="{{ url_for('team.team_logo', team_number=team.team_number) }}" 
+                     alt="Team Logo" 
+                     class="w-32 h-32 object-cover rounded-lg">
             </div>
 
             <div class="flex-1">

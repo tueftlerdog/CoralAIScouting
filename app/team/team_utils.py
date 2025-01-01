@@ -125,37 +125,16 @@ class TeamManager(DatabaseManager):
             if await self.get_team_by_number(team_number):
                 return False, "Team number already exists"
 
-            # Create default logo using PIL
-            img = Image.new('RGB', (200, 200), 'white')
-            draw = ImageDraw.Draw(img)
-
-            # Try to use a default font, fallback to default if not found
-            try:
-                font = ImageFont.truetype("./app/static/fonts/oxanium-vrb.ttf", 60)
-            except Exception:
-                font = ImageFont.load_default()
-
-            # Draw team number centered
-            text = f"Team {team_number}"
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-            x = (200 - text_width) / 2
-            y = (200 - text_height) / 2
-            draw.text((x, y), text, fill='black', font=font)
-
-            # Save to BytesIO
-            buffer = BytesIO()
-            img.save(buffer, format='PNG')
-            buffer.seek(0)
-
-            # Save to GridFS
             fs = gridfs.GridFS(self.db)
-            logo_id = fs.put(
-                buffer.getvalue(),
-                filename=f"team_{team_number}_default_logo.png",
-                content_type='image/png'
-            )
+            
+            # If no logo provided, create default
+            if not logo_id:
+                logo_bytes = self.create_default_team_logo(team_number)
+                logo_id = fs.put(
+                    logo_bytes,
+                    filename=f"team_{team_number}_default_logo.png",
+                    content_type='image/png'
+                )
 
             team_data = {
                 "team_number": team_number,
@@ -167,7 +146,7 @@ class TeamManager(DatabaseManager):
                 "created_by": creator_id,
                 "team_name": team_name,
                 "description": description,
-                "logo_id": logo_id  # Use the generated logo ID
+                "logo_id": str(logo_id)
             }
 
             result = self.db.teams.insert_one(team_data)
@@ -751,3 +730,37 @@ class TeamManager(DatabaseManager):
         except Exception as e:
             logger.error(f"Error updating team info: {str(e)}")
             return False, str(e)
+
+    def create_default_team_logo(self, team_number: int) -> bytes:
+        """Create a default team logo with centered text"""
+        # Create a white background image
+        img = Image.new('RGB', (200, 200), 'white')
+        draw = ImageDraw.Draw(img)
+
+        try:
+            # Try to load custom font, fallback to default if not available
+            font_large = ImageFont.truetype("./app/static/fonts/oxanium-vrb.ttf", 80)
+            font_small = ImageFont.truetype("./app/static/fonts/oxanium-vrb.ttf", 40)
+        except Exception:
+            font_large = ImageFont.load_default()
+            font_small = ImageFont.load_default()
+
+        # Draw "Team" text
+        team_text = "Team"
+        bbox = draw.textbbox((0, 0), team_text, font=font_small)
+        text_width = bbox[2] - bbox[0]
+        x = (200 - text_width) / 2
+        draw.text((x, 40), team_text, fill='black', font=font_small)
+
+        # Draw team number
+        number_text = str(team_number)
+        bbox = draw.textbbox((0, 0), number_text, font=font_large)
+        text_width = bbox[2] - bbox[0]
+        x = (200 - text_width) / 2
+        draw.text((x, 80), number_text, fill='black', font=font_large)
+
+        # Save to BytesIO
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+        return buffer.getvalue()

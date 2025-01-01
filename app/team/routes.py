@@ -19,6 +19,7 @@ from .forms import CreateTeamForm
 from gridfs import GridFS
 from io import BytesIO
 import asyncio
+from PIL import Image
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
@@ -96,18 +97,28 @@ async def create_team():
             # Handle logo upload if provided
             logo_id = None
             if form.logo.data:
+                # Open and resize image
+                image = Image.open(form.logo.data)
+                image = image.convert('RGB')  # Convert to RGB mode
+                image.thumbnail((200, 200))  # Resize maintaining aspect ratio
+                
+                # Save to BytesIO
+                buffer = BytesIO()
+                image.save(buffer, format='PNG')
+                buffer.seek(0)
+                
                 fs = GridFS(team_manager.db)
                 filename = secure_filename(
-                    f"team_{form.team_number.data}_{form.logo.data.filename}"
+                    f"team_{form.team_number.data}_logo.png"
                 )
                 current_app.logger.debug(f"Uploading file: {filename}")
                 logo_id = fs.put(
-                    form.logo.data,
+                    buffer.getvalue(),
                     filename=filename,
-                    content_type=form.logo.data.content_type,
+                    content_type='image/png'
                 )
 
-            # Create the team (default logo will be created if logo_id is None)
+            # Create the team
             success, result = await team_manager.create_team(
                 team_number=form.team_number.data,
                 creator_id=current_user.id,
