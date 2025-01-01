@@ -9,6 +9,9 @@ import logging
 import time
 import string
 from typing import Dict, Tuple, Optional, List, Any, Union
+from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
+import gridfs
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -122,6 +125,38 @@ class TeamManager(DatabaseManager):
             if await self.get_team_by_number(team_number):
                 return False, "Team number already exists"
 
+            # Create default logo using PIL
+            img = Image.new('RGB', (200, 200), 'white')
+            draw = ImageDraw.Draw(img)
+
+            # Try to use a default font, fallback to default if not found
+            try:
+                font = ImageFont.truetype("./app/static/fonts/oxanium-vrb.ttf", 60)
+            except Exception:
+                font = ImageFont.load_default()
+
+            # Draw team number centered
+            text = f"Team {team_number}"
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            x = (200 - text_width) / 2
+            y = (200 - text_height) / 2
+            draw.text((x, y), text, fill='black', font=font)
+
+            # Save to BytesIO
+            buffer = BytesIO()
+            img.save(buffer, format='PNG')
+            buffer.seek(0)
+
+            # Save to GridFS
+            fs = gridfs.GridFS(self.db)
+            logo_id = fs.put(
+                buffer.getvalue(),
+                filename=f"team_{team_number}_default_logo.png",
+                content_type='image/png'
+            )
+
             team_data = {
                 "team_number": team_number,
                 "team_join_code": self.generate_join_code(),
@@ -132,11 +167,11 @@ class TeamManager(DatabaseManager):
                 "created_by": creator_id,
                 "team_name": team_name,
                 "description": description,
-                "logo_id": ObjectId(logo_id) if logo_id else None
+                "logo_id": logo_id  # Use the generated logo ID
             }
 
             result = self.db.teams.insert_one(team_data)
-            
+
             # Update creator's team number
             self.db.users.update_one(
                 {"_id": ObjectId(creator_id)},

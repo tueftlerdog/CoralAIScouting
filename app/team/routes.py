@@ -93,25 +93,21 @@ async def create_team():
         try:
             team_manager = TeamManager(current_app.config["MONGO_URI"])
 
-            # Handle logo upload using GridFS
+            # Handle logo upload if provided
             logo_id = None
             if form.logo.data:
-                # Use the MongoDB connection from TeamManager instead
                 fs = GridFS(team_manager.db)
-
                 filename = secure_filename(
                     f"team_{form.team_number.data}_{form.logo.data.filename}"
                 )
                 current_app.logger.debug(f"Uploading file: {filename}")
-
-                # Store file in GridFS
                 logo_id = fs.put(
                     form.logo.data,
                     filename=filename,
                     content_type=form.logo.data.content_type,
                 )
 
-            # Create the team
+            # Create the team (default logo will be created if logo_id is None)
             success, result = await team_manager.create_team(
                 team_number=form.team_number.data,
                 creator_id=current_user.id,
@@ -375,21 +371,16 @@ async def clear_assignments(team_number):
     return redirect(url_for("team.manage_team"))
 
 
-@team_bp.route("/<int:team_number>/delete", methods=["DELETE"])
+@team_bp.route("/<int:team_number>/delete", methods=["POST"])
 @login_required
 @async_route
 async def delete_team(team_number):
     """Delete team (owner only)"""
     team_manager = TeamManager(current_app.config["MONGO_URI"])
-    success, message = await team_manager.delete_team(
-        team_number, current_user.get_id()
-    )
+    success, message = await team_manager.delete_team(team_number, current_user.get_id())
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return (
-            jsonify({"success": success, "message": message}),
-            200 if success else 400,
-        )
+        return jsonify({"success": success, "message": message}), 200 if success else 400
 
     if success:
         flash("Team deleted successfully", "success")
