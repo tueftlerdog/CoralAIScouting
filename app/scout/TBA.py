@@ -21,7 +21,8 @@ class TBAInterface:
         try:
             response = requests.get(
                 f"{self.base_url}/team/{team_key}",
-                headers=self.headers
+                headers=self.headers,
+                timeout=10
             )
             return response.json() if response.status_code == 200 else None
         except Exception as e:
