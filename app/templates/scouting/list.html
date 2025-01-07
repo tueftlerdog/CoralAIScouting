@@ -228,7 +228,7 @@
                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                 <div class="flex space-x-2">
                                     {% if data.scouter_id|string == current_user.id|string %}
-                                        <a href="{{ url_for('scouting.edit_scouting_data', id=data.id) }}" 
+                                        <a href="{{ url_for('scouting.edit_scouting_data', id=data._id) }}" 
                                            class="text-indigo-600 hover:text-indigo-900">
                                             <span class="hidden sm:inline">Edit</span>
                                             <span class="sm:hidden">📝</span>

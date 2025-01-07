@@ -7,8 +7,8 @@
     </div>
 
     <form method="POST" class="space-y-6" autocomplete="off" id="scoutingForm">
-        <!-- Team & Event Info Section -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Team & Event Info Section -->
             <div class="space-y-6">
                 <div class="bg-gray-50 p-4 rounded-lg">
                     <h2 class="text-lg font-semibold text-gray-700 mb-4">Team Information</h2>
@@ -17,27 +17,30 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Team Number</label>
                             <input type="number" 
                                    name="team_number" 
-                                   value="{{ team_data.team_number }}" 
+                                   value="{{ team_data.team_number }}"
                                    required 
                                    min="1"
-                                   class="w-full px-4 py-2 rounded-md border">
+                                   placeholder="e.g., 334"
+                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Event Code</label>
                             <input type="text" 
                                    name="event_code" 
-                                   value="{{ team_data.event_code }}" 
+                                   value="{{ team_data.event_code }}"
                                    required 
-                                   class="w-full px-4 py-2 rounded-md border uppercase">
+                                   placeholder="e.g., NYLI"
+                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition duration-150">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Match Number</label>
                             <input type="number" 
                                    name="match_number" 
-                                   value="{{ team_data.match_number }}" 
+                                   value="{{ team_data.match_number }}"
                                    required 
                                    min="1"
-                                   class="w-full px-4 py-2 rounded-md border">
+                                   placeholder="e.g., 1"
+                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                         </div>
                     </div>
                 </div>
@@ -50,7 +53,7 @@
                                    name="alliance" 
                                    value="red" 
                                    {% if team_data.alliance == 'red' %}checked{% endif %}
-                                   class="form-radio text-red-600">
+                                   class="form-radio text-red-600 h-4 w-4">
                             <span class="ml-2 text-red-600">Red Alliance</span>
                         </label>
                         <label class="inline-flex items-center">
@@ -58,7 +61,7 @@
                                    name="alliance" 
                                    value="blue"
                                    {% if team_data.alliance == 'blue' %}checked{% endif %}
-                                   class="form-radio text-blue-600">
+                                   class="form-radio text-blue-600 h-4 w-4">
                             <span class="ml-2 text-blue-600">Blue Alliance</span>
                         </label>
                     </div>
@@ -66,96 +69,98 @@
             </div>
 
             <!-- Coral Scoring Section -->
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">Coral Scoring</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
-                        <input type="number" 
-                               name="coral_level1" 
-                               value="{{ team_data.coral_level1 }}" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
-                        <input type="number" 
-                               name="coral_level2" 
-                               value="{{ team_data.coral_level2 }}" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
-                        <input type="number" 
-                               name="coral_level3" 
-                               value="{{ team_data.coral_level3 }}" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
-                        <input type="number" 
-                               name="coral_level4" 
-                               value="{{ team_data.coral_level4 }}" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Algae Scoring Section -->
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">Algae Scoring</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
-                        <input type="number" 
-                               name="algae_net" 
-                               value="{{ team_data.algae_net }}" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
-                        <input type="number" 
-                               name="algae_processor" 
-                               value="{{ team_data.algae_processor }}" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Human Player Successful Shots</label>
-                        <input type="number" 
-                               name="human_player" 
-                               value="{{ team_data.human_player }}" 
-                               min="0"
-                               class="w-full px-4 py-2 rounded-md border">
-                        <p class="mt-1 text-sm text-gray-500">Number of successful shots made by the human player</p>
+            <div class="space-y-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h2 class="text-lg font-semibold text-gray-700 mb-4">Coral Scoring</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
+                            <input type="number" 
+                                   name="coral_level1" 
+                                   value="{{ team_data.coral_level1 }}"
+                                   min="0" 
+                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
+                            <input type="number" 
+                                   name="coral_level2" 
+                                   value="{{ team_data.coral_level2 }}"
+                                   min="0" 
+                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
+                            <input type="number" 
+                                   name="coral_level3" 
+                                   value="{{ team_data.coral_level3 }}"
+                                   min="0" 
+                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
+                            <input type="number" 
+                                   name="coral_level4" 
+                                   value="{{ team_data.coral_level4 }}"
+                                   min="0" 
+                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Climb Section -->
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">Climb</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                        <select name="climb_type" class="w-full px-4 py-2 rounded-md border">
-                            <option value="" {% if not team_data.climb_type %}selected{% endif %}>None</option>
-                            <option value="shallow" {% if team_data.climb_type == 'shallow' %}selected{% endif %}>Shallow</option>
-                            <option value="deep" {% if team_data.climb_type == 'deep' %}selected{% endif %}>Deep</option>
-                            <option value="park" {% if team_data.climb_type == 'park' %}selected{% endif %}>Park</option>
-                        </select>
-                    </div>
-                    <div class="flex items-center">
-                        <input type="checkbox" 
-                               name="climb_success" 
-                               {% if team_data.climb_success %}checked{% endif %}
-                               class="h-4 w-4 text-blue-600">
-                        <label class="ml-2 text-sm text-gray-700">Climb Successful</label>
-                    </div>
+        <!-- Algae Scoring Section -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Algae Scoring</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
+                    <input type="number" 
+                           name="algae_net" 
+                           value="{{ team_data.algae_net }}"
+                           min="0" 
+                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
+                    <input type="number" 
+                           name="algae_processor" 
+                           value="{{ team_data.algae_processor }}"
+                           min="0" 
+                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Human Player Successful Shots</label>
+                    <input type="number" 
+                           name="human_player" 
+                           value="{{ team_data.human_player }}"
+                           min="0"
+                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <p class="mt-1 text-sm text-gray-500">Number of successful shots made by the human player</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Climb Section -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Climb</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select name="climb_type" class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="" {% if not team_data.climb_type %}selected{% endif %}>None</option>
+                        <option value="shallow" {% if team_data.climb_type == 'shallow' %}selected{% endif %}>Shallow</option>
+                        <option value="deep" {% if team_data.climb_type == 'deep' %}selected{% endif %}>Deep</option>
+                        <option value="park" {% if team_data.climb_type == 'park' %}selected{% endif %}>Park</option>
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" 
+                           name="climb_success" 
+                           {% if team_data.climb_success %}checked{% endif %}
+                           class="h-4 w-4 text-blue-600">
+                    <label class="ml-2 text-sm text-gray-700">Climb Successful</label>
                 </div>
             </div>
         </div>
@@ -179,7 +184,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Defense Notes</label>
                     <textarea name="defense_notes" 
                               rows="2" 
-                              class="w-full px-4 py-2 rounded-md border">{{ team_data.defense_notes }}</textarea>
+                              class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ team_data.defense_notes }}</textarea>
                 </div>
             </div>
         </div>
@@ -187,14 +192,26 @@
         <!-- Auto Path Section -->
         <div class="bg-gray-50 p-4 rounded-lg">
             <h2 class="text-lg font-semibold text-gray-700 mb-4">Auto Path</h2>
-            <canvas id="autoPath" width="800" height="400" class="border rounded-lg bg-white"></canvas>
+            <div class="relative w-full overflow-hidden" style="height: 60vh;">
+                <canvas id="autoPath" 
+                        class="w-full h-full border rounded-lg bg-white touch-none">
+                </canvas>
+            </div>
             <input type="hidden" name="auto_path" id="autoPathData" value="{{ team_data.auto_path }}">
-            <button type="button" onclick="clearCanvas()" class="mt-2 px-4 py-2 bg-gray-200 rounded-md">Clear Path</button>
-            <div class="mt-2">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mt-4">
+                <p class="text-sm text-gray-500 text-center sm:text-left">Draw the robot's autonomous path</p>
+                <button type="button" 
+                        onclick="clearCanvas()" 
+                        class="w-full sm:w-auto px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
+                    Clear Path
+                </button>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Auto Notes</label>
                 <textarea name="auto_notes" 
                           rows="2" 
-                          class="w-full px-4 py-2 rounded-md border">{{ team_data.auto_notes }}</textarea>
+                          class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter any observations about autonomous...">{{ team_data.auto_notes }}</textarea>
             </div>
         </div>
 
@@ -203,28 +220,139 @@
             <h2 class="text-lg font-semibold text-gray-700 mb-4">Additional Notes</h2>
             <textarea name="notes" 
                       rows="4" 
-                      class="w-full px-4 py-2 rounded-md border">{{ team_data.notes }}</textarea>
+                      class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ team_data.notes }}</textarea>
         </div>
 
         <!-- Action Buttons -->
         <div class="flex justify-end space-x-4 pt-6 border-t">
             <a href="{{ url_for('scouting.list_scouting_data') }}" 
-               class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+               class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition duration-150">
                 Cancel
             </a>
             <button type="submit" 
-                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                Save Changes
+                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
+                Update Team Data
             </button>
         </div>
     </form>
 </div>
 
 <script>
-// Canvas drawing functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-capitalize event code
+    const eventCodeInput = document.querySelector('input[name="event_code"]');
+    eventCodeInput.addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase();
+    });
+
+    // Calculate total points in real-time
+    function updateTotal() {
+        const coralPoints = [1, 2, 3, 4].reduce((sum, level) => {
+            return sum + (parseInt(document.querySelector(`input[name="coral_level${level}"]`).value) || 0) * level;
+        }, 0);
+        
+        const algaeNet = (parseInt(document.querySelector('input[name="algae_net"]').value) || 0) * 2;
+        const algaeProcessor = (parseInt(document.querySelector('input[name="algae_processor"]').value) || 0) * 3;
+        const humanPlayerPoints = (parseInt(document.querySelector('input[name="human_player"]').value) || 0) * 2;
+        
+        const climbType = document.querySelector('select[name="climb_type"]').value;
+        const climbSuccess = document.querySelector('input[name="climb_success"]').checked;
+        let climbPoints = 0;
+        if (climbSuccess) {
+            switch(climbType) {
+                case 'shallow': climbPoints = 3; break;
+                case 'deep': climbPoints = 5; break;
+                case 'park': climbPoints = 1; break;
+            }
+        }
+        
+        const total = coralPoints + algaeNet + algaeProcessor + humanPlayerPoints + climbPoints;
+        document.getElementById('totalPoints').textContent = total;
+    }
+
+    // Add event listeners for all scoring inputs
+    document.querySelectorAll('input[type="number"], input[type="checkbox"], select[name="climb_type"]')
+        .forEach(input => input.addEventListener('input', updateTotal));
+
+    // Initialize total
+    updateTotal();
+
+    // Add form submission handler with team check
+    const form = document.getElementById('scoutingForm');
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const teamNumber = form.querySelector('input[name="team_number"]').value;
+        const eventCode = form.querySelector('input[name="event_code"]').value;
+        const matchNumber = form.querySelector('input[name="match_number"]').value;
+        const currentId = '{{ team_data._id }}';
+
+        // Check if team already exists in this match (excluding current entry)
+        try {
+            const response = await fetch(`/scouting/check_team?team=${teamNumber}&event=${eventCode}&match=${matchNumber}&current_id=${currentId}`);
+            const data = await response.json();
+            
+            if (data.exists) {
+                alert(`Team ${teamNumber} already exists in match ${matchNumber} for event ${eventCode}`);
+                return;
+            }
+            
+            // If team doesn't exist or it's the same entry, submit the form
+            form.submit();
+        } catch (error) {
+            console.error('Error checking team:', error);
+            // If check fails, allow form submission
+            form.submit();
+        }
+    });
+});
+
 const canvas = document.getElementById('autoPath');
 const ctx = canvas.getContext('2d');
 let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+let bgImage = new Image();
+
+function resizeCanvas() {
+    const container = canvas.parentElement;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    // Set canvas size to match container
+    canvas.style.width = containerWidth + 'px';
+    canvas.style.height = containerHeight + 'px';
+    
+    // Set actual canvas dimensions
+    canvas.width = containerWidth * window.devicePixelRatio;
+    canvas.height = containerHeight * window.devicePixelRatio;
+    
+    // Scale context to match device pixel ratio
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    
+    // Draw background after resize
+    drawBackground();
+}
+
+function drawBackground() {
+    if (!bgImage.complete) return; // Wait for image to load
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Calculate scaling to fit while maintaining aspect ratio
+    const scale = Math.min(
+        canvas.width / bgImage.width,
+        canvas.height / bgImage.height
+    );
+    
+    // Calculate position to center the image
+    const x = (canvas.width - bgImage.width * scale) / 2;
+    const y = (canvas.height - bgImage.height * scale) / 2;
+    
+    // Draw background
+    ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
+}
 
 // Load existing path if available
 const existingPath = document.getElementById('autoPathData').value;
@@ -267,8 +395,26 @@ function stopDrawing() {
 }
 
 function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackground();  // This will redraw the field background
     document.getElementById('autoPathData').value = '';
 }
+
+// Initialize
+window.addEventListener('load', () => {
+    bgImage.onload = () => {
+        resizeCanvas();
+        // Load existing path after background is drawn
+        const existingPath = document.getElementById('autoPathData').value;
+        if (existingPath) {
+            const pathImage = new Image();
+            pathImage.onload = function() {
+                ctx.drawImage(pathImage, 0, 0, canvas.width, canvas.height);
+            }
+            pathImage.src = existingPath;
+        }
+    };
+    bgImage.src = "{{ url_for('static', filename='images/field-2025.png') }}";
+});
+window.addEventListener('resize', resizeCanvas);
 </script>
 {% endblock %}
