@@ -418,62 +418,118 @@ def sync_scouting_data():
 @scouting_bp.route("/leaderboard")
 def leaderboard():
     try:
-        MIN_MATCHES = 1  # Minimum matches required to be on leaderboard
+        MIN_MATCHES = 1
+        sort_type = request.args.get('sort', 'coral')
         
         pipeline = [
-            # Group by team number
             {"$group": {
                 "_id": "$team_number",
                 "matches_played": {"$sum": 1},
-                "total_points": {"$sum": "$total_points"},
-                "auto_points": {"$sum": "$auto_points"},
-                "teleop_points": {"$sum": "$teleop_points"},
-                "endgame_points": {"$sum": "$endgame_points"},
-                "wins": {
-                    "$sum": {"$cond": [{"$eq": ["$match_result", "won"]}, 1, 0]}
+                "coral_level1": {"$avg": {"$ifNull": ["$coral_level1", 0]}},
+                "coral_level2": {"$avg": {"$ifNull": ["$coral_level2", 0]}},
+                "coral_level3": {"$avg": {"$ifNull": ["$coral_level3", 0]}},
+                "coral_level4": {"$avg": {"$ifNull": ["$coral_level4", 0]}},
+                "algae_net": {"$avg": {"$ifNull": ["$algae_net", 0]}},
+                "algae_processor": {"$avg": {"$ifNull": ["$algae_processor", 0]}},
+                # Regular climb stats
+                "climb_attempts": {"$sum": 1},
+                "climb_successes": {
+                    "$sum": {"$cond": [{"$eq": ["$climb_success", True]}, 1, 0]}
                 },
-                "losses": {
-                    "$sum": {"$cond": [{"$eq": ["$match_result", "lost"]}, 1, 0]}
+                # Deep climb specific stats
+                "deep_climb_attempts": {
+                    "$sum": {"$cond": [{"$eq": ["$climb_type", "deep"]}, 1, 0]}
                 },
-                "ties": {
-                    "$sum": {"$cond": [{"$eq": ["$match_result", "tie"]}, 1, 0]}
+                "deep_climb_successes": {
+                    "$sum": {
+                        "$cond": [
+                            {"$and": [
+                                {"$eq": ["$climb_type", "deep"]},
+                                {"$eq": ["$climb_success", True]}
+                            ]},
+                            1,
+                            0
+                        ]
+                    }
                 }
             }},
-            # Filter teams with minimum matches
-            {"$match": {
-                "matches_played": {"$gte": MIN_MATCHES}
-            }},
-            # Calculate averages and win rate
+            {"$match": {"matches_played": {"$gte": MIN_MATCHES}}},
             {"$project": {
                 "team_number": "$_id",
                 "matches_played": 1,
-                "total_points": 1,
-                "avg_points": {"$divide": ["$total_points", "$matches_played"]},
-                "avg_auto": {"$divide": ["$auto_points", "$matches_played"]},
-                "avg_teleop": {"$divide": ["$teleop_points", "$matches_played"]},
-                "avg_endgame": {"$divide": ["$endgame_points", "$matches_played"]},
-                "wins": 1,
-                "losses": 1,
-                "ties": 1,
-                "win_rate": {
-                    "$multiply": [
-                        {"$divide": ["$wins", "$matches_played"]},
-                        100
+                "coral_stats": {
+                    "level1": {"$round": ["$coral_level1", 1]},
+                    "level2": {"$round": ["$coral_level2", 1]},
+                    "level3": {"$round": ["$coral_level3", 1]},
+                    "level4": {"$round": ["$coral_level4", 1]}
+                },
+                "algae_stats": {
+                    "net": {"$round": ["$algae_net", 1]},
+                    "processor": {"$round": ["$algae_processor", 1]}
+                },
+                "climb_success_rate": {
+                    "$round": [
+                        {"$multiply": [
+                            {"$cond": [
+                                {"$gt": ["$climb_attempts", 0]},
+                                {"$divide": ["$climb_successes", "$climb_attempts"]},
+                                0
+                            ]},
+                            100
+                        ]},
+                        1
                     ]
+                },
+                "deep_climb_success_rate": {
+                    "$round": [
+                        {"$multiply": [
+                            {"$cond": [
+                                {"$gt": ["$deep_climb_attempts", 0]},
+                                {"$divide": ["$deep_climb_successes", "$deep_climb_attempts"]},
+                                0
+                            ]},
+                            100
+                        ]},
+                        1
+                    ]
+                },
+                "total_coral": {
+                    "$round": [{
+                        "$add": ["$coral_level1", "$coral_level2", "$coral_level3", "$coral_level4"]
+                    }, 1]
+                },
+                "total_algae": {
+                    "$round": [{
+                        "$add": ["$algae_net", "$algae_processor"]
+                    }, 1]
                 }
-            }},
-            # Sort by win rate and average points
-            {"$sort": {
-                "win_rate": -1,
-                "avg_points": -1
             }}
         ]
 
+        # Add sorting based on selected type
+        sort_field = {
+            'coral': 'total_coral',
+            'algae': 'total_algae',
+            'climb': 'climb_success_rate',
+            'deep_climb': 'deep_climb_success_rate'
+        }.get(sort_type, 'total_coral')
+
+        # Only filter for deep climb attempts if that's the selected sort
+        if sort_type == 'deep_climb':
+            pipeline.insert(-1, {
+                "$match": {
+                    "deep_climb_attempts": {"$gt": 0}
+                }
+            })
+
+        pipeline.append({"$sort": {sort_field: -1}})
+
         teams = list(scouting_manager.db.team_data.aggregate(pipeline))
-        return render_template("scouting/leaderboard.html", teams=teams)
+        return render_template("scouting/leaderboard.html", teams=teams, current_sort=sort_type)
     except Exception as e:
+        print(f"Error in leaderboard: {str(e)}")
         flash(f"Error loading leaderboard: {str(e)}", "error")
-        return render_template("scouting/leaderboard.html", teams=[])
+        return render_template("scouting/leaderboard.html", teams=[], current_sort='coral')
 
 
 @scouting_bp.route("/scouting/matches")
