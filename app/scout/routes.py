@@ -31,7 +31,8 @@ def async_route(f):
 @login_required
 def add_scouting_data():
     if request.method == "POST":
-        data = request.get_json() if request.is_json else request.form
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        
         success, message = scouting_manager.add_scouting_data(
             data, current_user.get_id()
         )
@@ -175,9 +176,21 @@ async def compare_teams():
                 {
                     "event_code": entry["event_code"],
                     "match_number": entry["match_number"],
-                    "auto_points": entry["auto_points"],
-                    "teleop_points": entry["teleop_points"],
-                    "endgame_points": entry["endgame_points"],
+                    "coral_levels": [
+                        entry["coral_level1"],
+                        entry["coral_level2"],
+                        entry["coral_level3"],
+                        entry["coral_level4"]
+                    ],
+                    "algae": {
+                        "net": entry["algae_net"],
+                        "processor": entry["algae_processor"],
+                        "human_player": entry["human_player"]
+                    },
+                    "climb": {
+                        "type": entry["climb_type"],
+                        "success": entry["climb_success"]
+                    },
                     "total_points": entry["total_points"],
                     "notes": entry["notes"],
                     "scouter": entry["scouter"]["username"],
@@ -192,7 +205,14 @@ async def compare_teams():
                 "city": team.get("city"),
                 "state_prov": team.get("state_prov"),
                 "country": team.get("country"),
-                "stats": stats,
+                "stats": {
+                    "matches_played": stats["matches_played"],
+                    "avg_coral": stats["avg_coral"],
+                    "avg_algae": stats["avg_algae"],
+                    "climb_success_rate": stats["climb_success_rate"],
+                    "defense_rating": stats["avg_defense"],
+                    "total_points": stats["total_points"]
+                },
                 "scouting_data": scouting_entries,
             }
 
@@ -236,13 +256,94 @@ async def search_teams():
                     "from": "users",
                     "localField": "scouter_id",
                     "foreignField": "_id",
-                    "as": "scouter",
+                    "as": "scouter"
                 }
             },
             {"$unwind": "$scouter"},
+            {
+                "$project": {
+                    "_id": 1,
+                    "team_number": 1,
+                    "match_number": 1,
+                    "event_code": 1,
+                    "coral_level1": 1,
+                    "coral_level2": 1,
+                    "coral_level3": 1,
+                    "coral_level4": 1,
+                    "algae_net": 1,
+                    "algae_processor": 1,
+                    "human_player": 1,
+                    "climb_type": 1,
+                    "climb_success": 1,
+                    "defense_rating": 1,
+                    "defense_notes": 1,
+                    "auto_path": 1,
+                    "auto_notes": 1,
+                    "total_points": 1,
+                    "notes": 1,
+                    "alliance": 1,
+                    "scouter_id": 1,
+                    "scouter_name": "$scouter.username",
+                    "scouter_team": "$scouter.teamNumber"
+                }
+            }
         ]
 
         team_scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
+        
+        # Calculate statistics
+        matches_played = len(team_scouting_data)
+        if matches_played > 0:
+            coral_totals = [sum([
+                entry["coral_level1"],
+                entry["coral_level2"],
+                entry["coral_level3"],
+                entry["coral_level4"]
+            ]) for entry in team_scouting_data]
+            
+            algae_totals = [
+                entry["algae_net"] + entry["algae_processor"]
+                for entry in team_scouting_data
+            ]
+            
+            successful_climbs = sum(bool(entry["climb_success"])
+                                for entry in team_scouting_data)
+            
+            stats = {
+                "matches_played": matches_played,
+                "coral_stats": {
+                    "level1": sum(entry["coral_level1"] for entry in team_scouting_data) / matches_played,
+                    "level2": sum(entry["coral_level2"] for entry in team_scouting_data) / matches_played,
+                    "level3": sum(entry["coral_level3"] for entry in team_scouting_data) / matches_played,
+                    "level4": sum(entry["coral_level4"] for entry in team_scouting_data) / matches_played,
+                },
+                "algae_stats": {
+                    "net": sum(entry["algae_net"] for entry in team_scouting_data) / matches_played,
+                    "processor": sum(entry["algae_processor"] for entry in team_scouting_data) / matches_played,
+                    "human_player_rate": sum(bool(entry["human_player"])
+                                         for entry in team_scouting_data) / matches_played
+                },
+                "climb_success_rate": sum(bool(entry["climb_success"])
+                                      for entry in team_scouting_data) / matches_played,
+                "avg_defense": sum(entry["defense_rating"] for entry in team_scouting_data) / matches_played
+            }
+        else:
+            stats = {
+                "matches_played": 0,
+                "coral_stats": {
+                    "level1": 0,
+                    "level2": 0,
+                    "level3": 0,
+                    "level4": 0
+                },
+                "algae_stats": {
+                    "net": 0,
+                    "processor": 0,
+                    "human_player_rate": 0
+                },
+                "climb_success_rate": 0,
+                "avg_defense": 0
+            }
 
         scouting_entries = [
             {
@@ -391,9 +492,19 @@ def matches():
                             "number": "$team_number",
                             "total_points": "$total_points",
                             "alliance": "$alliance",
-                            "auto_points": "$auto_points",
-                            "teleop_points": "$teleop_points",
-                            "endgame_points": "$endgame_points"
+                            "coral_total": {
+                                "$sum": [
+                                    "$coral_level1",
+                                    "$coral_level2",
+                                    "$coral_level3",
+                                    "$coral_level4"
+                                ]
+                            },
+                            "algae_total": {
+                                "$sum": ["$algae_net", "$algae_processor"]
+                            },
+                            "climb_type": "$climb_type",
+                            "climb_success": "$climb_success"
                         }
                     }
                 }
@@ -414,7 +525,11 @@ def matches():
                 "red_teams": red_teams,
                 "blue_teams": blue_teams,
                 "red_score": sum(t["total_points"] for t in red_teams),
-                "blue_score": sum(t["total_points"] for t in blue_teams)
+                "blue_score": sum(t["total_points"] for t in blue_teams),
+                "red_coral_total": sum(t["coral_total"] for t in red_teams),
+                "red_algae_total": sum(t["algae_total"] for t in red_teams),
+                "blue_coral_total": sum(t["coral_total"] for t in blue_teams),
+                "blue_algae_total": sum(t["algae_total"] for t in blue_teams)
             })
         
         return render_template("scouting/matches.html", matches=matches)
@@ -422,75 +537,39 @@ def matches():
         flash(f"Error fetching matches: {str(e)}", "error")
         return render_template("scouting/matches.html", matches=[])
 
-@scouting_bp.route("/scouting/team/<int:team_number>")
+@scouting_bp.route("/team/<int:team_number>")
 @login_required
-def team_view(team_number):
+def view_team(team_number):
     try:
-        # Get team stats from MongoDB
-        pipeline = [
-            {"$match": {"team_number": team_number}},
-            {
-                "$group": {
-                    "_id": "$team_number",
-                    "matches_played": {"$sum": 1},
-                    "total_points": {"$sum": "$total_points"},
-                    "auto_points": {"$avg": "$auto_points"},
-                    "teleop_points": {"$avg": "$teleop_points"},
-                    "endgame_points": {"$avg": "$endgame_points"},
-                    "matches": {
-                        "$push": {
-                            "match_number": "$match_number",
-                            "event_code": "$event_code",
-                            "auto_points": "$auto_points",
-                            "teleop_points": "$teleop_points",
-                            "endgame_points": "$endgame_points",
-                            "total_points": "$total_points",
-                            "notes": {"$ifNull": ["$notes", ""]}
-                        }
-                    }
-                }
-            }
-        ]
-
-        team_data = list(scouting_manager.db.team_data.aggregate(pipeline))
-
-        if not team_data:
-            flash("No scouting data found for this team", "error")
-            return redirect(url_for("scouting.list_scouting_data"))
-
-        team_stats = team_data[0]
-
-        # Convert Decimal128 to float for JSON serialization
-        stats = {
-            "matches_played": team_stats["matches_played"],
-            "total_points": float(team_stats["total_points"]),
-            "auto_points": float(team_stats["auto_points"]),
-            "teleop_points": float(team_stats["teleop_points"]),
-            "endgame_points": float(team_stats["endgame_points"])
-        }
-
-        matches = [
-            {
-                "event_code": str(match["event_code"]),
-                "match_number": int(match["match_number"]),
-                "auto_points": float(match["auto_points"]),
-                "teleop_points": float(match["teleop_points"]),
-                "endgame_points": float(match["endgame_points"]),
-                "total_points": float(match["total_points"]),
-                "notes": str(match["notes"]),
-            }
-            for match in team_stats["matches"]
-        ]
+        matches = scouting_manager.get_team_matches(team_number)
+        stats = scouting_manager.get_team_stats(team_number)
+        
+        # Calculate averages and success rates
+        if stats["matches_played"] > 0:
+            stats["avg_coral"] = (
+                stats["total_coral"] / stats["matches_played"]
+            )
+            stats["avg_algae"] = (
+                stats["total_algae"] / stats["matches_played"]
+            )
+            stats["climb_success_rate"] = (
+                stats["successful_climbs"] / stats["matches_played"]
+            )
+        else:
+            stats.update({
+                "avg_coral": 0,
+                "avg_algae": 0,
+                "climb_success_rate": 0
+            })
+            
         return render_template(
             "scouting/team.html",
             team_number=team_number,
-            stats=stats,
-            matches=matches
+            matches=matches,
+            stats=stats
         )
-
     except Exception as e:
-        print(f"Error loading team data: {str(e)}")
-        flash(f"Error loading team data: {str(e)}", "error")
+        flash(f"Error fetching team data: {str(e)}", "error")
         return redirect(url_for("scouting.list_scouting_data"))
 
 @scouting_bp.route("/scouting/check_team")

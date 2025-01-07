@@ -105,55 +105,49 @@ class ScoutingManager:
             if (alliance == "red" and len(red_teams) >= 3) or (alliance == "blue" and len(blue_teams) >= 3):
                 return False, f"Cannot add more teams to {alliance} alliance (maximum 3)"
 
-            # Calculate alliance scores
-            red_score = sum(t["total_points"] for t in red_teams)
-            blue_score = sum(t["total_points"] for t in blue_teams)
-
-            # Add current team's points to their alliance
-            current_points = (
-                int(data["auto_points"])
-                + int(data["teleop_points"])
-                + int(data["endgame_points"])
-            )
-            if alliance == "red":
-                red_score += current_points
-                alliance_score = red_score
-                opponent_score = blue_score
-            else:
-                blue_score += current_points
-                alliance_score = blue_score
-                opponent_score = red_score
-
-            # Determine match result
-            if alliance_score > opponent_score:
-                match_result = "won"
-            elif alliance_score < opponent_score:
-                match_result = "lost"
-            else:
-                match_result = "tie"
-
+            # Process form data
             team_data = {
                 "team_number": team_number,
                 "event_code": data["event_code"],
                 "match_number": int(data["match_number"]),
-                "auto_points": int(data["auto_points"]),
-                "teleop_points": int(data["teleop_points"]),
-                "endgame_points": int(data["endgame_points"]),
-                "total_points": current_points,
-                "notes": data["notes"],
-                "scouter_id": ObjectId(scouter_id),
                 "alliance": alliance,
-                "alliance_score": alliance_score,
-                "opponent_score": opponent_score,
-                "match_result": match_result,
+                
+                # Coral scoring
+                "coral_level1": int(data.get("coral_level1", 0)),
+                "coral_level2": int(data.get("coral_level2", 0)),
+                "coral_level3": int(data.get("coral_level3", 0)),
+                "coral_level4": int(data.get("coral_level4", 0)),
+                
+                # Algae scoring
+                "algae_net": int(data.get("algae_net", 0)),
+                "algae_processor": int(data.get("algae_processor", 0)),
+                "human_player": int(data.get("human_player", 0)),
+                
+                # Climb
+                "climb_type": data.get("climb_type", ""),
+                "climb_success": bool(data.get("climb_success", False)),
+                
+                # Defense
+                "defense_rating": int(data.get("defense_rating", 1)),
+                "defense_notes": data.get("defense_notes", ""),
+                
+                # Auto
+                "auto_path": data.get("auto_path", ""),
+                "auto_notes": data.get("auto_notes", ""),
+                
+                # Notes
+                "notes": data.get("notes", ""),
+                
+                # Metadata
+                "scouter_id": ObjectId(scouter_id),
                 "created_at": datetime.now(timezone.utc),
             }
 
-            self.db.team_data.insert_one(team_data)
-            logger.info(f"Added new scouting data for team {data['team_number']}")
-            return True, "Data added successfully"
+            result = self.db.team_data.insert_one(team_data)
+            return True, str(result.inserted_id)
+
         except Exception as e:
-            logger.error(f"Error adding scouting data: {str(e)}")
+            logger.error(f"Error adding team data: {str(e)}")
             return False, str(e)
 
     @with_mongodb_retry(retries=3, delay=2)
@@ -176,13 +170,21 @@ class ScoutingManager:
                         "team_number": 1,
                         "match_number": 1,
                         "event_code": 1,
-                        "auto_points": 1,
-                        "teleop_points": 1,
-                        "endgame_points": 1,
-                        "total_points": 1,
+                        "coral_level1": 1,
+                        "coral_level2": 1,
+                        "coral_level3": 1,
+                        "coral_level4": 1,
+                        "algae_net": 1,
+                        "algae_processor": 1,
+                        "human_player": 1,
+                        "climb_type": 1,
+                        "climb_success": 1,
+                        "defense_rating": 1,
+                        "defense_notes": 1,
+                        "auto_path": 1,
+                        "auto_notes": 1,
                         "notes": 1,
                         "alliance": 1,
-                        "match_result": 1,
                         "scouter_id": 1,
                         "scouter_name": "$scouter.username",
                         "scouter_team": "$scouter.teamNumber"
@@ -191,9 +193,9 @@ class ScoutingManager:
             ]
             
             team_data = list(self.db.team_data.aggregate(pipeline))
-            return [TeamData.create_from_db(data) for data in team_data]
+            return team_data
         except Exception as e:
-            print(f"Error fetching team data: {e}")
+            logger.error(f"Error fetching team data: {str(e)}")
             return []
 
     @with_mongodb_retry(retries=3, delay=2)
@@ -237,17 +239,33 @@ class ScoutingManager:
                 "team_number": int(data["team_number"]),
                 "event_code": data["event_code"],
                 "match_number": int(data["match_number"]),
-                "auto_points": int(data["auto_points"]),
-                "teleop_points": int(data["teleop_points"]),
-                "endgame_points": int(data["endgame_points"]),
-                "total_points": (
-                    int(data["auto_points"])
-                    + int(data["teleop_points"])
-                    + int(data["endgame_points"])
-                ),
-                "notes": data["notes"],
                 "alliance": data.get("alliance", "red"),
-                "match_result": data.get("match_result", ""),
+                
+                # Coral scoring
+                "coral_level1": int(data.get("coral_level1", 0)),
+                "coral_level2": int(data.get("coral_level2", 0)),
+                "coral_level3": int(data.get("coral_level3", 0)),
+                "coral_level4": int(data.get("coral_level4", 0)),
+                
+                # Algae scoring
+                "algae_net": int(data.get("algae_net", 0)),
+                "algae_processor": int(data.get("algae_processor", 0)),
+                "human_player": int(data.get("human_player", 0)),
+                
+                # Climb
+                "climb_type": data.get("climb_type", ""),
+                "climb_success": bool(data.get("climb_success", False)),
+                
+                # Defense
+                "defense_rating": int(data.get("defense_rating", 1)),
+                "defense_notes": data.get("defense_notes", ""),
+                
+                # Auto
+                "auto_path": data.get("auto_path", ""),
+                "auto_notes": data.get("auto_notes", ""),
+                
+                # Notes
+                "notes": data.get("notes", ""),
             }
 
             result = self.db.team_data.update_one(
@@ -282,6 +300,81 @@ class ScoutingManager:
         except Exception as e:
             logger.error(f"Error checking team data: {str(e)}")
             return False
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def get_team_stats(self, team_number):
+        """Get comprehensive stats for a team"""
+        self.ensure_connected()
+        try:
+            pipeline = [
+                {"$match": {"team_number": int(team_number)}},
+                {
+                    "$group": {
+                        "_id": "$team_number",
+                        "matches_played": {"$sum": 1},
+                        "total_coral": {
+                            "$sum": {
+                                "$add": [
+                                    "$coral_level1",
+                                    "$coral_level2",
+                                    "$coral_level3",
+                                    "$coral_level4"
+                                ]
+                            }
+                        },
+                        "total_algae": {
+                            "$sum": {"$add": ["$algae_net", "$algae_processor"]}
+                        },
+                        "successful_climbs": {
+                            "$sum": {"$cond": ["$climb_success", 1, 0]}
+                        },
+                        "total_defense": {"$sum": "$defense_rating"},
+                        "total_points": {"$sum": "$total_points"}
+                    }
+                }
+            ]
+            
+            result = list(self.db.team_data.aggregate(pipeline))
+            if not result:
+                return {
+                    "matches_played": 0,
+                    "total_coral": 0,
+                    "total_algae": 0,
+                    "successful_climbs": 0,
+                    "total_defense": 0,
+                    "total_points": 0
+                }
+            
+            stats = result[0]
+            stats.pop("_id")  # Remove MongoDB ID
+            return stats
+        except Exception as e:
+            logger.error(f"Error getting team stats: {str(e)}")
+            return None
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def get_team_matches(self, team_number):
+        """Get all match data for a specific team"""
+        self.ensure_connected()
+        try:
+            pipeline = [
+                {"$match": {"team_number": int(team_number)}},
+                {"$sort": {"event_code": 1, "match_number": 1}},
+                {
+                    "$lookup": {
+                        "from": "users",
+                        "localField": "scouter_id",
+                        "foreignField": "_id",
+                        "as": "scouter"
+                    }
+                },
+                {"$unwind": "$scouter"}
+            ]
+
+            return list(self.db.team_data.aggregate(pipeline))
+        except Exception as e:
+            logger.error(f"Error getting team matches: {str(e)}")
+            return []
 
     def __del__(self):
         """Cleanup MongoDB connection"""

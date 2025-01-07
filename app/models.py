@@ -71,19 +71,39 @@ class TeamData:
         self.team_number = data.get('team_number')
         self.match_number = data.get('match_number')
         self.event_code = data.get('event_code')
-        self.auto_points = data.get('auto_points', 0)
-        self.teleop_points = data.get('teleop_points', 0)
-        self.endgame_points = data.get('endgame_points', 0)
-        self.total_points = data.get('total_points', 0)
-        self.notes = data.get('notes', '')
         self.alliance = data.get('alliance', '')
-        self.match_result = data.get('match_result', '')
+        
+        # Coral scoring
+        self.coral_level1 = data.get('coral_level1', 0)
+        self.coral_level2 = data.get('coral_level2', 0)
+        self.coral_level3 = data.get('coral_level3', 0)
+        self.coral_level4 = data.get('coral_level4', 0)
+        
+        # Algae scoring
+        self.algae_net = data.get('algae_net', 0)
+        self.algae_processor = data.get('algae_processor', 0)
+        self.human_player = data.get('human_player', 0)  # Number of successful shots
+        
+        # Climb
+        self.climb_type = data.get('climb_type', '')  # 'shallow', 'deep', 'park', or ''
+        self.climb_success = data.get('climb_success', False)
+        
+        # Defense
+        self.defense_rating = data.get('defense_rating', 1)  # 1-5 scale
+        self.defense_notes = data.get('defense_notes', '')
+        
+        # Auto
+        self.auto_path = data.get('auto_path', '')  # Store canvas data as base64
+        self.auto_notes = data.get('auto_notes', '')
+        
+        # Notes
+        self.notes = data.get('notes', '')
         
         # Scouter information
         self.scouter_id = data.get('scouter_id')
         self.scouter_name = data.get('scouter_name')
         self.scouter_team = data.get('scouter_team')
-        self.is_owner = data.get('is_owner', True)  # Default to False if not set
+        self.is_owner = data.get('is_owner', True)
 
     @classmethod
     def create_from_db(cls, data):
@@ -95,13 +115,21 @@ class TeamData:
             'team_number': self.team_number,
             'match_number': self.match_number,
             'event_code': self.event_code,
-            'auto_points': self.auto_points,
-            'teleop_points': self.teleop_points,
-            'endgame_points': self.endgame_points,
-            'total_points': self.total_points,
-            'notes': self.notes,
             'alliance': self.alliance,
-            'match_result': self.match_result,
+            'coral_level1': self.coral_level1,
+            'coral_level2': self.coral_level2,
+            'coral_level3': self.coral_level3,
+            'coral_level4': self.coral_level4,
+            'algae_net': self.algae_net,
+            'algae_processor': self.algae_processor,
+            'human_player': self.human_player,
+            'climb_type': self.climb_type,
+            'climb_success': self.climb_success,
+            'defense_rating': self.defense_rating,
+            'defense_notes': self.defense_notes,
+            'auto_path': self.auto_path,
+            'auto_notes': self.auto_notes,
+            'notes': self.notes,
             'scouter_id': self.scouter_id,
             'scouter_name': self.scouter_name,
             'scouter_team': self.scouter_team,

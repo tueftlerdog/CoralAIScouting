@@ -51,16 +51,16 @@
                     <p class="mt-1">{{ (stats.total_points / stats.matches_played) | round(1) }}</p>
                 </div>
                 <div>
-                    <h3 class="font-medium text-gray-700">Avg Auto</h3>
-                    <p class="mt-1">{{ stats.auto_points | round(1) }}</p>
+                    <h3 class="font-medium text-gray-700">Avg Coral</h3>
+                    <p class="mt-1">{{ stats.avg_coral | round(1) }}</p>
                 </div>
                 <div>
-                    <h3 class="font-medium text-gray-700">Avg Teleop</h3>
-                    <p class="mt-1">{{ stats.teleop_points | round(1) }}</p>
+                    <h3 class="font-medium text-gray-700">Avg Algae</h3>
+                    <p class="mt-1">{{ stats.avg_algae | round(1) }}</p>
                 </div>
                 <div>
-                    <h3 class="font-medium text-gray-700">Avg Endgame</h3>
-                    <p class="mt-1">{{ stats.endgame_points | round(1) }}</p>
+                    <h3 class="font-medium text-gray-700">Climb Success</h3>
+                    <p class="mt-1">{{ (stats.climb_success_rate * 100) | round(1) }}%</p>
                 </div>
             </div>
         </div>
@@ -80,9 +80,9 @@
                 <thead>
                     <tr>
                         <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Match</th>
-                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auto</th>
-                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teleop</th>
-                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Endgame</th>
+                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coral (L1-L4)</th>
+                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Algae (Net/Proc)</th>
+                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Climb</th>
                         <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                         <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                     </tr>
@@ -91,9 +91,20 @@
                     {% for match in matches %}
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">{{ match.event_code }} - {{ match.match_number }}</td>
-                        <td class="px-6 py-4">{{ match.auto_points }}</td>
-                        <td class="px-6 py-4">{{ match.teleop_points }}</td>
-                        <td class="px-6 py-4">{{ match.endgame_points }}</td>
+                        <td class="px-6 py-4">
+                            {{ match.coral_level1 }}/{{ match.coral_level2 }}/{{ match.coral_level3 }}/{{ match.coral_level4 }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {{ match.algae_net }}/{{ match.algae_processor }}
+                            {% if match.human_player %}<span class="text-green-600">✓ HP</span>{% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if match.climb_success %}
+                            <span class="text-green-600">✓ {{ match.climb_type }}</span>
+                            {% else %}
+                            <span class="text-red-600">✗</span>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4">{{ match.total_points }}</td>
                         <td class="px-6 py-4">{{ match.notes }}</td>
                     </tr>
@@ -192,14 +203,14 @@ function initializeRadarChart(matchesData) {
     const consistency = calculateConsistency(matchesData);
     
     const radarData = {
-        labels: ['Auto', 'Teleop', 'Endgame', 'Consistency', 'Overall'],
+        labels: ['Coral', 'Algae', 'Climb', 'Consistency', 'Defense'],
         datasets: [{
             data: [
-                {{ stats.auto_points|float }},
-                {{ stats.teleop_points|float }},
-                {{ stats.endgame_points|float }},
+                {{ stats.avg_coral|float }},
+                {{ stats.avg_algae|float }},
+                {{ (stats.climb_success_rate * 100)|float }},
                 consistency,
-                {{ (stats.total_points / stats.matches_played)|float }}
+                {{ stats.avg_defense|float }}
             ],
             backgroundColor: 'rgba(54, 162, 235, 0.2)',
             borderColor: 'rgb(54, 162, 235)',

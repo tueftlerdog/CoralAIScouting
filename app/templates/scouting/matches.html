@@ -22,7 +22,7 @@
                                 Blue Alliance
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Final Score
+                                Details
                             </th>
                         </tr>
                     </thead>
@@ -35,36 +35,55 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="flex flex-col space-y-1">
+                                <div class="flex flex-col space-y-2">
                                     {% for team in match.red_teams %}
                                     <div class="text-sm">
                                         <a href="{{ url_for('team.view_team', team_number=team.number) }}" 
-                                           class="text-red-600 hover:text-red-800">
+                                           class="text-red-600 hover:text-red-800 font-medium">
                                             {{ team.number }}
                                         </a>
-                                        <span class="text-gray-500">- {{ team.total_points }} points</span>
+                                        <div class="text-xs text-gray-500">
+                                            Coral: {{ team.coral_total }} | 
+                                            Algae: {{ team.algae_total }} |
+                                            {% if team.climb_success %}
+                                            <span class="text-green-600">✓ {{ team.climb_type }}</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     {% endfor %}
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="flex flex-col space-y-1">
+                                <div class="flex flex-col space-y-2">
                                     {% for team in match.blue_teams %}
                                     <div class="text-sm">
                                         <a href="{{ url_for('team.view_team', team_number=team.number) }}" 
-                                           class="text-blue-600 hover:text-blue-800">
+                                           class="text-blue-600 hover:text-blue-800 font-medium">
                                             {{ team.number }}
                                         </a>
-                                        <span class="text-gray-500">- {{ team.total_points }} points</span>
+                                        <div class="text-xs text-gray-500">
+                                            Coral: {{ team.coral_total }} | 
+                                            Algae: {{ team.algae_total }} |
+                                            {% if team.climb_success %}
+                                            <span class="text-green-600">✓ {{ team.climb_type }}</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     {% endfor %}
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium">
-                                    <span class="text-red-600">{{ match.red_score }}</span>
-                                    -
-                                    <span class="text-blue-600">{{ match.blue_score }}</span>
+                                <div class="text-sm">
+                                    <div class="font-medium">
+                                        <span class="text-red-600">{{ match.red_score }}</span>
+                                        -
+                                        <span class="text-blue-600">{{ match.blue_score }}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Red: {{ match.red_coral_total }} coral, {{ match.red_algae_total }} algae
+                                        <br>
+                                        Blue: {{ match.blue_coral_total }} coral, {{ match.blue_algae_total }} algae
+                                    </div>
                                 </div>
                             </td>
                         </tr>

@@ -14,10 +14,11 @@
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Record (W-L-T)</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Win Rate</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matches</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Points</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Coral</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Algae</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Climb %</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Defense</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Points</th>
                         </tr>
                     </thead>
@@ -31,20 +32,42 @@
                                     Team {{ team.team_number }}
                                 </a>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ team.wins }}-{{ team.losses }}-{{ team.ties }}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ team.matches_played }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm">
+                                    <div class="font-medium">{{ "%.1f"|format(team.avg_coral) }}</div>
+                                    <div class="text-gray-500 text-xs">per match</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm">
+                                    <div class="font-medium">{{ "%.1f"|format(team.avg_algae) }}</div>
+                                    <div class="text-gray-500 text-xs">per match</div>
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ team.win_rate }}%"></div>
+                                        <div class="bg-green-600 h-2 rounded-full" 
+                                             style="width: {{ team.climb_success_rate }}%">
+                                        </div>
                                     </div>
-                                    <span class="text-sm text-gray-500">{{ "%.1f%%"|format(team.win_rate) }}</span>
+                                    <span class="text-sm text-gray-500">{{ "%.1f%%"|format(team.climb_success_rate) }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ team.matches_played }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ "%.1f"|format(team.avg_points) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ team.total_points }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" 
+                                             style="width: {{ (team.avg_defense / 5) * 100 }}%">
+                                        </div>
+                                    </div>
+                                    <span class="text-sm text-gray-500">{{ "%.1f"|format(team.avg_defense) }}/5</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ team.total_points }}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
