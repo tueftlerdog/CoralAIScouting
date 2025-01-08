@@ -112,15 +112,27 @@ class ScoutingManager:
                 "match_number": int(data["match_number"]),
                 "alliance": alliance,
                 
-                # Coral scoring
-                "coral_level1": int(data.get("coral_level1", 0)),
-                "coral_level2": int(data.get("coral_level2", 0)),
-                "coral_level3": int(data.get("coral_level3", 0)),
-                "coral_level4": int(data.get("coral_level4", 0)),
+                # Auto Coral scoring
+                "auto_coral_level1": int(data.get("auto_coral_level1", 0)),
+                "auto_coral_level2": int(data.get("auto_coral_level2", 0)),
+                "auto_coral_level3": int(data.get("auto_coral_level3", 0)),
+                "auto_coral_level4": int(data.get("auto_coral_level4", 0)),
                 
-                # Algae scoring
-                "algae_net": int(data.get("algae_net", 0)),
-                "algae_processor": int(data.get("algae_processor", 0)),
+                # Teleop Coral scoring
+                "teleop_coral_level1": int(data.get("teleop_coral_level1", 0)),
+                "teleop_coral_level2": int(data.get("teleop_coral_level2", 0)),
+                "teleop_coral_level3": int(data.get("teleop_coral_level3", 0)),
+                "teleop_coral_level4": int(data.get("teleop_coral_level4", 0)),
+                
+                # Auto Algae scoring
+                "auto_algae_net": int(data.get("auto_algae_net", 0)),
+                "auto_algae_processor": int(data.get("auto_algae_processor", 0)),
+                
+                # Teleop Algae scoring
+                "teleop_algae_net": int(data.get("teleop_algae_net", 0)),
+                "teleop_algae_processor": int(data.get("teleop_algae_processor", 0)),
+                
+                # Human Player
                 "human_player": int(data.get("human_player", 0)),
                 
                 # Climb
@@ -170,12 +182,18 @@ class ScoutingManager:
                         "team_number": 1,
                         "match_number": 1,
                         "event_code": 1,
-                        "coral_level1": 1,
-                        "coral_level2": 1,
-                        "coral_level3": 1,
-                        "coral_level4": 1,
-                        "algae_net": 1,
-                        "algae_processor": 1,
+                        "auto_coral_level1": 1,
+                        "auto_coral_level2": 1,
+                        "auto_coral_level3": 1,
+                        "auto_coral_level4": 1,
+                        "teleop_coral_level1": 1,
+                        "teleop_coral_level2": 1,
+                        "teleop_coral_level3": 1,
+                        "teleop_coral_level4": 1,
+                        "auto_algae_net": 1,
+                        "auto_algae_processor": 1,
+                        "teleop_algae_net": 1,
+                        "teleop_algae_processor": 1,
                         "human_player": 1,
                         "climb_type": 1,
                         "climb_success": 1,
@@ -266,6 +284,26 @@ class ScoutingManager:
                 
                 # Notes
                 "notes": data.get("notes", ""),
+                
+                # Auto Coral scoring
+                "auto_coral_level1": int(data.get("auto_coral_level1", 0)),
+                "auto_coral_level2": int(data.get("auto_coral_level2", 0)),
+                "auto_coral_level3": int(data.get("auto_coral_level3", 0)),
+                "auto_coral_level4": int(data.get("auto_coral_level4", 0)),
+                
+                # Teleop Coral scoring
+                "teleop_coral_level1": int(data.get("teleop_coral_level1", 0)),
+                "teleop_coral_level2": int(data.get("teleop_coral_level2", 0)),
+                "teleop_coral_level3": int(data.get("teleop_coral_level3", 0)),
+                "teleop_coral_level4": int(data.get("teleop_coral_level4", 0)),
+                
+                # Auto Algae scoring
+                "auto_algae_net": int(data.get("auto_algae_net", 0)),
+                "auto_algae_processor": int(data.get("auto_algae_processor", 0)),
+                
+                # Teleop Algae scoring
+                "teleop_algae_net": int(data.get("teleop_algae_net", 0)),
+                "teleop_algae_processor": int(data.get("teleop_algae_processor", 0)),
             }
 
             result = self.db.team_data.update_one(

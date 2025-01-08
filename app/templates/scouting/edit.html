@@ -7,138 +7,205 @@
     </div>
 
     <form method="POST" class="space-y-6" autocomplete="off" id="scoutingForm">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Team & Event Info Section -->
-            <div class="space-y-6">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h2 class="text-lg font-semibold text-gray-700 mb-4">Team Information</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Team Number</label>
-                            <input type="number" 
-                                   name="team_number" 
-                                   value="{{ team_data.team_number }}"
-                                   required 
-                                   min="1"
-                                   placeholder="e.g., 334"
-                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Event Code</label>
-                            <input type="text" 
-                                   name="event_code" 
-                                   value="{{ team_data.event_code }}"
-                                   required 
-                                   placeholder="e.g., NYLI"
-                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition duration-150">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Match Number</label>
-                            <input type="number" 
-                                   name="match_number" 
-                                   value="{{ team_data.match_number }}"
-                                   required 
-                                   min="1"
-                                   placeholder="e.g., 1"
-                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                        </div>
-                    </div>
+        <!-- Team & Event Info Section - Full Width -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Team Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Team Number</label>
+                    <input type="number" 
+                           name="team_number" 
+                           value="{{ team_data.team_number }}"
+                           required 
+                           min="1"
+                           placeholder="e.g., 334"
+                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Event Code</label>
+                    <input type="text" 
+                           name="event_code" 
+                           value="{{ team_data.event_code }}"
+                           required 
+                           placeholder="e.g., NYLI"
+                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition duration-150">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Match Number</label>
+                    <input type="number" 
+                           name="match_number" 
+                           value="{{ team_data.match_number }}"
+                           required 
+                           min="1"
+                           placeholder="e.g., 1"
+                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                </div>
+            </div>
+            <div class="mt-4">
+                <h3 class="text-sm font-medium text-gray-700 mb-2">Alliance</h3>
+                <div class="flex space-x-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" 
+                               name="alliance" 
+                               value="red" 
+                               {% if team_data.alliance == 'red' %}checked{% endif %}
+                               class="form-radio text-red-600 h-4 w-4">
+                        <span class="ml-2 text-red-600">Red Alliance</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" 
+                               name="alliance" 
+                               value="blue"
+                               {% if team_data.alliance == 'blue' %}checked{% endif %}
+                               class="form-radio text-blue-600 h-4 w-4">
+                        <span class="ml-2 text-blue-600">Blue Alliance</span>
+                    </label>
+                </div>
+            </div>
+        </div>
 
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h2 class="text-lg font-semibold text-gray-700 mb-4">Alliance</h2>
-                    <div class="flex space-x-4">
-                        <label class="inline-flex items-center">
-                            <input type="radio" 
-                                   name="alliance" 
-                                   value="red" 
-                                   {% if team_data.alliance == 'red' %}checked{% endif %}
-                                   class="form-radio text-red-600 h-4 w-4">
-                            <span class="ml-2 text-red-600">Red Alliance</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" 
-                                   name="alliance" 
-                                   value="blue"
-                                   {% if team_data.alliance == 'blue' %}checked{% endif %}
-                                   class="form-radio text-blue-600 h-4 w-4">
-                            <span class="ml-2 text-blue-600">Blue Alliance</span>
-                        </label>
+        <!-- Coral Scoring Section - Split -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Auto Coral -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Auto Coral</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
+                        <input type="number" 
+                               name="auto_coral_level1" 
+                               value="{{ team_data.auto_coral_level1 }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <!-- Repeat for levels 2-4 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
+                        <input type="number" 
+                               name="auto_coral_level2" 
+                               value="{{ team_data.auto_coral_level2 }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <!-- ... levels 3 and 4 ... -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
+                        <input type="number" 
+                               name="auto_coral_level3" 
+                               value="{{ team_data.auto_coral_level3 }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
+                        <input type="number" 
+                               name="auto_coral_level4" 
+                               value="{{ team_data.auto_coral_level4 }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
             </div>
 
-            <!-- Coral Scoring Section -->
-            <div class="space-y-6">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h2 class="text-lg font-semibold text-gray-700 mb-4">Coral Scoring</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
-                            <input type="number" 
-                                   name="coral_level1" 
-                                   value="{{ team_data.coral_level1 }}"
-                                   min="0" 
-                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
-                            <input type="number" 
-                                   name="coral_level2" 
-                                   value="{{ team_data.coral_level2 }}"
-                                   min="0" 
-                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
-                            <input type="number" 
-                                   name="coral_level3" 
-                                   value="{{ team_data.coral_level3 }}"
-                                   min="0" 
-                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
-                            <input type="number" 
-                                   name="coral_level4" 
-                                   value="{{ team_data.coral_level4 }}"
-                                   min="0" 
-                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
+            <!-- Teleop Coral -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Teleop Coral</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
+                        <input type="number" 
+                               name="teleop_coral_level1" 
+                               value="{{ team_data.teleop_coral_level1 }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
+                        <input type="number" 
+                               name="teleop_coral_level2" 
+                               value="{{ team_data.teleop_coral_level2 }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
+                        <input type="number" 
+                               name="teleop_coral_level3" 
+                               value="{{ team_data.teleop_coral_level3 }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
+                        <input type="number" 
+                               name="teleop_coral_level4" 
+                               value="{{ team_data.teleop_coral_level4 }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Algae Scoring Section -->
+        <!-- Algae Scoring Section - Split -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Auto Algae -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Auto Algae</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
+                        <input type="number" 
+                               name="auto_algae_net" 
+                               value="{{ team_data.auto_algae_net }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
+                        <input type="number" 
+                               name="auto_algae_processor" 
+                               value="{{ team_data.auto_algae_processor }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teleop Algae -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Teleop Algae</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
+                        <input type="number" 
+                               name="teleop_algae_net" 
+                               value="{{ team_data.teleop_algae_net }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
+                        <input type="number" 
+                               name="teleop_algae_processor" 
+                               value="{{ team_data.teleop_algae_processor }}"
+                               min="0" 
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Human Player Section -->
         <div class="bg-gray-50 p-4 rounded-lg">
-            <h2 class="text-lg font-semibold text-gray-700 mb-4">Algae Scoring</h2>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
-                    <input type="number" 
-                           name="algae_net" 
-                           value="{{ team_data.algae_net }}"
-                           min="0" 
-                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
-                    <input type="number" 
-                           name="algae_processor" 
-                           value="{{ team_data.algae_processor }}"
-                           min="0" 
-                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Human Player Successful Shots</label>
-                    <input type="number" 
-                           name="human_player" 
-                           value="{{ team_data.human_player }}"
-                           min="0"
-                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <p class="mt-1 text-sm text-gray-500">Number of successful shots made by the human player</p>
-                </div>
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Human Player</h2>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Successful Shots</label>
+                <input type="number" 
+                       name="human_player" 
+                       value="{{ team_data.human_player }}"
+                       min="0" 
+                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
         </div>
 

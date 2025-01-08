@@ -73,16 +73,10 @@ class TeamData:
         self.event_code = data.get('event_code')
         self.alliance = data.get('alliance', '')
         
-        # Coral scoring
-        self.coral_level1 = data.get('coral_level1', 0)
-        self.coral_level2 = data.get('coral_level2', 0)
-        self.coral_level3 = data.get('coral_level3', 0)
-        self.coral_level4 = data.get('coral_level4', 0)
-        
         # Algae scoring
         self.algae_net = data.get('algae_net', 0)
         self.algae_processor = data.get('algae_processor', 0)
-        self.human_player = data.get('human_player', 0)  # Number of successful shots
+        self.human_player = data.get('human_player', 0)  # Total successful shots
         
         # Climb
         self.climb_type = data.get('climb_type', '')  # 'shallow', 'deep', 'park', or ''
@@ -104,6 +98,29 @@ class TeamData:
         self.scouter_name = data.get('scouter_name')
         self.scouter_team = data.get('scouter_team')
         self.is_owner = data.get('is_owner', True)
+        
+        # Auto Coral scoring
+        self.auto_coral_level1 = data.get('auto_coral_level1', 0)
+        self.auto_coral_level2 = data.get('auto_coral_level2', 0)
+        self.auto_coral_level3 = data.get('auto_coral_level3', 0)
+        self.auto_coral_level4 = data.get('auto_coral_level4', 0)
+        
+        # Teleop Coral scoring
+        self.teleop_coral_level1 = data.get('teleop_coral_level1', 0)
+        self.teleop_coral_level2 = data.get('teleop_coral_level2', 0)
+        self.teleop_coral_level3 = data.get('teleop_coral_level3', 0)
+        self.teleop_coral_level4 = data.get('teleop_coral_level4', 0)
+        
+        # Auto Algae scoring
+        self.auto_algae_net = data.get('auto_algae_net', 0)
+        self.auto_algae_processor = data.get('auto_algae_processor', 0)
+        
+        # Teleop Algae scoring
+        self.teleop_algae_net = data.get('teleop_algae_net', 0)
+        self.teleop_algae_processor = data.get('teleop_algae_processor', 0)
+        
+        # Human Player (single field)
+        self.human_player = data.get('human_player', 0)
 
     @classmethod
     def create_from_db(cls, data):
@@ -116,12 +133,18 @@ class TeamData:
             'match_number': self.match_number,
             'event_code': self.event_code,
             'alliance': self.alliance,
-            'coral_level1': self.coral_level1,
-            'coral_level2': self.coral_level2,
-            'coral_level3': self.coral_level3,
-            'coral_level4': self.coral_level4,
-            'algae_net': self.algae_net,
-            'algae_processor': self.algae_processor,
+            'auto_coral_level1': self.auto_coral_level1,
+            'auto_coral_level2': self.auto_coral_level2,
+            'auto_coral_level3': self.auto_coral_level3,
+            'auto_coral_level4': self.auto_coral_level4,
+            'teleop_coral_level1': self.teleop_coral_level1,
+            'teleop_coral_level2': self.teleop_coral_level2,
+            'teleop_coral_level3': self.teleop_coral_level3,
+            'teleop_coral_level4': self.teleop_coral_level4,
+            'auto_algae_net': self.auto_algae_net,
+            'auto_algae_processor': self.auto_algae_processor,
+            'teleop_algae_net': self.teleop_algae_net,
+            'teleop_algae_processor': self.teleop_algae_processor,
             'human_player': self.human_player,
             'climb_type': self.climb_type,
             'climb_success': self.climb_success,
@@ -133,7 +156,7 @@ class TeamData:
             'scouter_id': self.scouter_id,
             'scouter_name': self.scouter_name,
             'scouter_team': self.scouter_team,
-            'is_owner': self.is_owner
+            'is_owner': self.is_owner,
         }
 
     @property
