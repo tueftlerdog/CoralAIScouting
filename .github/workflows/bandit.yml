@@ -2,6 +2,10 @@ name: Bandit Code Security
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   bandit:
     runs-on: ubuntu-latest

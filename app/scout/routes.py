@@ -1,7 +1,7 @@
 import asyncio
 from functools import wraps
 import aiohttp
-from flask import Blueprint, flash, render_template, request, redirect, url_for, jsonify
+from flask import Blueprint, current_app, flash, render_template, request, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app.scout.scouting_utils import ScoutingManager
 from .TBA import TBAInterface
@@ -54,7 +54,8 @@ def list_scouting_data():
         team_data = scouting_manager.get_all_scouting_data()
         return render_template("scouting/list.html", team_data=team_data)
     except Exception as e:
-        flash(f"Error fetching data: {str(e)}", "error")
+        current_app.logger.error(f"Error fetching scouting data: {str(e)}", exc_info=True)
+        flash("Unable to fetch scouting data. Please try again later.", "error")
         return render_template("scouting/list.html", team_data=[])
 
 
@@ -65,27 +66,23 @@ def edit_scouting_data(id):
         team_data = scouting_manager.get_team_data(id, current_user.get_id())
 
         if not team_data:
-            flash(
-                "Team data not found or you do not have permission to edit it", "error"
-            )
+            flash("Team data not found", "error")
             return redirect(url_for("scouting.list_scouting_data"))
 
         if not team_data.is_owner:
-            flash("You do not have permission to edit this entry", "error")
+            flash("Access denied", "error")
             return redirect(url_for("scouting.list_scouting_data"))
 
         if request.method == "POST":
-            if scouting_manager.update_team_data(
-                id, request.form, current_user.get_id()
-            ):
+            if scouting_manager.update_team_data(id, request.form, current_user.get_id()):
                 flash("Data updated successfully", "success")
                 return redirect(url_for("scouting.list_scouting_data"))
-            else:
-                flash("Error updating data", "error")
+            flash("Unable to update data", "error")
 
         return render_template("scouting/edit.html", team_data=team_data)
     except Exception as e:
-        flash(f"Error: {str(e)}", "error")
+        current_app.logger.error(f"Error in edit_scouting_data: {str(e)}", exc_info=True)
+        flash("An error occurred while processing your request", "error")
         return redirect(url_for("scouting.list_scouting_data"))
 
 

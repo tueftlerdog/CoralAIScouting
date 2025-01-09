@@ -277,6 +277,7 @@ class ScoutingManager:
                 # Defense
                 "defense_rating": int(data.get("defense_rating", 1)),
                 "defense_notes": data.get("defense_notes", ""),
+
                 
                 # Auto
                 "auto_path": data.get("auto_path", ""),

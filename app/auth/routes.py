@@ -8,6 +8,7 @@ from flask import (
     jsonify,
     send_file,
     current_app,
+    abort,
 )
 from flask_login import login_required, login_user, current_user, logout_user
 from app.auth.auth_utils import UserManager
@@ -17,6 +18,8 @@ import os
 from werkzeug.utils import secure_filename
 from bson import ObjectId
 from gridfs import GridFS
+from urllib.parse import urlparse, urljoin
+from flask_pymongo import PyMongo
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -80,12 +83,22 @@ def async_route(f):
 
 auth_bp = Blueprint("auth", __name__)
 user_manager = None
+mongo = None
 
 
 @auth_bp.record
 def on_blueprint_init(state):
-    global user_manager
-    user_manager = UserManager(state.app.config["MONGO_URI"])
+    global user_manager, mongo
+    app = state.app
+    mongo = PyMongo(app)
+    user_manager = UserManager(app.config["MONGO_URI"])
+
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and \
+           ref_url.netloc == test_url.netloc
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -110,9 +123,9 @@ async def login():
             success, user = await user_manager.authenticate_user(login, password)
             if success and user:
                 login_user(user, remember=remember)
-                next_page = request.args.get("next")
-                if not next_page or not next_page.startswith("/"):
-                    next_page = url_for("index")
+                next_page = request.args.get('next')
+                if not next_page or not is_safe_url(next_page):
+                    next_page = url_for('main.index')
                 flash("Successfully logged in", "success")
                 return redirect(next_page)
             else:
@@ -172,50 +185,29 @@ def logout():
 
 @auth_bp.route("/settings", methods=["GET", "POST"])
 @login_required
-@async_route
-async def settings():
-    if request.method == "POST":
-        updates = {}
-        
-        # Handle profile picture upload
-        if 'profile_picture' in request.files:
-            file = request.files['profile_picture']
-            if file and allowed_file(file.filename):
-                try:
-                    # Save new file to GridFS
-                    fs = GridFS(user_manager.db)
-                    filename = secure_filename(f"profile_{current_user.id}_{file.filename}")
-                    file_id = fs.put(
-                        file.stream.read(),
-                        filename=filename,
-                        content_type=file.content_type
-                    )
-                    
-                    # Update user's profile picture and clean up old one
-                    success, message = await user_manager.update_profile_picture(current_user.id, file_id)
-                    if not success:
-                        # If update failed, delete the newly uploaded file
-                        fs.delete(file_id)
-                        flash(message, "error")
-                    else:
-                        updates['profile_picture_id'] = file_id
-                except Exception as e:
-                    flash(f"Error uploading profile picture: {str(e)}", "error")
-
-        # Handle other profile updates
-        if username := request.form.get('username'):
-            updates['username'] = username
-        if description := request.form.get('description'):
-            updates['description'] = description
-
-        if updates:
-            success, message = await user_manager.update_user_profile(current_user.id, updates)
-            flash(message, "success" if success else "error")
+def settings():
+    try:
+        if request.method == "POST":
+            # Handle form submission
+            form_data = request.form
+            file = request.files.get("profile_picture")
+            
+            success = user_manager.update_user_settings(
+                current_user.get_id(),
+                form_data,
+                file
+            )
             
             if success:
-                return redirect(url_for('auth.settings'))
-
-    return render_template("auth/settings.html", user=current_user)
+                flash("Settings updated successfully", "success")
+            else:
+                flash("Unable to update settings", "error")
+                
+        return render_template("auth/settings.html")
+    except Exception as e:
+        current_app.logger.error(f"Error in settings: {str(e)}", exc_info=True)
+        flash("An error occurred while processing your request", "error")
+        return redirect(url_for("auth.settings"))
 
 
 @auth_bp.route("/profile/<username>")

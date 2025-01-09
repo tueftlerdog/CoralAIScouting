@@ -80,9 +80,9 @@ function initializeSearch() {
             const memberRows = document.querySelectorAll('.member-row');
 
             memberRows.forEach(row => {
-                const username = row.children[0].textContent.toLowerCase();
-                const email = row.children[1].textContent.toLowerCase();
-                const role = row.children[2].textContent.toLowerCase();
+                const username = row.children[0]?.textContent?.toLowerCase() || '';
+                const email = row.children[1]?.textContent?.toLowerCase() || '';
+                const role = row.children[2]?.textContent?.toLowerCase() || '';
 
                 row.style.display = (username.includes(searchTerm) || 
                                    email.includes(searchTerm) || 
@@ -308,11 +308,15 @@ async function updateAssignmentStatus(selectElement, assignmentId) {
 function updateStatusBadge(selectElement, newStatus) {
     const row = selectElement.closest('tr');
     const statusCell = row.querySelector('.status-badge');
-    const dueDateCell = row.querySelector('td:nth-child(4)').textContent;
+    const dueDateCell = row.querySelector('td:nth-child(4)');
+    
+    // Sanitize inputs
+    const sanitizedStatus = String(newStatus).replace(/[<>]/g, '');
+    const dueDateText = dueDateCell ? dueDateCell.textContent : '';
     
     let isLate = false;
-    if (dueDateCell && dueDateCell !== 'No due date') {
-        const dueDate = new Date(dueDateCell);
+    if (dueDateText && dueDateText !== 'No due date') {
+        const dueDate = new Date(dueDateText);
         isLate = dueDate < new Date();
     }
     
@@ -324,16 +328,17 @@ function updateStatusBadge(selectElement, newStatus) {
     
     let statusText = '';
     if (isLate) {
-        statusText = newStatus === 'in_progress' ? 'In Progress (Late)' : 
-                    newStatus === 'completed' ? 'Completed (Late)' : 
+        statusText = sanitizedStatus === 'in_progress' ? 'In Progress (Late)' : 
+                    sanitizedStatus === 'completed' ? 'Completed (Late)' : 
                     'Pending (Late)';
     } else {
-        statusText = newStatus === 'in_progress' ? 'In Progress' : 
-                    newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        statusText = sanitizedStatus === 'in_progress' ? 'In Progress' : 
+                    sanitizedStatus.charAt(0).toUpperCase() + sanitizedStatus.slice(1);
     }
     
+    // Use textContent instead of innerHTML
     statusCell.textContent = statusText;
-    statusCell.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge ${statusClasses[newStatus]}`;
+    statusCell.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge ${statusClasses[sanitizedStatus] || statusClasses['pending']}`;
 }
 
 async function deleteAssignment(assignmentId) {
@@ -657,5 +662,24 @@ async function leaveTeam() {
     } catch (error) {
         console.error('Error:', error);
         alert(error.message || 'An error occurred while leaving the team');
+    }
+}
+
+async function syncPendingData() {
+    try {
+        const clients = await self.clients.matchAll();
+        if (!clients.length) {
+            console.log('No active clients found');
+            return;
+        }
+        
+        await Promise.all(clients.map(client => 
+            client.postMessage({
+                type: 'SYNC_REQUIRED'
+            })
+        ));
+    } catch (error) {
+        console.error('Sync failed:', error.message);
+        alert('Sync failed. Please try again later.');
     }
 }

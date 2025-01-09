@@ -13,6 +13,7 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
 
     if debug_mode:
-        app.run(debug=True, host=host, port=port)
+        debug = os.getenv("DEBUG", "False").lower() == "true"
+        app.run(debug=debug, host=host, port=port)
     else:
         serve(app, host=host, port=port)

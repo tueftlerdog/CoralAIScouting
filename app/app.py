@@ -1,4 +1,4 @@
-from flask import Flask, make_response, render_template, send_from_directory
+from flask import Flask, make_response, render_template, send_from_directory, jsonify
 from flask_login import LoginManager
 from flask_pymongo import PyMongo
 import os
@@ -26,6 +26,7 @@ def create_app():
     )
 
     mongo.init_app(app)
+    csrf.init_app(app)
 
     with app.app_context():
         if "team_data" not in mongo.db.list_collection_names():
@@ -72,6 +73,15 @@ def create_app():
         response.headers["Content-Type"] = "application/javascript"
         response.headers["Service-Worker-Allowed"] = "/"
         return response
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        # Log the real error with stack trace
+        app.logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+        # Return generic message to user
+        return jsonify({
+            "error": "An unexpected error occurred"
+        }), 500
 
     return app
 

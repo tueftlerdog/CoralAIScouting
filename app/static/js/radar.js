@@ -83,11 +83,11 @@ function createRadarChart(canvasId, data, isCombo = false) {
 }
 
 function calculateConsistency(matchData) {
-    if (matchData.length < 2 && matchData.length != 0) {
-        return 10;
-    }
-    if (matchData.length == 0) {
+    if (matchData.length === 0) {
         return 0;
+    }
+    if (matchData.length === 1) {
+        return 10;
     }
     
     const scores = matchData.map(m => m.total_points);

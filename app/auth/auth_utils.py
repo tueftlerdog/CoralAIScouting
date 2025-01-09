@@ -7,9 +7,17 @@ import logging
 import time
 from functools import wraps
 from gridfs import GridFS
+from flask_login import current_user
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def with_mongodb_retry(retries=3, delay=2):
@@ -278,6 +286,47 @@ class UserManager:
         except Exception as e:
             logger.error(f"Error deleting user: {str(e)}")
             return False, f"Error deleting account: {str(e)}"
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def update_user_settings(self, user_id, form_data, profile_picture=None):
+        """Update user settings including profile picture"""
+        self.ensure_connected()
+        try:
+            updates = {}
+            
+            # Handle username update if provided
+            if new_username := form_data.get('username'):
+                if new_username != current_user.username:
+                    # Check if username is taken
+                    if self.db.users.find_one({"username": new_username}):
+                        return False
+                    updates['username'] = new_username
+
+            # Handle description update
+            if description := form_data.get('description'):
+                updates['description'] = description
+
+            # Handle profile picture
+            if profile_picture:
+                from werkzeug.utils import secure_filename
+                if profile_picture and allowed_file(profile_picture.filename):
+                    fs = GridFS(self.db)
+                    filename = secure_filename(profile_picture.filename)
+                    file_id = fs.put(
+                        profile_picture.stream.read(),
+                        filename=filename,
+                        content_type=profile_picture.content_type
+                    )
+                    updates['profile_picture_id'] = file_id
+
+            if updates:
+                success, message = await self.update_user_profile(user_id, updates)
+                return success
+
+            return True
+        except Exception as e:
+            logger.error(f"Error updating user settings: {str(e)}")
+            return False
 
     def __del__(self):
         """Cleanup MongoDB connection"""
