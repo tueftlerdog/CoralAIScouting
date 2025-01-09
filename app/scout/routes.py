@@ -6,6 +6,8 @@ from flask_login import login_required, current_user
 from app.scout.scouting_utils import ScoutingManager
 from .TBA import TBAInterface
 from bson import ObjectId
+from gridfs import GridFS
+import base64
 
 scouting_bp = Blueprint("scouting", __name__)
 scouting_manager = None
@@ -104,120 +106,171 @@ def delete_scouting_data(id):
 def compare_page():
     return render_template("compare.html")
 
+def format_team_stats(stats):
+    """Format team stats with calculated totals"""
+    return {
+        "matches_played": stats.get("matches_played", 0),
+        "auto_coral_total": sum([
+            stats.get("avg_auto_coral_level1", 0),
+            stats.get("avg_auto_coral_level2", 0),
+            stats.get("avg_auto_coral_level3", 0),
+            stats.get("avg_auto_coral_level4", 0)
+        ]),
+        "teleop_coral_total": sum([
+            stats.get("avg_teleop_coral_level1", 0),
+            stats.get("avg_teleop_coral_level2", 0),
+            stats.get("avg_teleop_coral_level3", 0),
+            stats.get("avg_teleop_coral_level4", 0)
+        ]),
+        "auto_algae_total": sum([
+            stats.get("avg_auto_algae_net", 0),
+            stats.get("avg_auto_algae_processor", 0)
+        ]),
+        "teleop_algae_total": sum([
+            stats.get("avg_teleop_algae_net", 0),
+            stats.get("avg_teleop_algae_processor", 0)
+        ]),
+        "human_player": stats.get("avg_human_player", 0),
+        "climb_success_rate": stats.get("climb_success_rate", 0) * 100
+    }
+
 
 @scouting_bp.route("/api/compare")
 @login_required
 @async_route
 async def compare_teams():
-    team1 = request.args.get("team1", "").strip()
-    team2 = request.args.get("team2", "").strip()
-
-    if not team1 or not team2:
-        return jsonify({"error": "Both team numbers are required"}), 400
-
     try:
-        tba = TBAInterface()
+        # Get team numbers from query parameters
+        teams = []
+        for i in range(1, 4):  # Check for team1, team2, team3
+            team_num = request.args.get(f'team{i}')
+            if team_num:
+                teams.append(team_num)
+
+        if len(teams) < 2:
+            return jsonify({"error": "At least two team numbers are required"}), 400
+
         teams_data = {}
+        tba = TBAInterface()
 
-        for team_num in [team1, team2]:
-            # Fetch TBA team info using async client
-            team_key = f"frc{team_num}"
-            url = f"{tba.base_url}/team/{team_key}"
+        for team_num in teams:
+            try:
+                # Get team stats from database
+                pipeline = [
+                    {"$match": {"team_number": int(team_num)}},
+                    {"$group": {
+                        "_id": "$team_number",
+                        "matches_played": {"$sum": 1},
+                        "auto_coral_level1": {"$avg": {"$ifNull": ["$auto_coral_level1", 0]}},
+                        "auto_coral_level2": {"$avg": {"$ifNull": ["$auto_coral_level2", 0]}},
+                        "auto_coral_level3": {"$avg": {"$ifNull": ["$auto_coral_level3", 0]}},
+                        "auto_coral_level4": {"$avg": {"$ifNull": ["$auto_coral_level4", 0]}},
+                        "auto_algae_net": {"$avg": {"$ifNull": ["$auto_algae_net", 0]}},
+                        "auto_algae_processor": {"$avg": {"$ifNull": ["$auto_algae_processor", 0]}},
+                        "teleop_coral_level1": {"$avg": {"$ifNull": ["$teleop_coral_level1", 0]}},
+                        "teleop_coral_level2": {"$avg": {"$ifNull": ["$teleop_coral_level2", 0]}},
+                        "teleop_coral_level3": {"$avg": {"$ifNull": ["$teleop_coral_level3", 0]}},
+                        "teleop_coral_level4": {"$avg": {"$ifNull": ["$teleop_coral_level4", 0]}},
+                        "teleop_algae_net": {"$avg": {"$ifNull": ["$teleop_algae_net", 0]}},
+                        "teleop_algae_processor": {"$avg": {"$ifNull": ["$teleop_algae_processor", 0]}},
+                        "climb_success_rate": {
+                            "$avg": {"$cond": [{"$eq": ["$climb_success", True]}, 100, 0]}
+                        },
+                        "preferred_climb_type": {"$last": "$climb_type"}
+                    }}
+                ]
 
-            async with aiohttp.ClientSession(headers=tba.headers) as session:
-                async with session.get(url) as response:
-                    if response.status != 200:
-                        return jsonify({"error": f"Team {team_num} not found"}), 404
-                    team = await response.json()
+                team_stats = list(scouting_manager.db.team_data.aggregate(pipeline))
+                stats = team_stats[0] if team_stats else {}
 
-            # Fetch all scouting data for this team from MongoDB
-            pipeline = [
-                {"$match": {"team_number": int(team_num)}},
-                {
-                    "$lookup": {
-                        "from": "users",
-                        "localField": "scouter_id",
-                        "foreignField": "_id",
-                        "as": "scouter",
-                    }
-                },
-                {"$unwind": "$scouter"},
-            ]
+                # Get team info from TBA using async HTTP client
+                team_key = f"frc{team_num}"
+                url = f"{tba.base_url}/team/{team_key}"
+                
+                async with aiohttp.ClientSession(headers=tba.headers) as session:
+                    async with session.get(url) as response:
+                        team_info = await response.json() if response.status == 200 else {}
 
-            team_scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
+                # Get auto path images from GridFS
+                fs = GridFS(scouting_manager.db)
+                auto_paths = []
+                
+                # Find all auto paths for this team
+                for path_file in fs.find({
+                    "filename": {"$regex": f"^team_{team_num}_auto_path"},
+                    "metadata.type": "auto_path"
+                }).sort("metadata.match_number", 1):
+                    try:
+                        binary_data = path_file.read()
+                        base64_data = base64.b64encode(binary_data).decode('utf-8')
+                        auto_paths.append({
+                            "match_number": path_file.metadata.get("match_number", "Unknown"),
+                            "image_data": f"data:image/png;base64,{base64_data}"
+                        })
+                    except Exception as e:
+                        current_app.logger.error(f"Error processing path file: {str(e)}")
+                        continue
 
-            # Calculate statistics
-            auto_points = [entry["auto_points"] for entry in team_scouting_data]
-            teleop_points = [entry["teleop_points"] for entry in team_scouting_data]
-            endgame_points = [entry["endgame_points"] for entry in team_scouting_data]
-            total_points = [entry["total_points"] for entry in team_scouting_data]
-
-            stats = {
-                "matches_played": len(team_scouting_data),
-                "avg_auto": (sum(auto_points) / len(auto_points) if auto_points else 0),
-                "avg_teleop": (
-                    sum(teleop_points) / len(teleop_points) if teleop_points else 0
-                ),
-                "avg_endgame": (
-                    sum(endgame_points) / len(endgame_points) if endgame_points else 0
-                ),
-                "avg_total": (
-                    sum(total_points) / len(total_points) if total_points else 0
-                ),
-                "max_total": max(total_points, default=0),
-                "min_total": min(total_points, default=0),
-            }
-
-            scouting_entries = [
-                {
-                    "event_code": entry["event_code"],
-                    "match_number": entry["match_number"],
-                    "coral_levels": [
-                        entry["coral_level1"],
-                        entry["coral_level2"],
-                        entry["coral_level3"],
-                        entry["coral_level4"]
-                    ],
-                    "algae": {
-                        "net": entry["algae_net"],
-                        "processor": entry["algae_processor"],
-                        "human_player": entry["human_player"]
+                teams_data[team_num] = {
+                    "team_number": int(team_num),
+                    "nickname": team_info.get("nickname", "Unknown"),
+                    "school_name": team_info.get("school_name"),
+                    "city": team_info.get("city"),
+                    "state_prov": team_info.get("state_prov"),
+                    "country": team_info.get("country"),
+                    "stats": {
+                        "matches_played": stats.get("matches_played", 0),
+                        "auto_coral_level1": stats.get("auto_coral_level1", 0),
+                        "auto_coral_level2": stats.get("auto_coral_level2", 0),
+                        "auto_coral_level3": stats.get("auto_coral_level3", 0),
+                        "auto_coral_level4": stats.get("auto_coral_level4", 0),
+                        "auto_algae_net": stats.get("auto_algae_net", 0),
+                        "auto_algae_processor": stats.get("auto_algae_processor", 0),
+                        "teleop_coral_level1": stats.get("teleop_coral_level1", 0),
+                        "teleop_coral_level2": stats.get("teleop_coral_level2", 0),
+                        "teleop_coral_level3": stats.get("teleop_coral_level3", 0),
+                        "teleop_coral_level4": stats.get("teleop_coral_level4", 0),
+                        "teleop_algae_net": stats.get("teleop_algae_net", 0),
+                        "teleop_algae_processor": stats.get("teleop_algae_processor", 0),
+                        "climb_success_rate": stats.get("climb_success_rate", 0),
+                        "preferred_climb_type": stats.get("preferred_climb_type", "none"),
+                        "normalized_stats": {
+                            "auto_scoring": (
+                                stats.get("auto_coral_level1", 0) +
+                                stats.get("auto_coral_level2", 0) * 2 +
+                                stats.get("auto_coral_level3", 0) * 3 +
+                                stats.get("auto_coral_level4", 0) * 4 +
+                                stats.get("auto_algae_net", 0) +
+                                stats.get("auto_algae_processor", 0)
+                            ) / 6,
+                            "teleop_scoring": (
+                                stats.get("teleop_coral_level1", 0) +
+                                stats.get("teleop_coral_level2", 0) * 2 +
+                                stats.get("teleop_coral_level3", 0) * 3 +
+                                stats.get("teleop_coral_level4", 0) * 4 +
+                                stats.get("teleop_algae_net", 0) +
+                                stats.get("teleop_algae_processor", 0)
+                            ) / 6,
+                            "climb_rating": stats.get("climb_success_rate", 0),
+                            "defense_rating": stats.get("avg_defense", 0),
+                            "human_player": stats.get("human_player", 0)
+                        }
                     },
-                    "climb": {
-                        "type": entry["climb_type"],
-                        "success": entry["climb_success"]
-                    },
-                    "total_points": entry["total_points"],
-                    "notes": entry["notes"],
-                    "scouter": entry["scouter"]["username"],
+                    "auto_paths": auto_paths  # Add the auto paths to the response
                 }
-                for entry in team_scouting_data
-            ]
 
-            teams_data[team_num] = {
-                "team_number": team["team_number"],
-                "nickname": team["nickname"],
-                "school_name": team.get("school_name"),
-                "city": team.get("city"),
-                "state_prov": team.get("state_prov"),
-                "country": team.get("country"),
-                "stats": {
-                    "matches_played": stats["matches_played"],
-                    "avg_coral": stats["avg_coral"],
-                    "avg_algae": stats["avg_algae"],
-                    "climb_success_rate": stats["climb_success_rate"],
-                    "defense_rating": stats["avg_defense"],
-                    "total_points": stats["total_points"]
-                },
-                "scouting_data": scouting_entries,
-            }
+            except Exception as team_error:
+                current_app.logger.error(f"Error processing team {team_num}: {str(team_error)}")
+                teams_data[team_num] = {
+                    "team_number": int(team_num),
+                    "error": str(team_error)
+                }
 
         return jsonify(teams_data)
 
     except Exception as e:
-        print(f"Error comparing teams: {e}")
-        return jsonify({"error": "Failed to fetch team data"}), 500
-
+        current_app.logger.error(f"Error comparing teams: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 @scouting_bp.route("/search")
 @login_required

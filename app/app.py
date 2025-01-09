@@ -74,14 +74,14 @@ def create_app():
         response.headers["Service-Worker-Allowed"] = "/"
         return response
 
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        # Log the real error with stack trace
-        app.logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
-        # Return generic message to user
-        return jsonify({
-            "error": "An unexpected error occurred"
-        }), 500
+    # @app.errorhandler(Exception)
+    # def handle_exception(e):
+    #     # Log the real error with stack trace
+    #     app.logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+    #     # Return generic message to user
+    #     return jsonify({
+    #         "error": "An unexpected error occurred"
+    #     }), 500
 
     return app
 

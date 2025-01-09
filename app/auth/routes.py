@@ -125,7 +125,7 @@ async def login():
                 login_user(user, remember=remember)
                 next_page = request.args.get('next')
                 if not next_page or not is_safe_url(next_page):
-                    next_page = url_for('main.index')
+                    next_page = url_for('index')
                 flash("Successfully logged in", "success")
                 return redirect(next_page)
             else:
@@ -185,14 +185,15 @@ def logout():
 
 @auth_bp.route("/settings", methods=["GET", "POST"])
 @login_required
-def settings():
+@async_route
+async def settings():
     try:
         if request.method == "POST":
             # Handle form submission
             form_data = request.form
             file = request.files.get("profile_picture")
             
-            success = user_manager.update_user_settings(
+            success = await user_manager.update_user_settings(
                 current_user.get_id(),
                 form_data,
                 file

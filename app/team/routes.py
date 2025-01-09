@@ -21,6 +21,7 @@ from gridfs import GridFS
 from io import BytesIO
 import asyncio
 from PIL import Image
+from bson import ObjectId
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
@@ -399,11 +400,12 @@ async def delete_team(team_number):
 @team_bp.route("/team/<int:team_number>/logo")
 def team_logo(team_number):
     try:
-        fs = GridFS(mongo.db)
-        team = mongo.db.teams.find_one({"team_number": team_number})
+        fs = GridFS(team_manager.db)
+        team = team_manager.db.teams.find_one({"team_number": team_number})
         
         if team and team.get("logo_id"):
-            logo = fs.get(team["logo_id"])
+            logo_id = ObjectId(team["logo_id"]) if isinstance(team["logo_id"], str) else team["logo_id"]
+            logo = fs.get(logo_id)
             return send_file(
                 BytesIO(logo.read()),
                 mimetype=logo.content_type,

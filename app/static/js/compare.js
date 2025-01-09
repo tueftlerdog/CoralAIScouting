@@ -1,9 +1,12 @@
 // Constants
 const API_ENDPOINT = '/api/compare';
+const MIN_TEAMS = 2;
+const MAX_TEAMS = 3;
 
 // DOM Elements
 const team1Input = document.getElementById('team1-input');
 const team2Input = document.getElementById('team2-input');
+const team3Input = document.getElementById('team3-input');
 const compareBtn = document.getElementById('compare-btn');
 const comparisonResults = document.getElementById('comparison-results');
 
@@ -11,122 +14,338 @@ const comparisonResults = document.getElementById('comparison-results');
 compareBtn.addEventListener('click', compareTeams);
 
 async function compareTeams() {
-    const team1 = team1Input.value.trim();
-    const team2 = team2Input.value.trim();
+    const teams = [
+        team1Input.value.trim(),
+        team2Input.value.trim(),
+        team3Input.value.trim()
+    ].filter(team => team !== '');
 
-    if (!team1 || !team2) {
-        alert('Please enter both team numbers');
+    if (teams.length < MIN_TEAMS) {
+        alert(`Please enter at least ${MIN_TEAMS} team numbers`);
         return;
     }
 
     try {
-        const response = await fetch(`${API_ENDPOINT}?team1=${team1}&team2=${team2}`);
+        const queryString = teams
+            .map((team, index) => `team${index + 1}=${encodeURIComponent(team)}`)
+            .join('&');
+        
+        const response = await fetch(`${API_ENDPOINT}?${queryString}`);
+        const data = await response.json();
+        
         if (!response.ok) {
-            const data = await response.json();
             throw new Error(data.error || 'Failed to fetch team data');
         }
 
-        const teamsData = await response.json();
-        displayComparisonResults(teamsData);
+        displayComparisonResults(data);
     } catch (error) {
-        alert(error.message);
+        console.error('Error comparing teams:', error);
+        alert(error.message || 'An error occurred while comparing teams');
     }
 }
 
 function displayComparisonResults(teamsData) {
+    // Add debug logging
+    console.log('Teams Data:', teamsData);
+    
     comparisonResults.classList.remove('hidden');
     
-    // Update team information for both teams
-    for (const [teamNum, teamData] of Object.entries(teamsData)) {
-        const teamPrefix = `team${teamNum === Object.keys(teamsData)[0] ? '1' : '2'}`;
-        const teamNumber = teamData.team_number;
+    // Get all teams' stats for comparison
+    const allStats = Object.values(teamsData).map(team => {
+        // Add null check for team.stats
+        if (!team || !team.stats) return {};
+        return team.stats;
+    });
+    
+    // Hide all team info containers first
+    for (let i = 1; i <= MAX_TEAMS; i++) {
+        const container = document.getElementById(`team${i}-info`);
+        if (container) {
+            container.classList.add('hidden');
+        }
+    }
+    
+    // Display each team's data with highlighting
+    Object.entries(teamsData).forEach(([teamNum, teamData], index) => {
+        // Add error handling for malformed team data
+        if (!teamData) {
+            console.error(`No data received for team ${teamNum}`);
+            return;
+        }
+
+        const teamPrefix = `team${index + 1}`;
+        const container = document.getElementById(`${teamPrefix}-info`);
         
-        document.getElementById(`${teamPrefix}-header`).textContent = `Team ${teamNumber}`;
-        document.getElementById(`${teamPrefix}-history-header`).textContent = 
-            `Team's ${teamNumber} Match History`;
+        if (!container) {
+            console.error(`Container not found for ${teamPrefix}`);
+            return;
+        }
+
+        container.classList.remove('hidden');
         
-        document.getElementById(`${teamPrefix}-number-name`).textContent = 
-            `#${teamNumber} - ${teamData.nickname}`;
-        
-        document.getElementById(`${teamPrefix}-location`).textContent = 
-            formatLocation(teamData);
-        
+        // Update basic team info with additional error checking
+        const header = document.getElementById(`${teamPrefix}-header`);
+        const numberName = document.getElementById(`${teamPrefix}-number-name`);
+        const locationEl = document.getElementById(`${teamPrefix}-location`);
         const statsContainer = document.getElementById(`${teamPrefix}-stats`);
-        statsContainer.innerHTML = formatStats(teamData.stats);
         
-        const matchesContainer = document.getElementById(`${teamPrefix}-matches`);
-        matchesContainer.innerHTML = formatMatchHistory(teamData.scouting_data);
+        if (header) header.textContent = `Team ${teamData.team_number}`;
+        if (numberName) numberName.textContent = 
+            `#${teamData.team_number}${teamData.nickname ? ` - ${teamData.nickname}` : ''}`;
+        
+        // Only show location if we have any location data
+        const location = formatLocation(teamData);
+        if (locationEl) {
+            if (location) {
+                locationEl.textContent = location;
+                locationEl.classList.remove('hidden');
+            } else {
+                locationEl.classList.add('hidden');
+            }
+        }
+        
+        // Update stats with highlighting
+        if (statsContainer) {
+            statsContainer.innerHTML = formatStatsWithHighlighting(teamData.stats, allStats);
+        }
+    });
+
+    // Adjust containers based on number of teams
+    const teamCount = Object.keys(teamsData).length;
+    const cardsContainer = document.getElementById('team-cards-container');
+    const autoPathsContainer = document.getElementById('auto-paths-container');
+
+    if (cardsContainer) {
+        if (teamCount === 2) {
+            cardsContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+        } else if (teamCount === 3) {
+            cardsContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-6';
+        }
     }
 
-    // Update radar charts
-    updateRadarCharts(teamsData);
+    if (autoPathsContainer) {
+        if (teamCount === 2) {
+            autoPathsContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+        } else if (teamCount === 3) {
+            autoPathsContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-6';
+        }
+    }
+
+    // Display auto paths for each team
+    Object.entries(teamsData).forEach(([teamNum, teamData], index) => {
+        console.log(`Drawing auto paths for team ${teamNum}:`, teamData.auto_paths);
+        displayAutoPath(teamNum, teamData.auto_paths, index + 1);
+    });
+    
+    // Update radar chart
+    updateRadarChart(teamsData);
 }
 
 function formatLocation(teamData) {
     const parts = [];
-    if (teamData.school_name) {
-      parts.push(teamData.school_name);
-    }
-    if (teamData.city) {
-      parts.push(teamData.city);
-    }
-    if (teamData.state_prov) {
-      parts.push(teamData.state_prov);
-    }
-    if (teamData.country && teamData.country !== 'USA') {
-      parts.push(teamData.country);
-    }
+    if (teamData.city) parts.push(teamData.city);
+    if (teamData.state_prov) parts.push(teamData.state_prov);
+    if (teamData.country && teamData.country !== 'USA') parts.push(teamData.country);
     return parts.join(', ');
 }
 
-function formatStats(stats) {
+function formatStatsWithHighlighting(stats, allStats) {
+    // Add default values if stats is undefined
+    stats = stats || {};
+    
+    const statComparisons = {
+        // Auto Period
+        'Auto Coral Scoring': {
+            'Level 1': calculateStatRanking(stats.auto_coral_level1 || 0, allStats.map(s => s?.auto_coral_level1 || 0)),
+            'Level 2': calculateStatRanking(stats.auto_coral_level2 || 0, allStats.map(s => s?.auto_coral_level2 || 0)),
+            'Level 3': calculateStatRanking(stats.auto_coral_level3 || 0, allStats.map(s => s?.auto_coral_level3 || 0)),
+            'Level 4': calculateStatRanking(stats.auto_coral_level4 || 0, allStats.map(s => s?.auto_coral_level4 || 0))
+        },
+        'Auto Algae Scoring': {
+            'Net': calculateStatRanking(stats.auto_algae_net || 0, allStats.map(s => s?.auto_algae_net || 0)),
+            'Processor': calculateStatRanking(stats.auto_algae_processor || 0, allStats.map(s => s?.auto_algae_processor || 0))
+        },
+        
+        // Teleop Period
+        'Teleop Coral Scoring': {
+            'Level 1': calculateStatRanking(stats.teleop_coral_level1 || 0, allStats.map(s => s?.teleop_coral_level1 || 0)),
+            'Level 2': calculateStatRanking(stats.teleop_coral_level2 || 0, allStats.map(s => s?.teleop_coral_level2 || 0)),
+            'Level 3': calculateStatRanking(stats.teleop_coral_level3 || 0, allStats.map(s => s?.teleop_coral_level3 || 0)),
+            'Level 4': calculateStatRanking(stats.teleop_coral_level4 || 0, allStats.map(s => s?.teleop_coral_level4 || 0))
+        },
+        'Teleop Algae Scoring': {
+            'Net': calculateStatRanking(stats.teleop_algae_net || 0, allStats.map(s => s?.teleop_algae_net || 0)),
+            'Processor': calculateStatRanking(stats.teleop_algae_processor || 0, allStats.map(s => s?.teleop_algae_processor || 0))
+        },
+        
+        // Endgame
+        'Climb Success Rate': calculateStatRanking(stats.climb_success_rate || 0, allStats.map(s => s?.climb_success_rate || 0)),
+        'Preferred Climb Type': stats.preferred_climb_type || 'none'
+    };
+
+    // Add null checks for value formatting
     return `
-        <div class="grid grid-cols-2 gap-2">
-            <div class="text-sm">Matches Scouted:</div>
-            <div class="text-sm font-medium">${stats.matches_played}</div>
-            
-            <div class="text-sm">Avg Auto:</div>
-            <div class="text-sm font-medium">${stats.avg_auto.toFixed(1)}</div>
-            
-            <div class="text-sm">Avg Teleop:</div>
-            <div class="text-sm font-medium">${stats.avg_teleop.toFixed(1)}</div>
-            
-            <div class="text-sm">Avg Endgame:</div>
-            <div class="text-sm font-medium">${stats.avg_endgame.toFixed(1)}</div>
-            
-            <div class="text-sm">Avg Total:</div>
-            <div class="text-sm font-medium">${stats.avg_total.toFixed(1)}</div>
-            
-            <div class="text-sm">Highest Score:</div>
-            <div class="text-sm font-medium">${stats.max_total}</div>
-            
-            <div class="text-sm">Lowest Score:</div>
-            <div class="text-sm font-medium">${stats.min_total}</div>
+        <div class="space-y-4">
+            <!-- Auto Period -->
+            <div>
+                <div class="font-medium text-gray-700 border-b mb-2">Auto Period</div>
+                <div class="grid grid-cols-2 gap-2">
+                    ${Object.entries(statComparisons['Auto Coral Scoring']).map(([level, {value, highlight}]) => `
+                        <div class="text-sm pl-2">${level}:</div>
+                        <div class="text-sm font-medium ${highlight || ''}">${(value || 0).toFixed(1)} times/match</div>
+                    `).join('')}
+                    
+                    <div class="col-span-2 text-sm font-medium mt-2">Algae Scoring:</div>
+                    ${Object.entries(statComparisons['Auto Algae Scoring']).map(([method, {value, highlight}]) => `
+                        <div class="text-sm pl-2">${method}:</div>
+                        <div class="text-sm font-medium ${highlight}">${value.toFixed(1)} times/match</div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- Teleop Period -->
+            <div>
+                <div class="font-medium text-gray-700 border-b mb-2">Teleop Period</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="col-span-2 text-sm font-medium">Coral Scoring:</div>
+                    ${Object.entries(statComparisons['Teleop Coral Scoring']).map(([level, {value, highlight}]) => `
+                        <div class="text-sm pl-2">${level}:</div>
+                        <div class="text-sm font-medium ${highlight}">${value.toFixed(1)} times/match</div>
+                    `).join('')}
+                    
+                    <div class="col-span-2 text-sm font-medium mt-2">Algae Scoring:</div>
+                    ${Object.entries(statComparisons['Teleop Algae Scoring']).map(([method, {value, highlight}]) => `
+                        <div class="text-sm pl-2">${method}:</div>
+                        <div class="text-sm font-medium ${highlight}">${value.toFixed(1)} times/match</div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- Endgame -->
+            <div>
+                <div class="font-medium text-gray-700 border-b mb-2">Endgame</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="text-sm">Climb Success:</div>
+                    <div class="text-sm font-medium ${statComparisons['Climb Success Rate'].highlight}">
+                        ${statComparisons['Climb Success Rate'].value.toFixed(1)}%
+                    </div>
+                    <div class="text-sm">Preferred Climb:</div>
+                    <div class="text-sm font-medium">${statComparisons['Preferred Climb Type']}</div>
+                </div>
+            </div>
         </div>
     `;
 }
 
-function formatMatchHistory(matches) {
-    return matches
-        .sort((a, b) => a.match_number - b.match_number)
-        .map(match => `
-            <tr>
-                <td class="px-4 py-2 whitespace-nowrap">
-                    ${match.event_code} Q${match.match_number}
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap">
-                    ${match.auto_points}
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap">
-                    ${match.teleop_points}
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap">
-                    ${match.endgame_points}
-                </td>
-                <td class="px-4 py-2 whitespace-nowrap font-medium">
-                    ${match.total_points}
-                </td>
-            </tr>
-        `)
-        .join('');
+function calculateStatRanking(value, allValues) {
+    const max = Math.max(...allValues);
+    const min = Math.min(...allValues);
+    
+    let highlight = '';
+    if (value === max) highlight = 'text-green-600';
+    if (value === min) highlight = 'text-red-600';
+    
+    return { value, highlight };
+}
+
+function displayAutoPath(teamNum, pathData, containerIndex) {
+    const containerSelector = `#auto-path-team${containerIndex}-container`;
+    const container = document.querySelector(containerSelector);
+    
+    if (!container) {
+        console.error(`Container ${containerSelector} not found`);
+        return;
+    }
+
+    // Clear existing content
+    container.innerHTML = `<h4 class="font-medium text-gray-700">Team ${teamNum} Auto Paths</h4>`;
+
+    if (!pathData || pathData.length === 0) {
+        container.innerHTML += `
+            <p class="text-gray-500 text-sm">No auto paths available for this team.</p>
+        `;
+        return;
+    }
+
+    // Create canvas for each path
+    pathData.forEach((path, index) => {
+        const canvasWrapper = document.createElement('div');
+        canvasWrapper.className = 'mb-4';
+        
+        const matchLabel = document.createElement('p');
+        matchLabel.className = 'text-sm text-gray-600 mb-2';
+        matchLabel.textContent = `Match ${path.match_number}`;
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 300;
+        canvas.className = 'border rounded-lg bg-white w-full';
+        
+        canvasWrapper.appendChild(matchLabel);
+        canvasWrapper.appendChild(canvas);
+        container.appendChild(canvasWrapper);
+
+        // Draw the path
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        };
+        img.src = path.image_data;
+    });
+}
+
+function updateRadarChart(teamsData) {
+    const ctx = document.getElementById('radar-chart-combined');
+    
+    // Destroy existing chart if it exists
+    if (window.radarChart) {
+        window.radarChart.destroy();
+    }
+    
+    const datasets = Object.entries(teamsData).map(([teamNum, teamData], index) => {
+        const colors = ['rgba(37, 99, 235, 0.2)', 'rgba(220, 38, 38, 0.2)', 'rgba(5, 150, 105, 0.2)'];
+        const borderColors = ['rgb(37, 99, 235)', 'rgb(220, 38, 38)', 'rgb(5, 150, 105)'];
+        
+        // Scale values to be out of 20 instead of 100
+        const stats = teamData.stats.normalized_stats;
+        return {
+            label: `Team ${teamNum}`,
+            data: [
+                Math.min(20, stats.auto_scoring),
+                Math.min(20, stats.teleop_scoring),
+                Math.min(20, stats.climb_rating / 5),
+                Math.min(20, stats.defense_rating * 4),
+                Math.min(20, stats.human_player * 4)
+            ],
+            backgroundColor: colors[index],
+            borderColor: borderColors[index],
+            borderWidth: 2
+        };
+    });
+    
+    window.radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: [
+                'Auto Scoring',
+                'Teleop Scoring',
+                'Climb Success',
+                'Defense Rating',
+                'Human Player Rating'
+            ],
+            datasets: datasets
+        },
+        options: {
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 20,
+                    ticks: {
+                        stepSize: 4
+                    }
+                }
+            }
+        }
+    });
 }
