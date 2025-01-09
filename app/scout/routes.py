@@ -254,7 +254,7 @@ async def compare_teams():
 
     except Exception as e:
         current_app.logger.error(f"Error comparing teams: {str(e)}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An internal error has occurred."}), 500
 
 @scouting_bp.route("/search")
 @login_required
