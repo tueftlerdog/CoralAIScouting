@@ -125,9 +125,9 @@ function displayComparisonResults(teamsData) {
 
     if (autoPathsContainer) {
         if (teamCount === 2) {
-            autoPathsContainer.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6';
+            autoPathsContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
         } else if (teamCount === 3) {
-            autoPathsContainer.className = 'grid grid-cols-1 gap-6';
+            autoPathsContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-6';
         }
     }
 
@@ -242,8 +242,8 @@ function calculateStatRanking(value, allValues) {
     const min = Math.min(...allValues);
     
     let highlight = '';
-    if (value === max) highlight = 'text-green-600';
-    if (value === min) highlight = 'text-red-600';
+    if (value === max && max !== 0) highlight = 'text-green-600';
+    if (value === min && min !== max) highlight = 'text-red-600';
     
     return { value, highlight };
 }
@@ -294,9 +294,9 @@ function displayAutoPath(teamNum, pathData, containerIndex) {
         content.className = 'p-4 hidden';
         
         const canvas = document.createElement('canvas');
-        canvas.width = 800;  // Increased size
-        canvas.height = 600; // Increased size
-        canvas.className = 'border rounded-lg bg-white w-full h-auto';
+        canvas.width = 400;  // Smaller width
+        canvas.height = 300; // Smaller height
+        canvas.className = 'border rounded-lg bg-white w-full h-auto max-w-full';
         
         content.appendChild(canvas);
         accordionItem.appendChild(header);
@@ -313,7 +313,6 @@ function displayAutoPath(teamNum, pathData, containerIndex) {
                 const ctx = canvas.getContext('2d');
                 const bgImage = new Image();
                 bgImage.onload = () => {
-                    ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
                     
                     const pathImage = new Image();
                     pathImage.onload = () => {
