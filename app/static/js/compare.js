@@ -125,9 +125,9 @@ function displayComparisonResults(teamsData) {
 
     if (autoPathsContainer) {
         if (teamCount === 2) {
-            autoPathsContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+            autoPathsContainer.className = 'grid grid-cols-1 lg:grid-cols-2 gap-6';
         } else if (teamCount === 3) {
-            autoPathsContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-6';
+            autoPathsContainer.className = 'grid grid-cols-1 gap-6';
         }
     }
 
@@ -267,32 +267,68 @@ function displayAutoPath(teamNum, pathData, containerIndex) {
         return;
     }
 
-    // Create canvas for each path
-    pathData.forEach((path, index) => {
-        const canvasWrapper = document.createElement('div');
-        canvasWrapper.className = 'mb-4';
+    // Sort paths by match number and get latest 5
+    const sortedPaths = [...pathData]
+        .sort((a, b) => b.match_number - a.match_number)
+        .slice(0, 5);
+
+    // Create accordion container
+    const accordionContainer = document.createElement('div');
+    accordionContainer.className = 'space-y-2';
+    
+    // Create accordion items for each path
+    sortedPaths.forEach((path, index) => {
+        const accordionItem = document.createElement('div');
+        accordionItem.className = 'border rounded-lg';
         
-        const matchLabel = document.createElement('p');
-        matchLabel.className = 'text-sm text-gray-600 mb-2';
-        matchLabel.textContent = `Match ${path.match_number}`;
+        const header = document.createElement('button');
+        header.className = 'w-full px-4 py-2 text-left flex justify-between items-center bg-gray-50 hover:bg-gray-100 rounded-lg focus:outline-none';
+        header.innerHTML = `
+            <span class="font-medium">Match ${path.match_number} - ${path.event_code}</span>
+            <svg class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+        `;
+
+        const content = document.createElement('div');
+        content.className = 'p-4 hidden';
         
         const canvas = document.createElement('canvas');
-        canvas.width = 400;
-        canvas.height = 300;
-        canvas.className = 'border rounded-lg bg-white w-full';
+        canvas.width = 800;  // Increased size
+        canvas.height = 600; // Increased size
+        canvas.className = 'border rounded-lg bg-white w-full h-auto';
         
-        canvasWrapper.appendChild(matchLabel);
-        canvasWrapper.appendChild(canvas);
-        container.appendChild(canvasWrapper);
-
-        // Draw the path
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        };
-        img.src = path.image_data;
+        content.appendChild(canvas);
+        accordionItem.appendChild(header);
+        accordionItem.appendChild(content);
+        
+        // Add click handler for accordion
+        header.addEventListener('click', () => {
+            const isHidden = content.classList.contains('hidden');
+            content.classList.toggle('hidden');
+            header.querySelector('svg').style.transform = isHidden ? 'rotate(180deg)' : '';
+            
+            if (isHidden) {
+                // Draw the path only when accordion is opened
+                const ctx = canvas.getContext('2d');
+                const bgImage = new Image();
+                bgImage.onload = () => {
+                    ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+                    
+                    const pathImage = new Image();
+                    pathImage.onload = () => {
+                        ctx.drawImage(pathImage, 0, 0, canvas.width, canvas.height);
+                    };
+                    pathImage.src = path.image_data;
+                };
+                bgImage.src = "/static/images/field-2025.png";
+            }
+        });
+        
+        accordionContainer.appendChild(accordionItem);
     });
+
+    container.appendChild(accordionContainer);
 }
 
 function updateRadarChart(teamsData) {
@@ -307,16 +343,23 @@ function updateRadarChart(teamsData) {
         const colors = ['rgba(37, 99, 235, 0.2)', 'rgba(220, 38, 38, 0.2)', 'rgba(5, 150, 105, 0.2)'];
         const borderColors = ['rgb(37, 99, 235)', 'rgb(220, 38, 38)', 'rgb(5, 150, 105)'];
         
-        // Scale values to be out of 20 instead of 100
-        const stats = teamData.stats.normalized_stats;
+        // Add null checks and default values
+        const stats = teamData?.stats?.normalized_stats || {
+            auto_scoring: 0,
+            teleop_scoring: 0,
+            climb_rating: 0,
+            defense_rating: 0,
+            human_player: 0
+        };
+        
         return {
             label: `Team ${teamNum}`,
             data: [
-                Math.min(20, stats.auto_scoring),
-                Math.min(20, stats.teleop_scoring),
-                Math.min(20, stats.climb_rating / 5),
-                Math.min(20, stats.defense_rating * 4),
-                Math.min(20, stats.human_player * 4)
+                Math.min(20, stats.auto_scoring || 0),
+                Math.min(20, stats.teleop_scoring || 0),
+                Math.min(20, stats.climb_rating / 5 || 0),
+                Math.min(20, stats.defense_rating * 4 || 0),
+                Math.min(20, stats.human_player * 4 || 0)
             ],
             backgroundColor: colors[index],
             borderColor: borderColors[index],

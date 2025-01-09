@@ -173,6 +173,7 @@ async def compare_teams():
                         "teleop_coral_level4": {"$avg": {"$ifNull": ["$teleop_coral_level4", 0]}},
                         "teleop_algae_net": {"$avg": {"$ifNull": ["$teleop_algae_net", 0]}},
                         "teleop_algae_processor": {"$avg": {"$ifNull": ["$teleop_algae_processor", 0]}},
+                        "auto_path": {"$last": "$auto_path"},
                         "climb_success_rate": {
                             "$avg": {"$cond": [{"$eq": ["$climb_success", True]}, 100, 0]}
                         },
@@ -191,25 +192,8 @@ async def compare_teams():
                     async with session.get(url) as response:
                         team_info = await response.json() if response.status == 200 else {}
 
-                # Get auto path images from GridFS
-                fs = GridFS(scouting_manager.db)
-                auto_paths = []
-                
-                # Find all auto paths for this team
-                for path_file in fs.find({
-                    "filename": {"$regex": f"^team_{team_num}_auto_path"},
-                    "metadata.type": "auto_path"
-                }).sort("metadata.match_number", 1):
-                    try:
-                        binary_data = path_file.read()
-                        base64_data = base64.b64encode(binary_data).decode('utf-8')
-                        auto_paths.append({
-                            "match_number": path_file.metadata.get("match_number", "Unknown"),
-                            "image_data": f"data:image/png;base64,{base64_data}"
-                        })
-                    except Exception as e:
-                        current_app.logger.error(f"Error processing path file: {str(e)}")
-                        continue
+                # get auto paths from scouting manager
+                auto_paths = scouting_manager.get_auto_paths(team_num)
 
                 teams_data[team_num] = {
                     "team_number": int(team_num),
@@ -256,7 +240,7 @@ async def compare_teams():
                             "human_player": stats.get("human_player", 0)
                         }
                     },
-                    "auto_paths": auto_paths  # Add the auto paths to the response
+                    "auto_paths": auto_paths
                 }
 
             except Exception as team_error:

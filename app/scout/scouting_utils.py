@@ -415,6 +415,40 @@ class ScoutingManager:
             logger.error(f"Error getting team matches: {str(e)}")
             return []
 
+    @with_mongodb_retry(retries=3, delay=2)
+    def get_auto_paths(self, team_number):
+        """Get all auto paths for a specific team"""
+        self.ensure_connected()
+        try:
+            # Find all team data entries for this team that have auto paths
+            paths = list(self.db.team_data.find(
+                {
+                    "team_number": int(team_number),
+                    "auto_path": {"$exists": True, "$ne": ""}
+                },
+                {
+                    "match_number": 1,
+                    "event_code": 1,
+                    "auto_path": 1
+                }
+            ).sort("match_number", 1))
+
+            # Format the paths data
+            formatted_paths = []
+            for path in paths:
+                if path.get("auto_path"):  # Only include if there's actually a path
+                    formatted_paths.append({
+                        "match_number": path.get("match_number", "Unknown"),
+                        "event_code": path.get("event_code", "Unknown"),
+                        "image_data": path["auto_path"]
+                    })
+
+            return formatted_paths
+
+        except Exception as e:
+            logger.error(f"Error fetching auto paths for team {team_number}: {str(e)}")
+            return []
+
     def __del__(self):
         """Cleanup MongoDB connection"""
         if self.client:
