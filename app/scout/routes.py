@@ -298,7 +298,7 @@ def compare_teams():
                 }
 
             except Exception as team_error:
-                print(f"Error processing team {team_num}: {str(team_error)}")
+                # print(f"Error processing team {team_num}: {str(team_error)}")
                 teams_data[team_num] = {
                     "team_number": int(team_num),
                     "error": str(team_error)
@@ -307,7 +307,7 @@ def compare_teams():
         return json.loads(json_util.dumps(teams_data))
 
     except Exception as e:
-        print(f"Error in compare_teams: {str(e)}")
+        # print(f"Error in compare_teams: {str(e)}")
         return jsonify({"error": "An error occurred while comparing teams"}), 500
 
 @scouting_bp.route("/search")
@@ -493,7 +493,7 @@ async def search_teams():
         )
 
     except Exception as e:
-        print(f"Error searching teams: {e}")
+        # print(f"Error searching teams: {e}")
         return jsonify({"error": "Failed to fetch team data"}), 500
 
 
@@ -691,8 +691,7 @@ def leaderboard():
         teams = list(scouting_manager.db.team_data.aggregate(pipeline))
         return render_template("scouting/leaderboard.html", teams=teams, current_sort=sort_type)
     except Exception as e:
-        print(f"Error in leaderboard: {str(e)}")
-        flash(f"Error loading leaderboard: {str(e)}", "error")
+        # print(f"Error in leaderboard: {str(e)}")
         return render_template("scouting/leaderboard.html", teams=[], current_sort='coral')
 
 

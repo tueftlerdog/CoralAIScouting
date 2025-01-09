@@ -30,12 +30,9 @@ async function compareTeams() {
             .map((team, index) => `team${index + 1}=${encodeURIComponent(team)}`)
             .join('&');
         
-        console.log('Fetching data with query:', queryString);
         const response = await fetch(`${API_ENDPOINT}?${queryString}`);
         const data = await response.json();
-        
-        console.log('Received data:', data);
-        
+                
         if (!response.ok) {
             throw new Error(data.error || 'Failed to fetch team data');
         }
@@ -53,7 +50,6 @@ async function compareTeams() {
 }
 
 function displayComparisonResults(teamsData) {
-    console.log('Starting displayComparisonResults with:', teamsData);
     comparisonResults.classList.remove('hidden');
     
     // Display raw scouting data first
@@ -458,13 +454,10 @@ window.addEventListener('resize', () => {
 });
 
 function displayRawData(teamsData) {
-    console.log('Starting displayRawData with:', teamsData);
     const tbody = document.getElementById('raw-data-tbody');
     tbody.innerHTML = '';  // Clear existing rows
     
     Object.entries(teamsData).forEach(([teamNum, teamData]) => {
-        console.log(`Processing team ${teamNum}:`, teamData);
-        
         // Check if matches data exists
         if (!teamData || !teamData.matches || !Array.isArray(teamData.matches)) {
             console.warn(`No matches data for team ${teamNum}`, teamData);
@@ -473,7 +466,6 @@ function displayRawData(teamsData) {
 
         // Sort matches by match number (most recent first)
         const sortedMatches = [...teamData.matches].sort((a, b) => b.match_number - a.match_number);
-        console.log(`Sorted matches for team ${teamNum}:`, sortedMatches);
         
         sortedMatches.forEach(match => {
             const row = document.createElement('tr');
