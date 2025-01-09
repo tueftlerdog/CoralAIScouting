@@ -625,27 +625,20 @@ def matches():
                         "$push": {
                             "number": "$team_number",
                             "alliance": "$alliance",
-                            "coral_total": {
-                                "$sum": [
-                                    "$auto_coral_level1",
-                                    "$auto_coral_level2",
-                                    "$auto_coral_level3",
-                                    "$auto_coral_level4",
-                                    "$teleop_coral_level1",
-                                    "$teleop_coral_level2",
-                                    "$teleop_coral_level3",
-                                    "$teleop_coral_level4"
-                                ]
-                            },
-                            "algae_total": {
-                                "$sum": [
-                                    "$auto_algae_net",
-                                    "$auto_algae_processor",
-                                    "$teleop_algae_net",
-                                    "$teleop_algae_processor"
-                                ]
-                            },
-                            "human_player": "$human_player",
+                            # Auto period
+                            "auto_coral_level1": {"$ifNull": ["$auto_coral_level1", 0]},
+                            "auto_coral_level2": {"$ifNull": ["$auto_coral_level2", 0]},
+                            "auto_coral_level3": {"$ifNull": ["$auto_coral_level3", 0]},
+                            "auto_coral_level4": {"$ifNull": ["$auto_coral_level4", 0]},
+                            "auto_algae_net": {"$ifNull": ["$auto_algae_net", 0]},
+                            "auto_algae_processor": {"$ifNull": ["$auto_algae_processor", 0]},
+                            # Teleop period
+                            "teleop_coral_level1": {"$ifNull": ["$teleop_coral_level1", 0]},
+                            "teleop_coral_level2": {"$ifNull": ["$teleop_coral_level2", 0]},
+                            "teleop_coral_level3": {"$ifNull": ["$teleop_coral_level3", 0]},
+                            "teleop_coral_level4": {"$ifNull": ["$teleop_coral_level4", 0]},
+                            "teleop_algae_net": {"$ifNull": ["$teleop_algae_net", 0]},
+                            "teleop_algae_processor": {"$ifNull": ["$teleop_algae_processor", 0]},
                             "climb_type": "$climb_type",
                             "climb_success": "$climb_success"
                         }
@@ -656,27 +649,77 @@ def matches():
         ]
         
         match_data = list(scouting_manager.db.team_data.aggregate(pipeline))
-        
         matches = []
+        
         for match in match_data:
             red_teams = [t for t in match["teams"] if t["alliance"] == "red"]
             blue_teams = [t for t in match["teams"] if t["alliance"] == "blue"]
             
+            # Calculate alliance totals
+            red_coral = {
+                "level1": sum(t["auto_coral_level1"] + t["teleop_coral_level1"] for t in red_teams),
+                "level2": sum(t["auto_coral_level2"] + t["teleop_coral_level2"] for t in red_teams),
+                "level3": sum(t["auto_coral_level3"] + t["teleop_coral_level3"] for t in red_teams),
+                "level4": sum(t["auto_coral_level4"] + t["teleop_coral_level4"] for t in red_teams)
+            }
+            
+            red_algae = {
+                "net": sum(t["auto_algae_net"] + t["teleop_algae_net"] for t in red_teams),
+                "processor": sum(t["auto_algae_processor"] + t["teleop_algae_processor"] for t in red_teams)
+            }
+            
+            blue_coral = {
+                "level1": sum(t["auto_coral_level1"] + t["teleop_coral_level1"] for t in blue_teams),
+                "level2": sum(t["auto_coral_level2"] + t["teleop_coral_level2"] for t in blue_teams),
+                "level3": sum(t["auto_coral_level3"] + t["teleop_coral_level3"] for t in blue_teams),
+                "level4": sum(t["auto_coral_level4"] + t["teleop_coral_level4"] for t in blue_teams)
+            }
+            
+            blue_algae = {
+                "net": sum(t["auto_algae_net"] + t["teleop_algae_net"] for t in blue_teams),
+                "processor": sum(t["auto_algae_processor"] + t["teleop_algae_processor"] for t in blue_teams)
+            }
+            
+            # Prepare team data for template
+            red_team_data = [{
+                "number": t["number"],
+                "coral_level1": t["auto_coral_level1"] + t["teleop_coral_level1"],
+                "coral_level2": t["auto_coral_level2"] + t["teleop_coral_level2"],
+                "coral_level3": t["auto_coral_level3"] + t["teleop_coral_level3"],
+                "coral_level4": t["auto_coral_level4"] + t["teleop_coral_level4"],
+                "algae_net": t["auto_algae_net"] + t["teleop_algae_net"],
+                "algae_processor": t["auto_algae_processor"] + t["teleop_algae_processor"],
+                "climb_type": t["climb_type"],
+                "climb_success": t["climb_success"]
+            } for t in red_teams]
+
+            blue_team_data = [{
+                "number": t["number"],
+                "coral_level1": t["auto_coral_level1"] + t["teleop_coral_level1"],
+                "coral_level2": t["auto_coral_level2"] + t["teleop_coral_level2"],
+                "coral_level3": t["auto_coral_level3"] + t["teleop_coral_level3"],
+                "coral_level4": t["auto_coral_level4"] + t["teleop_coral_level4"],
+                "algae_net": t["auto_algae_net"] + t["teleop_algae_net"],
+                "algae_processor": t["auto_algae_processor"] + t["teleop_algae_processor"],
+                "climb_type": t["climb_type"],
+                "climb_success": t["climb_success"]
+            } for t in blue_teams]
+            
             matches.append({
                 "event_code": match["_id"]["event"],
                 "match_number": match["_id"]["match"],
-                "red_teams": red_teams,
-                "blue_teams": blue_teams,
-                "red_score": sum(t["total_points"] for t in red_teams),
-                "blue_score": sum(t["total_points"] for t in blue_teams),
-                "red_coral_total": sum(t["coral_total"] for t in red_teams),
-                "red_algae_total": sum(t["algae_total"] for t in red_teams),
-                "blue_coral_total": sum(t["coral_total"] for t in blue_teams),
-                "blue_algae_total": sum(t["algae_total"] for t in blue_teams)
+                "red_teams": red_team_data,
+                "blue_teams": blue_team_data,
+                "red_coral": red_coral,
+                "red_algae": red_algae,
+                "blue_coral": blue_coral,
+                "blue_algae": blue_algae
             })
         
         return render_template("scouting/matches.html", matches=matches)
+        
     except Exception as e:
+        current_app.logger.error(f"Error fetching matches: {str(e)}", exc_info=True)
         flash(f"Error fetching matches: {str(e)}", "error")
         return render_template("scouting/matches.html", matches=[])
 

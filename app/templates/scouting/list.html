@@ -172,7 +172,7 @@
                             <td class="px-3 sm:px-6 py-4">
                                 <a href="{{ url_for('scouting.view_team', team_number=data.team_number) }}" 
                                    class="text-blue-600 hover:text-blue-900">
-                                    {{ data.team_number }}
+                                    {{ data.scouter_team }}
                                 </a>
                             </td>
                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
@@ -232,7 +232,7 @@
                                            href="{{ url_for('auth.profile', username=data.scouter_name) }}">
                                             {{ data.scouter_name }}
                                         </a>
-                                        <span class="sm:inline"><a href="{{ url_for('team.view_team', team_number=data.team_number) }}" class="hover:text-blue-500">({{ data.team_number }})</a></span>
+                                        <span class="sm:inline"><a href="{{ url_for('team.view_team', team_number=data.scouter_team) }}" class="hover:text-blue-500">({{ data.scouter_team }})</a></span>
                                     </div>
                                 </div>
                             </td>

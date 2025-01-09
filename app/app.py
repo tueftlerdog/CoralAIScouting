@@ -26,7 +26,7 @@ def create_app():
     )
 
     mongo.init_app(app)
-    csrf.init_app(app)
+    # csrf.init_app(app) # TODO: Enable this in production for security
 
     with app.app_context():
         if "team_data" not in mongo.db.list_collection_names():

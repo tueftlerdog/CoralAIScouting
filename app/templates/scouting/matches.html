@@ -12,17 +12,17 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-sm font-bold text-gray-900 uppercase">
                                 Match
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-sm font-bold text-gray-900 uppercase">
                                 Red Alliance
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-sm font-bold text-gray-900 uppercase">
                                 Blue Alliance
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Details
+                            <th class="px-6 py-3 text-left text-sm font-bold text-gray-900 uppercase">
+                                Alliance Totals
                             </th>
                         </tr>
                     </thead>
@@ -30,23 +30,37 @@
                         {% for match in matches %}
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">
+                                <div class="text-base font-semibold text-gray-900">
                                     {{ match.event_code }} Q{{ match.match_number }}
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="flex flex-col space-y-2">
+                                <div class="flex flex-col space-y-4">
                                     {% for team in match.red_teams %}
                                     <div class="text-sm">
-                                        <a href="{{ url_for('team.view_team', team_number=team.number) }}" 
-                                           class="text-red-600 hover:text-red-800 font-medium">
+                                        <a href="{{ url_for('scouting.view_team', team_number=team.number) }}" 
+                                           class="text-lg font-bold text-red-600 hover:text-red-800">
                                             {{ team.number }}
                                         </a>
-                                        <div class="text-xs text-gray-500">
-                                            Coral: {{ team.coral_total }} | 
-                                            Algae: {{ team.algae_total }} |
+                                        <div class="text-sm text-gray-700 mt-1 space-y-1">
+                                            <div title="Coral Levels">
+                                                <span class="font-medium">🪸 Coral:</span> 
+                                                L1:{{ team.coral_level1 }} | 
+                                                L2:{{ team.coral_level2 }} | 
+                                                L3:{{ team.coral_level3 }} | 
+                                                L4:{{ team.coral_level4 }}
+                                            </div>
+                                            <div title="Algae">
+                                                <span class="font-medium">🌿 Algae:</span> 
+                                                Net:{{ team.algae_net }} | 
+                                                Proc:{{ team.algae_processor }}
+                                            </div>
                                             {% if team.climb_success %}
-                                            <span class="text-green-600">✓ {{ team.climb_type }}</span>
+                                            <div>
+                                                <span class="text-green-600 font-medium" title="Climb">
+                                                    ⬆️ {{ team.climb_type|title }}
+                                                </span>
+                                            </div>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -54,18 +68,32 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="flex flex-col space-y-2">
+                                <div class="flex flex-col space-y-4">
                                     {% for team in match.blue_teams %}
                                     <div class="text-sm">
-                                        <a href="{{ url_for('team.view_team', team_number=team.number) }}" 
-                                           class="text-blue-600 hover:text-blue-800 font-medium">
+                                        <a href="{{ url_for('scouting.view_team', team_number=team.number) }}" 
+                                           class="text-lg font-bold text-blue-600 hover:text-blue-800">
                                             {{ team.number }}
                                         </a>
-                                        <div class="text-xs text-gray-500">
-                                            Coral: {{ team.coral_total }} | 
-                                            Algae: {{ team.algae_total }} |
+                                        <div class="text-sm text-gray-700 mt-1 space-y-1">
+                                            <div title="Coral Levels">
+                                                <span class="font-medium">🪸 Coral:</span> 
+                                                L1:{{ team.coral_level1 }} | 
+                                                L2:{{ team.coral_level2 }} | 
+                                                L3:{{ team.coral_level3 }} | 
+                                                L4:{{ team.coral_level4 }}
+                                            </div>
+                                            <div title="Algae">
+                                                <span class="font-medium">🌿 Algae:</span> 
+                                                Net:{{ team.algae_net }} | 
+                                                Proc:{{ team.algae_processor }}
+                                            </div>
                                             {% if team.climb_success %}
-                                            <span class="text-green-600">✓ {{ team.climb_type }}</span>
+                                            <div>
+                                                <span class="text-green-600 font-medium" title="Climb">
+                                                    ⬆️ {{ team.climb_type|title }}
+                                                </span>
+                                            </div>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -73,16 +101,41 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm">
-                                    <div class="font-medium">
-                                        <span class="text-red-600">{{ match.red_score }}</span>
-                                        -
-                                        <span class="text-blue-600">{{ match.blue_score }}</span>
+                                <div class="text-sm space-y-4">
+                                    <div class="bg-red-50 p-2 rounded">
+                                        <div class="font-bold text-red-600 mb-1">Red Alliance</div>
+                                        <div class="text-sm text-gray-700 space-y-1">
+                                            <div>
+                                                <span class="font-medium">🪸 Coral:</span><br>
+                                                L1:{{ match.red_coral.level1 }} | 
+                                                L2:{{ match.red_coral.level2 }} | 
+                                                L3:{{ match.red_coral.level3 }} | 
+                                                L4:{{ match.red_coral.level4 }}
+                                            </div>
+                                            <div>
+                                                <span class="font-medium">🌿 Algae:</span><br>
+                                                Net:{{ match.red_algae.net }} | 
+                                                Proc:{{ match.red_algae.processor }}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="text-xs text-gray-500 mt-1">
-                                        Red: {{ match.red_coral_total }} coral, {{ match.red_algae_total }} algae
-                                        <br>
-                                        Blue: {{ match.blue_coral_total }} coral, {{ match.blue_algae_total }} algae
+                                    
+                                    <div class="bg-blue-50 p-2 rounded">
+                                        <div class="font-bold text-blue-600 mb-1">Blue Alliance</div>
+                                        <div class="text-sm text-gray-700 space-y-1">
+                                            <div>
+                                                <span class="font-medium">🪸 Coral:</span><br>
+                                                L1:{{ match.blue_coral.level1 }} | 
+                                                L2:{{ match.blue_coral.level2 }} | 
+                                                L3:{{ match.blue_coral.level3 }} | 
+                                                L4:{{ match.blue_coral.level4 }}
+                                            </div>
+                                            <div>
+                                                <span class="font-medium">🌿 Algae:</span><br>
+                                                Net:{{ match.blue_algae.net }} | 
+                                                Proc:{{ match.blue_algae.processor }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </td>

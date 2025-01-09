@@ -134,7 +134,8 @@
 
 <script>
 function changeRanking(type) {
-    window.location.href = `{{ url_for('scouting.leaderboard') }}?sort=${type}`;
+    const sanitizedType = encodeURIComponent(type);
+    window.location.href = `{{ url_for('scouting.leaderboard') }}?sort=${sanitizedType}`;
 }
 </script>
 {% endblock %} 
