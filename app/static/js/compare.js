@@ -30,11 +30,19 @@ async function compareTeams() {
             .map((team, index) => `team${index + 1}=${encodeURIComponent(team)}`)
             .join('&');
         
+        console.log('Fetching data with query:', queryString);
         const response = await fetch(`${API_ENDPOINT}?${queryString}`);
         const data = await response.json();
         
+        console.log('Received data:', data);
+        
         if (!response.ok) {
             throw new Error(data.error || 'Failed to fetch team data');
+        }
+
+        // Check if we have valid data before updating the chart
+        if (!data || Object.keys(data).length === 0) {
+            throw new Error('No data received from API');
         }
 
         displayComparisonResults(data);
@@ -45,14 +53,14 @@ async function compareTeams() {
 }
 
 function displayComparisonResults(teamsData) {
-    // Add debug logging
-    console.log('Teams Data:', teamsData);
-    
+    console.log('Starting displayComparisonResults with:', teamsData);
     comparisonResults.classList.remove('hidden');
+    
+    // Display raw scouting data first
+    displayRawData(teamsData);
     
     // Get all teams' stats for comparison
     const allStats = Object.values(teamsData).map(team => {
-        // Add null check for team.stats
         if (!team || !team.stats) return {};
         return team.stats;
     });
@@ -133,7 +141,6 @@ function displayComparisonResults(teamsData) {
 
     // Display auto paths for each team
     Object.entries(teamsData).forEach(([teamNum, teamData], index) => {
-        console.log(`Drawing auto paths for team ${teamNum}:`, teamData.auto_paths);
         displayAutoPath(teamNum, teamData.auto_paths, index + 1);
     });
     
@@ -180,7 +187,13 @@ function formatStatsWithHighlighting(stats, allStats) {
         
         // Endgame
         'Climb Success Rate': calculateStatRanking(stats.climb_success_rate || 0, allStats.map(s => s?.climb_success_rate || 0)),
-        'Preferred Climb Type': stats.preferred_climb_type || 'none'
+        'Preferred Climb Type': stats.preferred_climb_type || 'none',
+
+        // Add Human Player & Defense comparisons
+        'Human Player & Defense': {
+            'Human Player': calculateStatRanking(stats.human_player || 0, allStats.map(s => s?.human_player || 0)),
+            'Defense Rating': calculateStatRanking(stats.defense_rating || 0, allStats.map(s => s?.defense_rating || 0))
+        }
     };
 
     // Add null checks for value formatting
@@ -192,13 +205,13 @@ function formatStatsWithHighlighting(stats, allStats) {
                 <div class="grid grid-cols-2 gap-2">
                     ${Object.entries(statComparisons['Auto Coral Scoring']).map(([level, {value, highlight}]) => `
                         <div class="text-sm pl-2">${level}:</div>
-                        <div class="text-sm font-medium ${highlight || ''}">${(value || 0).toFixed(1)} times/match</div>
+                        <div class="text-sm font-medium ${highlight || ''}">${value.toFixed(2)} times/match</div>
                     `).join('')}
                     
                     <div class="col-span-2 text-sm font-medium mt-2">Algae Scoring:</div>
                     ${Object.entries(statComparisons['Auto Algae Scoring']).map(([method, {value, highlight}]) => `
                         <div class="text-sm pl-2">${method}:</div>
-                        <div class="text-sm font-medium ${highlight}">${value.toFixed(1)} times/match</div>
+                        <div class="text-sm font-medium ${highlight}">${value.toFixed(2)} times/match</div>
                     `).join('')}
                 </div>
             </div>
@@ -210,13 +223,13 @@ function formatStatsWithHighlighting(stats, allStats) {
                     <div class="col-span-2 text-sm font-medium">Coral Scoring:</div>
                     ${Object.entries(statComparisons['Teleop Coral Scoring']).map(([level, {value, highlight}]) => `
                         <div class="text-sm pl-2">${level}:</div>
-                        <div class="text-sm font-medium ${highlight}">${value.toFixed(1)} times/match</div>
+                        <div class="text-sm font-medium ${highlight}">${value.toFixed(2)} times/match</div>
                     `).join('')}
                     
                     <div class="col-span-2 text-sm font-medium mt-2">Algae Scoring:</div>
                     ${Object.entries(statComparisons['Teleop Algae Scoring']).map(([method, {value, highlight}]) => `
                         <div class="text-sm pl-2">${method}:</div>
-                        <div class="text-sm font-medium ${highlight}">${value.toFixed(1)} times/match</div>
+                        <div class="text-sm font-medium ${highlight}">${value.toFixed(2)} times/match</div>
                     `).join('')}
                 </div>
             </div>
@@ -227,10 +240,25 @@ function formatStatsWithHighlighting(stats, allStats) {
                 <div class="grid grid-cols-2 gap-2">
                     <div class="text-sm">Climb Success:</div>
                     <div class="text-sm font-medium ${statComparisons['Climb Success Rate'].highlight}">
-                        ${statComparisons['Climb Success Rate'].value.toFixed(1)}%
+                        ${statComparisons['Climb Success Rate'].value.toFixed(2)}%
                     </div>
                     <div class="text-sm">Preferred Climb:</div>
                     <div class="text-sm font-medium">${statComparisons['Preferred Climb Type']}</div>
+                </div>
+            </div>
+
+            <!-- Human Player & Defense -->
+            <div>
+                <div class="font-medium text-gray-700 border-b mb-2">Human Player & Defense</div>
+                <div class="grid grid-cols-2 gap-2">
+                    ${Object.entries(statComparisons['Human Player & Defense']).map(([stat, {value, highlight}]) => `
+                        <div class="text-sm">${stat}:</div>
+                        <div class="text-sm font-medium ${highlight}">
+                            ${value.toFixed(2)} / 20
+                        </div>
+                    `).join('')}
+                    <div class="text-sm">Defense Notes:</div>
+                    <div class="text-sm">${stats.defense_notes || 'None'}</div>
                 </div>
             </div>
         </div>
@@ -333,6 +361,11 @@ function displayAutoPath(teamNum, pathData, containerIndex) {
 function updateRadarChart(teamsData) {
     const ctx = document.getElementById('radar-chart-combined');
     
+    if (!ctx) {
+        console.error('Radar chart canvas not found');
+        return;
+    }
+    
     // Destroy existing chart if it exists
     if (window.radarChart) {
         window.radarChart.destroy();
@@ -342,27 +375,25 @@ function updateRadarChart(teamsData) {
         const colors = ['rgba(37, 99, 235, 0.2)', 'rgba(220, 38, 38, 0.2)', 'rgba(5, 150, 105, 0.2)'];
         const borderColors = ['rgb(37, 99, 235)', 'rgb(220, 38, 38)', 'rgb(5, 150, 105)'];
         
-        // Add null checks and default values
-        const stats = teamData?.stats?.normalized_stats || {
-            auto_scoring: 0,
-            teleop_scoring: 0,
-            climb_rating: 0,
-            defense_rating: 0,
-            human_player: 0
-        };
+        // Ensure normalized_stats exists and has default values
+        const stats = teamData?.normalized_stats || {};
         
         return {
             label: `Team ${teamNum}`,
             data: [
-                Math.min(20, stats.auto_scoring || 0),
-                Math.min(20, stats.teleop_scoring || 0),
-                Math.min(20, stats.climb_rating / 5 || 0),
-                Math.min(20, stats.defense_rating * 4 || 0),
-                Math.min(20, stats.human_player * 4 || 0)
+                (stats.auto_scoring || 0)*2,      
+                (stats.teleop_scoring || 0)*2,    
+                (stats.climb_rating || 0)*200,      
+                (stats.defense_rating || 0)*2,           
+                (stats.human_player || 0)*2              
             ],
             backgroundColor: colors[index],
             borderColor: borderColors[index],
-            borderWidth: 2
+            borderWidth: 2,
+            pointBackgroundColor: borderColors[index],
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: borderColors[index]
         };
     });
     
@@ -379,15 +410,250 @@ function updateRadarChart(teamsData) {
             datasets: datasets
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 r: {
                     beginAtZero: true,
-                    max: 20,
+                    max: 10,
                     ticks: {
                         stepSize: 4
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    angleLines: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    pointLabels: {
+                        font: {
+                            size: window.innerWidth < 768 ? 10 : 14
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: window.innerWidth < 768 ? 'bottom' : 'right',
+                    labels: {
+                        boxWidth: window.innerWidth < 768 ? 12 : 40,
+                        font: {
+                            size: window.innerWidth < 768 ? 10 : 12
+                        }
                     }
                 }
             }
         }
     });
+}
+
+// Add resize handler
+window.addEventListener('resize', () => {
+    if (window.radarChart) {
+        window.radarChart.options.plugins.legend.position = window.innerWidth < 768 ? 'bottom' : 'right';
+        window.radarChart.options.scales.r.ticks.font.size = window.innerWidth < 768 ? 8 : 12;
+        window.radarChart.options.scales.r.pointLabels.font.size = window.innerWidth < 768 ? 10 : 14;
+        window.radarChart.update();
+    }
+});
+
+function displayRawData(teamsData) {
+    console.log('Starting displayRawData with:', teamsData);
+    const tbody = document.getElementById('raw-data-tbody');
+    tbody.innerHTML = '';  // Clear existing rows
+    
+    Object.entries(teamsData).forEach(([teamNum, teamData]) => {
+        console.log(`Processing team ${teamNum}:`, teamData);
+        
+        // Check if matches data exists
+        if (!teamData || !teamData.matches || !Array.isArray(teamData.matches)) {
+            console.warn(`No matches data for team ${teamNum}`, teamData);
+            return;
+        }
+
+        // Sort matches by match number (most recent first)
+        const sortedMatches = [...teamData.matches].sort((a, b) => b.match_number - a.match_number);
+        console.log(`Sorted matches for team ${teamNum}:`, sortedMatches);
+        
+        sortedMatches.forEach(match => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50';
+            
+            // Safely get values with fallbacks
+            const alliance = match.alliance || 'unknown';
+            const matchNumber = match.match_number || 'N/A';
+            const autoCoralScores = [
+                match.auto_coral_level1 || 0,
+                match.auto_coral_level2 || 0,
+                match.auto_coral_level3 || 0,
+                match.auto_coral_level4 || 0
+            ].join('/');
+            const autoAlgaeScores = `${match.auto_algae_net || 0}/${match.auto_algae_processor || 0}`;
+            const teleopCoralScores = [
+                match.teleop_coral_level1 || 0,
+                match.teleop_coral_level2 || 0,
+                match.teleop_coral_level3 || 0,
+                match.teleop_coral_level4 || 0
+            ].join('/');
+            const teleopAlgaeScores = `${match.teleop_algae_net || 0}/${match.teleop_algae_processor || 0}/${match.human_player || 0}`;
+            
+            row.innerHTML = `
+                <td class="px-3 sm:px-6 py-4">
+                    <a href="/scouting/team/${teamNum}" class="text-blue-600 hover:text-blue-900">
+                        ${teamNum}
+                    </a>
+                </td>
+                <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <span class="px-2 py-1 text-sm rounded-full 
+                            ${alliance === 'red' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
+                            ${alliance.charAt(0).toUpperCase() + alliance.slice(1)}
+                        </span>
+                    </div>
+                </td>
+                <td class="sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${matchNumber}</td>
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${autoCoralScores}</td>
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${autoAlgaeScores}</td>
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${teleopCoralScores}</td>
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${teleopAlgaeScores}</td>
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                    ${match.climb_success ? 
+                        `<span class="text-green-600">✓ ${match.climb_type || 'Unknown'}</span>` : 
+                        `<span class="text-red-600">✗ ${match.climb_type || 'Unknown'}</span>`}
+                </td>
+                <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    ${match.auto_path ? 
+                        `<button onclick="showAutoPath('${match.auto_path}', '${match.auto_notes || ''}')" 
+                                class="text-blue-600 hover:text-blue-900">
+                            <span class="hidden sm:inline">View Path</span>
+                            <span class="sm:hidden">🗺️</span>
+                        </button>` : 
+                        `<span class="text-gray-400">No path</span>`}
+                </td>
+                <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    ${match.defense_rating || 0}/20
+                </td>
+                <td class="lg:table-cell px-3 sm:px-6 py-4 whitespace-normal max-w-xs truncate">
+                    ${match.notes || ''}
+                </td>
+                <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                        <img src="${match.profile_picture && match.profile_picture !== 'default' ? 
+                                  `/api/profile_picture/${match.profile_picture}` : 
+                                  '/static/images/default_profile.png'}" 
+                             alt="Profile Picture" 
+                             class="w-6 h-6 sm:w-8 sm:h-8 rounded-full">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-1">
+                            <a class="text-blue-600 hover:text-blue-900 text-sm" 
+                               href="/auth/profile/${match.scouter_name || 'unknown'}">
+                                ${match.scouter_name || 'Unknown'}
+                            </a>
+                            ${match.scouter_team ? 
+                                `<span class="sm:inline">
+                                    <a href="/team/${match.scouter_team}" class="hover:text-blue-500">
+                                        (${match.scouter_team})
+                                    </a>
+                                </span>` : 
+                                ''}
+                        </div>
+                    </div>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+    });
+}
+
+// Make sure showAutoPath function is defined globally
+window.showAutoPath = function(pathData, autoNotes = '') {
+    const modal = document.getElementById('autoPathModal');
+    const image = document.getElementById('modalAutoPathImage');
+    const notes = document.getElementById('modalAutoNotes');
+    
+    if (modal && image && notes) {
+        image.src = pathData;
+        notes.textContent = autoNotes || 'No auto notes provided';
+        modal.classList.remove('hidden');
+    } else {
+        console.error('Modal elements not found');
+    }
+};
+
+function createRadarChart(data) {
+    // Extract teams for comparison
+    const teams = Object.keys(data);
+    
+    // Define the metrics we want to compare
+    const metrics = [
+        'auto_scoring',
+        'teleop_scoring',
+        'climb_rating',
+        'defense_rating',
+        'human_player'
+    ];
+
+    // Prepare the data for the radar chart
+    const chartData = {
+        labels: metrics,
+        datasets: teams.map((team, index) => {
+            const teamData = data[team].normalized_stats;
+            const color = getTeamColor(index);
+            
+            return {
+                label: `Team ${team}`,
+                data: metrics.map(metric => teamData[metric] || 0),
+                fill: true,
+                backgroundColor: `${color}33`, // Add transparency
+                borderColor: color,
+                pointBackgroundColor: color,
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: color
+            };
+        })
+    };
+
+    // Configuration for the radar chart
+    const config = {
+        type: 'radar',
+        data: chartData,
+        options: {
+            responsive: true,
+            scales: {
+                r: {
+                    min: 0,
+                    max: 5,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            elements: {
+                line: {
+                    borderWidth: 3
+                }
+            }
+        }
+    };
+
+    // Create the chart
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    if (window.myRadarChart) {
+        window.myRadarChart.destroy();
+    }
+    window.myRadarChart = new Chart(ctx, config);
+}
+
+// Helper function to get different colors for teams
+function getTeamColor(index) {
+    const colors = [
+        '#FF6384',
+        '#36A2EB',
+        '#FFCE56',
+        '#4BC0C0',
+        '#9966FF',
+        '#FF9F40'
+    ];
+    return colors[index % colors.length];
 }

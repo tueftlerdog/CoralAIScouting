@@ -8,7 +8,7 @@ const radarConfig = {
         r: {
             beginAtZero: true,
             min: 0,
-            max: 10, // Set fixed max scale for consistency
+            max: 10,
             grid: {
                 color: 'rgba(0, 0, 0, 0.1)'
             },
@@ -39,11 +39,17 @@ function createRadarChart(canvasId, data, isCombo = false) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     
     const chartData = {
-        labels: ['Auto', 'Teleop', 'Endgame', 'Consistency', 'Overall'],
+        labels: [
+            'Auto Scoring',
+            'Teleop Scoring',
+            'Climb Success',
+            'Defense Rating',
+            'Human Player'
+        ],
         datasets: isCombo ? [
             {
-                label: 'Team 1',
-                data: data[0],
+                label: `Team ${data[0].team}`,
+                data: data[0].values,
                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
                 borderColor: 'rgb(54, 162, 235)',
                 borderWidth: 2,
@@ -53,8 +59,8 @@ function createRadarChart(canvasId, data, isCombo = false) {
                 pointHoverBorderColor: 'rgb(54, 162, 235)'
             },
             {
-                label: 'Team 2',
-                data: data[1],
+                label: `Team ${data[1].team}`,
+                data: data[1].values,
                 backgroundColor: 'rgba(255, 99, 132, 0.2)',
                 borderColor: 'rgb(255, 99, 132)',
                 borderWidth: 2,
@@ -64,7 +70,7 @@ function createRadarChart(canvasId, data, isCombo = false) {
                 pointHoverBorderColor: 'rgb(255, 99, 132)'
             }
         ] : [{
-            data: data,
+            data: data.values,
             backgroundColor: 'rgba(54, 162, 235, 0.2)',
             borderColor: 'rgb(54, 162, 235)',
             borderWidth: 2,
@@ -104,45 +110,37 @@ function normalizeValue(value, min, max, scale) {
 }
 
 function updateRadarCharts(teamsData) {
-    let team1Data = null;
-    let team2Data = null;
+    const processedData = [];
 
     // Calculate radar chart data for each team
     for (const [teamNum, teamData] of Object.entries(teamsData)) {
         const {stats} = teamData;
         
-        const consistency = calculateConsistency(teamData.scouting_data);
-        
-        const radarData = [
-            normalizeValue(stats.avg_auto, 0, 30, 10),
-            normalizeValue(stats.avg_teleop, 0, 50, 10),
-            normalizeValue(stats.avg_endgame, 0, 10, 10),
-            consistency,
-            normalizeValue(stats.avg_total, 0, 90, 10)
-        ];
+        // Create normalized values for each metric
+        const radarData = {
+            team: teamNum,
+            values: [
+                // Auto scoring (combine coral and algae)
+                stats.auto_scoring || 0,
+                // Teleop scoring (combine coral and algae)
+                stats.teleop_scoring || 0,
+                // Climb success rate
+                stats.climb_rating || 0,
+                // Defense rating
+                stats.defense_rating || 0,
+                // Human player rating
+                stats.human_player || 0
+            ]
+        };
 
-        if (teamNum === Object.keys(teamsData)[0]) {
-            team1Data = radarData;
-            if (team1RadarChart) {
-                team1RadarChart.destroy();
-            }
-            team1RadarChart = createRadarChart('radar-chart-team1', radarData);
-        } else {
-            team2Data = radarData;
-            if (team2RadarChart) {
-                team2RadarChart.destroy();
-            }
-            team2RadarChart = createRadarChart('radar-chart-team2', radarData);
-        }
+        processedData.push(radarData);
     }
 
     // Update combined chart
-    if (team1Data && team2Data) {
-        if (combinedRadarChart) {
-            combinedRadarChart.destroy();
-        }
-        combinedRadarChart = createRadarChart('radar-chart-combined', [team1Data, team2Data], true);
+    if (combinedRadarChart) {
+        combinedRadarChart.destroy();
     }
+    combinedRadarChart = createRadarChart('radar-chart-combined', processedData, true);
 }
 
 // Export the updateRadarCharts function

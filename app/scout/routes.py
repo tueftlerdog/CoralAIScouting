@@ -8,6 +8,8 @@ from .TBA import TBAInterface
 from bson import ObjectId
 from gridfs import GridFS
 import base64
+from bson import json_util
+import json
 
 scouting_bp = Blueprint("scouting", __name__)
 scouting_manager = None
@@ -137,22 +139,18 @@ def format_team_stats(stats):
 
 @scouting_bp.route("/api/compare")
 @login_required
-@async_route
-async def compare_teams():
+def compare_teams():
     try:
-        # Get team numbers from query parameters
         teams = []
-        for i in range(1, 4):  # Check for team1, team2, team3
+        for i in range(1, 4):  # Support up to 3 teams
             team_num = request.args.get(f'team{i}')
             if team_num:
                 teams.append(team_num)
 
         if len(teams) < 2:
-            return jsonify({"error": "At least two team numbers are required"}), 400
+            return jsonify({"error": "At least 2 teams are required"}), 400
 
         teams_data = {}
-        tba = TBAInterface()
-
         for team_num in teams:
             try:
                 # Get team stats from database
@@ -177,23 +175,114 @@ async def compare_teams():
                         "climb_success_rate": {
                             "$avg": {"$cond": [{"$eq": ["$climb_success", True]}, 100, 0]}
                         },
-                        "preferred_climb_type": {"$last": "$climb_type"}
+                        "preferred_climb_type": {"$last": "$climb_type"},
+                        "total_coral": {"$sum": {
+                            "$add": [
+                                "$auto_coral_level1", "$auto_coral_level2",
+                                "$auto_coral_level3", "$auto_coral_level4",
+                                "$teleop_coral_level1", "$teleop_coral_level2",
+                                "$teleop_coral_level3", "$teleop_coral_level4"
+                            ]
+                        }},
+                        "total_algae": {"$sum": {
+                            "$add": [
+                                "$auto_algae_net", "$auto_algae_processor",
+                                "$teleop_algae_net", "$teleop_algae_processor"
+                            ]
+                        }},
+                        "human_player": {"$avg": "$human_player"},
+                        "defense_rating": {"$avg": "$defense_rating"},
+                        "successful_climbs": {
+                            "$sum": {"$cond": ["$climb_success", 1, 0]}
+                        },
                     }}
                 ]
 
-                team_stats = list(scouting_manager.db.team_data.aggregate(pipeline))
-                stats = team_stats[0] if team_stats else {}
-
-                # Get team info from TBA using async HTTP client
-                team_key = f"frc{team_num}"
-                url = f"{tba.base_url}/team/{team_key}"
+                stats = list(scouting_manager.db.team_data.aggregate(pipeline))
                 
-                async with aiohttp.ClientSession(headers=tba.headers) as session:
-                    async with session.get(url) as response:
-                        team_info = await response.json() if response.status == 200 else {}
+                # Get the 5 most recent matches and convert ObjectId to string
+                matches = list(scouting_manager.db.team_data.aggregate([
+                    {"$match": {"team_number": int(team_num)}},
+                    {
+                        "$lookup": {
+                            "from": "users",
+                            "localField": "scouter_id",
+                            "foreignField": "_id",
+                            "as": "scouter"
+                        }
+                    },
+                    {"$unwind": {
+                        "path": "$scouter",
+                        "preserveNullAndEmptyArrays": True
+                    }},
+                    {"$sort": {"match_number": -1}},
+                    {"$limit": 5},
+                    {
+                        "$project": {
+                            "_id": 1,
+                            "team_number": 1,
+                            "match_number": 1,
+                            "event_code": 1,
+                            "alliance": 1,
+                            "auto_coral_level1": 1,
+                            "auto_coral_level2": 1,
+                            "auto_coral_level3": 1,
+                            "auto_coral_level4": 1,
+                            "auto_algae_net": 1,
+                            "auto_algae_processor": 1,
+                            "teleop_coral_level1": 1,
+                            "teleop_coral_level2": 1,
+                            "teleop_coral_level3": 1,
+                            "teleop_coral_level4": 1,
+                            "teleop_algae_net": 1,
+                            "teleop_algae_processor": 1,
+                            "human_player": 1,
+                            "climb_type": 1,
+                            "climb_success": 1,
+                            "defense_rating": 1,
+                            "auto_path": 1,
+                            "auto_notes": 1,
+                            "notes": 1,
+                            "scouter_name": "$scouter.username",
+                            "scouter_team": "$scouter.teamNumber",
+                            "profile_picture": "$scouter.profile_picture"
+                        }
+                    }
+                ]))
 
-                # get auto paths from scouting manager
+                # Convert ObjectId to string in matches
+                for match in matches:
+                    match['_id'] = str(match['_id'])
+
+                # Get team info from TBA
+                team_key = f"frc{team_num}"
+                team_info = TBAInterface().get_team(team_key)
+
+                # Get auto paths
                 auto_paths = scouting_manager.get_auto_paths(team_num)
+
+                # Calculate normalized stats for radar chart
+                if stats and stats[0]["matches_played"] > 0:
+                    matches_played = stats[0]["matches_played"]
+                    normalized_stats = {
+                        "auto_scoring": (stats[0]["total_coral"] / matches_played) / 20,
+                        "teleop_scoring": (stats[0]["total_algae"] / matches_played) / 20,
+                        "climb_rating": (stats[0]["successful_climbs"] / matches_played) / 20,
+                        "defense_rating": stats[0]["defense_rating"],
+                        "human_player": stats[0]["human_player"]
+                    }
+                else:
+                    normalized_stats = {
+                        "auto_scoring": 0,
+                        "teleop_scoring": 0,
+                        "climb_rating": 0,
+                        "defense_rating": 0,
+                        "human_player": 0
+                    }
+
+                # Convert ObjectId in stats
+                if stats and '_id' in stats[0]:
+                    stats[0]['_id'] = str(stats[0]['_id'])
 
                 teams_data[team_num] = {
                     "team_number": int(team_num),
@@ -202,59 +291,24 @@ async def compare_teams():
                     "city": team_info.get("city"),
                     "state_prov": team_info.get("state_prov"),
                     "country": team_info.get("country"),
-                    "stats": {
-                        "matches_played": stats.get("matches_played", 0),
-                        "auto_coral_level1": stats.get("auto_coral_level1", 0),
-                        "auto_coral_level2": stats.get("auto_coral_level2", 0),
-                        "auto_coral_level3": stats.get("auto_coral_level3", 0),
-                        "auto_coral_level4": stats.get("auto_coral_level4", 0),
-                        "auto_algae_net": stats.get("auto_algae_net", 0),
-                        "auto_algae_processor": stats.get("auto_algae_processor", 0),
-                        "teleop_coral_level1": stats.get("teleop_coral_level1", 0),
-                        "teleop_coral_level2": stats.get("teleop_coral_level2", 0),
-                        "teleop_coral_level3": stats.get("teleop_coral_level3", 0),
-                        "teleop_coral_level4": stats.get("teleop_coral_level4", 0),
-                        "teleop_algae_net": stats.get("teleop_algae_net", 0),
-                        "teleop_algae_processor": stats.get("teleop_algae_processor", 0),
-                        "climb_success_rate": stats.get("climb_success_rate", 0),
-                        "preferred_climb_type": stats.get("preferred_climb_type", "none"),
-                        "normalized_stats": {
-                            "auto_scoring": (
-                                stats.get("auto_coral_level1", 0) +
-                                stats.get("auto_coral_level2", 0) * 2 +
-                                stats.get("auto_coral_level3", 0) * 3 +
-                                stats.get("auto_coral_level4", 0) * 4 +
-                                stats.get("auto_algae_net", 0) +
-                                stats.get("auto_algae_processor", 0)
-                            ) / 6,
-                            "teleop_scoring": (
-                                stats.get("teleop_coral_level1", 0) +
-                                stats.get("teleop_coral_level2", 0) * 2 +
-                                stats.get("teleop_coral_level3", 0) * 3 +
-                                stats.get("teleop_coral_level4", 0) * 4 +
-                                stats.get("teleop_algae_net", 0) +
-                                stats.get("teleop_algae_processor", 0)
-                            ) / 6,
-                            "climb_rating": stats.get("climb_success_rate", 0),
-                            "defense_rating": stats.get("avg_defense", 0),
-                            "human_player": stats.get("human_player", 0)
-                        }
-                    },
-                    "auto_paths": auto_paths
+                    "stats": stats[0] if stats else {},
+                    "normalized_stats": normalized_stats,
+                    "matches": matches,
+                    "auto_paths": auto_paths,
                 }
 
             except Exception as team_error:
-                current_app.logger.error(f"Error processing team {team_num}: {str(team_error)}")
+                print(f"Error processing team {team_num}: {str(team_error)}")
                 teams_data[team_num] = {
                     "team_number": int(team_num),
                     "error": str(team_error)
                 }
 
-        return jsonify(teams_data)
+        return json.loads(json_util.dumps(teams_data))
 
     except Exception as e:
-        current_app.logger.error(f"Error comparing teams: {str(e)}", exc_info=True)
-        return jsonify({"error": "An internal error has occurred."}), 500
+        print(f"Error in compare_teams: {str(e)}")
+        return jsonify({"error": "An error occurred while comparing teams"}), 500
 
 @scouting_bp.route("/search")
 @login_required
@@ -310,6 +364,8 @@ async def search_teams():
                     "climb_success": 1,
                     "defense_rating": 1,
                     "defense_notes": 1,
+                    "human_player": 1,
+                    "defense_rating": 1,
                     "auto_path": 1,
                     "auto_notes": 1,
                     "total_points": 1,
@@ -400,6 +456,7 @@ async def search_teams():
                     }
                 },
                 "human_player": 0,
+                "defense_rating": 0,
                 "climb_success_rate": 0,
                 "avg_defense": 0
             }
@@ -429,7 +486,8 @@ async def search_teams():
                     "state_prov": team.get("state_prov"),
                     "country": team.get("country"),
                     "scouting_data": scouting_entries,
-                    "has_team_page": scouting_manager.has_team_data(team["team_number"])
+                    "has_team_page": scouting_manager.has_team_data(team["team_number"]),
+                    "stats": stats
                 }
             ]
         )
@@ -500,6 +558,13 @@ def leaderboard():
                 # Teleop Algae
                 "teleop_algae_net": {"$avg": {"$ifNull": ["$teleop_algae_net", 0]}},
                 "teleop_algae_processor": {"$avg": {"$ifNull": ["$teleop_algae_processor", 0]}},
+
+                # Human Player
+                "human_player": {"$avg": {"$ifNull": ["$human_player", 0]}},
+                
+                # Defense Rating
+                "defense_rating": {"$avg": {"$ifNull": ["$defense_rating", 0]}},
+
                 # Climb stats
                 "climb_attempts": {"$sum": 1},
                 "climb_successes": {
@@ -526,94 +591,76 @@ def leaderboard():
                 "team_number": "$_id",
                 "matches_played": 1,
                 "auto_coral_stats": {
-                    "level1": {"$round": ["$auto_coral_level1", 1]},
-                    "level2": {"$round": ["$auto_coral_level2", 1]},
-                    "level3": {"$round": ["$auto_coral_level3", 1]},
-                    "level4": {"$round": ["$auto_coral_level4", 1]}
+                    "level1": "$auto_coral_level1",
+                    "level2": "$auto_coral_level2",
+                    "level3": "$auto_coral_level3",
+                    "level4": "$auto_coral_level4"
                 },
                 "teleop_coral_stats": {
-                    "level1": {"$round": ["$teleop_coral_level1", 1]},
-                    "level2": {"$round": ["$teleop_coral_level2", 1]},
-                    "level3": {"$round": ["$teleop_coral_level3", 1]},
-                    "level4": {"$round": ["$teleop_coral_level4", 1]}
+                    "level1": "$teleop_coral_level1",
+                    "level2": "$teleop_coral_level2",
+                    "level3": "$teleop_coral_level3",
+                    "level4": "$teleop_coral_level4"
                 },
                 "auto_algae_stats": {
-                    "net": {"$round": ["$auto_algae_net", 1]},
-                    "processor": {"$round": ["$auto_algae_processor", 1]}
+                    "net": "$auto_algae_net",
+                    "processor": "$auto_algae_processor"
                 },
                 "teleop_algae_stats": {
-                    "net": {"$round": ["$teleop_algae_net", 1]},
-                    "processor": {"$round": ["$teleop_algae_processor", 1]}
+                    "net": "$teleop_algae_net",
+                    "processor": "$teleop_algae_processor"
                 },
                 # Calculate totals for each category
                 "total_coral": {
-                    "$round": [{
-                        "$add": [
-                            "$auto_coral_level1", "$auto_coral_level2", 
-                            "$auto_coral_level3", "$auto_coral_level4",
-                            "$teleop_coral_level1", "$teleop_coral_level2", 
-                            "$teleop_coral_level3", "$teleop_coral_level4"
-                        ]
-                    }, 1]
+                    "$add": [
+                        "$auto_coral_level1", "$auto_coral_level2", 
+                        "$auto_coral_level3", "$auto_coral_level4",
+                        "$teleop_coral_level1", "$teleop_coral_level2", 
+                        "$teleop_coral_level3", "$teleop_coral_level4"
+                    ]
                 },
                 "total_auto_coral": {
-                    "$round": [{
-                        "$add": [
-                            "$auto_coral_level1", "$auto_coral_level2", 
-                            "$auto_coral_level3", "$auto_coral_level4"
-                        ]
-                    }, 1]
+                    "$add": [
+                        "$auto_coral_level1", "$auto_coral_level2", 
+                        "$auto_coral_level3", "$auto_coral_level4"
+                    ]
                 },
                 "total_teleop_coral": {
-                    "$round": [{
-                        "$add": [
-                            "$teleop_coral_level1", "$teleop_coral_level2", 
-                            "$teleop_coral_level3", "$teleop_coral_level4"
-                        ]
-                    }, 1]
+                    "$add": [
+                        "$teleop_coral_level1", "$teleop_coral_level2", 
+                        "$teleop_coral_level3", "$teleop_coral_level4"
+                    ]
                 },
                 "total_algae": {
-                    "$round": [{
-                        "$add": [
-                            "$auto_algae_net", "$auto_algae_processor",
-                            "$teleop_algae_net", "$teleop_algae_processor"
-                        ]
-                    }, 1]
+                    "$add": [
+                        "$auto_algae_net", "$auto_algae_processor",
+                        "$teleop_algae_net", "$teleop_algae_processor"
+                    ]
                 },
                 "total_auto_algae": {
-                    "$round": [{
-                        "$add": ["$auto_algae_net", "$auto_algae_processor"]
-                    }, 1]
+                    "$add": ["$auto_algae_net", "$auto_algae_processor"]
                 },
                 "total_teleop_algae": {
-                    "$round": [{
-                        "$add": ["$teleop_algae_net", "$teleop_algae_processor"]
-                    }, 1]
+                    "$add": ["$teleop_algae_net", "$teleop_algae_processor"]
                 },
                 "climb_success_rate": {
-                    "$round": [
-                        {"$multiply": [
-                            {"$cond": [
-                                {"$gt": ["$climb_attempts", 0]},
-                                {"$divide": ["$climb_successes", "$climb_attempts"]},
-                                0
-                            ]},
-                            100
+                    "$multiply": [
+                        {"$cond": [
+                            {"$gt": ["$climb_attempts", 0]},
+                            {"$divide": ["$climb_successes", "$climb_attempts"]},
+                            0
                         ]},
-                        1
+                        100
                     ]
                 },
                 "deep_climb_success_rate": {
-                    "$round": [
-                        {"$multiply": [
-                            {"$cond": [
-                                {"$gt": ["$deep_climb_attempts", 0]},
-                                {"$divide": ["$deep_climb_successes", "$deep_climb_attempts"]},
-                                0
-                            ]},
-                            100
+                    "$multiply": [
+                        {"$cond": [
+                            {"$gt": ["$deep_climb_attempts", 0]},
+                            {"$divide": ["$deep_climb_successes", "$deep_climb_attempts"]},
+                            0
                         ]},
-                        1
+                        100
                     ]
                 }
             }}
@@ -627,7 +674,9 @@ def leaderboard():
             'algae': 'total_algae',
             'auto_algae': 'total_auto_algae',
             'teleop_algae': 'total_teleop_algae',
-            'deep_climb': 'deep_climb_success_rate'
+            'deep_climb': 'deep_climb_success_rate',
+            'human_player': 'human_player',
+            'defense_rating': 'defense_rating'
         }.get(sort_type, 'total_coral')
 
         if sort_type == 'deep_climb':
