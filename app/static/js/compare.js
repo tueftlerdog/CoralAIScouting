@@ -250,11 +250,10 @@ function formatStatsWithHighlighting(stats, allStats) {
                     ${Object.entries(statComparisons['Human Player & Defense']).map(([stat, {value, highlight}]) => `
                         <div class="text-sm">${stat}:</div>
                         <div class="text-sm font-medium ${highlight}">
-                            ${value.toFixed(2)} / 20
+                            ${value.toFixed(2)} / 5
                         </div>
                     `).join('')}
                     <div class="text-sm">Defense Notes:</div>
-                    <div class="text-sm">${stats.defense_notes || 'None'}</div>
                 </div>
             </div>
         </div>
