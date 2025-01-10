@@ -325,19 +325,37 @@ async def search_teams():
         return jsonify([])
 
     try:
+        # Initialize TBA interface
         tba = TBAInterface()
-        team_key = f"frc{query}"
-        url = f"{tba.base_url}/team/{team_key}"
+        
+        # Handle both numeric and text searches
+        if query.isdigit():
+            team_key = f"frc{query}"
+            url = f"{tba.base_url}/team/{team_key}"
+            
+            async with aiohttp.ClientSession(headers=tba.headers) as session:
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        return jsonify([])
+                    team = await response.json()
+        else:
+            # Search by team name/nickname
+            url = f"{tba.base_url}/teams/search/{query}"
+            async with aiohttp.ClientSession(headers=tba.headers) as session:
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        return jsonify([])
+                    teams = await response.json()
+                    if not teams:
+                        return jsonify([])
+                    team = teams[0]  # Take the first match
 
-        async with aiohttp.ClientSession(headers=tba.headers) as session:
-            async with session.get(url) as response:
-                if response.status != 200:
-                    return jsonify([])
-                team = await response.json()
-
-        # Fetch all scouting data for this team
+        # Get team number from the response
+        team_number = team.get("team_number")
+        
+        # Fetch scouting data from our database
         pipeline = [
-            {"$match": {"team_number": int(query)}},
+            {"$match": {"team_number": team_number}},
             {
                 "$lookup": {
                     "from": "users",
@@ -346,155 +364,58 @@ async def search_teams():
                     "as": "scouter"
                 }
             },
-            {"$unwind": "$scouter"},
+            {"$unwind": {"path": "$scouter", "preserveNullAndEmptyArrays": True}},
+            {"$sort": {"event_code": 1, "match_number": 1}},
             {
                 "$project": {
-                    "_id": 1,
-                    "team_number": 1,
-                    "match_number": 1,
+                    "_id": {"$toString": "$_id"},  # Convert ObjectId to string
                     "event_code": 1,
-                    "coral_level1": 1,
-                    "coral_level2": 1,
-                    "coral_level3": 1,
-                    "coral_level4": 1,
-                    "algae_net": 1,
-                    "algae_processor": 1,
-                    "human_player": 1,
+                    "match_number": 1,
+                    "auto_coral_level1": {"$ifNull": ["$auto_coral_level1", 0]},
+                    "auto_coral_level2": {"$ifNull": ["$auto_coral_level2", 0]},
+                    "auto_coral_level3": {"$ifNull": ["$auto_coral_level3", 0]},
+                    "auto_coral_level4": {"$ifNull": ["$auto_coral_level4", 0]},
+                    "teleop_coral_level1": {"$ifNull": ["$teleop_coral_level1", 0]},
+                    "teleop_coral_level2": {"$ifNull": ["$teleop_coral_level2", 0]},
+                    "teleop_coral_level3": {"$ifNull": ["$teleop_coral_level3", 0]},
+                    "teleop_coral_level4": {"$ifNull": ["$teleop_coral_level4", 0]},
+                    "auto_algae_net": {"$ifNull": ["$auto_algae_net", 0]},
+                    "auto_algae_processor": {"$ifNull": ["$auto_algae_processor", 0]},
+                    "teleop_algae_net": {"$ifNull": ["$teleop_algae_net", 0]},
+                    "teleop_algae_processor": {"$ifNull": ["$teleop_algae_processor", 0]},
+                    "human_player": {"$ifNull": ["$human_player", 0]},
                     "climb_type": 1,
                     "climb_success": 1,
-                    "defense_rating": 1,
-                    "defense_notes": 1,
-                    "human_player": 1,
-                    "defense_rating": 1,
                     "auto_path": 1,
                     "auto_notes": 1,
-                    "total_points": 1,
+                    "defense_rating": {"$ifNull": ["$defense_rating", 0]},
                     "notes": 1,
-                    "alliance": 1,
-                    "scouter_id": 1,
                     "scouter_name": "$scouter.username",
-                    "scouter_team": "$scouter.teamNumber"
+                    "scouter_id": {"$toString": "$scouter._id"} 
                 }
             }
         ]
 
-        team_scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
-        
-        # Calculate statistics
-        matches_played = len(team_scouting_data)
-        if matches_played > 0:
-            coral_totals = [sum([
-                entry["coral_level1"],
-                entry["coral_level2"],
-                entry["coral_level3"],
-                entry["coral_level4"]
-            ]) for entry in team_scouting_data]
-            
-            algae_totals = [
-                entry["algae_net"] + entry["algae_processor"]
-                for entry in team_scouting_data
-            ]
-            
-            successful_climbs = sum(bool(entry["climb_success"])
-                                for entry in team_scouting_data)
-            
-            stats = {
-                "matches_played": matches_played,
-                "coral_stats": {
-                    "auto": {
-                        "level1": sum(entry["auto_coral_level1"] for entry in team_scouting_data) / matches_played,
-                        "level2": sum(entry["auto_coral_level2"] for entry in team_scouting_data) / matches_played,
-                        "level3": sum(entry["auto_coral_level3"] for entry in team_scouting_data) / matches_played,
-                        "level4": sum(entry["auto_coral_level4"] for entry in team_scouting_data) / matches_played,
-                    },
-                    "teleop": {
-                        "level1": sum(entry["teleop_coral_level1"] for entry in team_scouting_data) / matches_played,
-                        "level2": sum(entry["teleop_coral_level2"] for entry in team_scouting_data) / matches_played,
-                        "level3": sum(entry["teleop_coral_level3"] for entry in team_scouting_data) / matches_played,
-                        "level4": sum(entry["teleop_coral_level4"] for entry in team_scouting_data) / matches_played,
-                    }
-                },
-                "algae_stats": {
-                    "auto": {
-                        "net": sum(entry["auto_algae_net"] for entry in team_scouting_data) / matches_played,
-                        "processor": sum(entry["auto_algae_processor"] for entry in team_scouting_data) / matches_played,
-                    },
-                    "teleop": {
-                        "net": sum(entry["teleop_algae_net"] for entry in team_scouting_data) / matches_played,
-                        "processor": sum(entry["teleop_algae_processor"] for entry in team_scouting_data) / matches_played,
-                    }
-                },
-                "human_player": sum(entry["human_player"] for entry in team_scouting_data) / matches_played,
-                "climb_success_rate": sum(bool(entry["climb_success"]) for entry in team_scouting_data) / matches_played,
-                "avg_defense": sum(entry["defense_rating"] for entry in team_scouting_data) / matches_played
-            }
-        else:
-            stats = {
-                "matches_played": 0,
-                "coral_stats": {
-                    "auto": {
-                        "level1": 0,
-                        "level2": 0,
-                        "level3": 0,
-                        "level4": 0
-                    },
-                    "teleop": {
-                        "level1": 0,
-                        "level2": 0,
-                        "level3": 0,
-                        "level4": 0
-                    }
-                },
-                "algae_stats": {
-                    "auto": {
-                        "net": 0,
-                        "processor": 0
-                    },
-                    "teleop": {
-                        "net": 0,
-                        "processor": 0
-                    }
-                },
-                "human_player": 0,
-                "defense_rating": 0,
-                "climb_success_rate": 0,
-                "avg_defense": 0
-            }
+        scouting_data = list(scouting_manager.db.team_data.aggregate(pipeline))
 
-        scouting_entries = [
-            {
-                "id": str(entry["_id"]),
-                "event_code": entry["event_code"],
-                "match_number": entry["match_number"],
-                "auto_points": entry["auto_points"],
-                "teleop_points": entry["teleop_points"],
-                "endgame_points": entry["endgame_points"],
-                "total_points": entry["total_points"],
-                "notes": entry["notes"],
-                "scouter": entry["scouter"]["username"],
-            }
-            for entry in team_scouting_data
-        ]
+        # Format response
+        response_data = [{
+            "team_number": team_number,
+            "nickname": team.get("nickname"),
+            "school_name": team.get("school_name"),
+            "city": team.get("city"),
+            "state_prov": team.get("state_prov"),
+            "country": team.get("country"),
+            "scouting_data": scouting_data,
+            "has_team_page": bool(scouting_data)  # True if we have any scouting data
+        }]
 
-        return jsonify(
-            [
-                {
-                    "team_number": team["team_number"],
-                    "nickname": team["nickname"],
-                    "school_name": team.get("school_name"),
-                    "city": team.get("city"),
-                    "state_prov": team.get("state_prov"),
-                    "country": team.get("country"),
-                    "scouting_data": scouting_entries,
-                    "has_team_page": scouting_manager.has_team_data(team["team_number"]),
-                    "stats": stats
-                }
-            ]
-        )
+        # Use json_util.dumps to handle MongoDB types
+        return json_util.dumps(response_data), 200, {'Content-Type': 'application/json'}
 
     except Exception as e:
-        # print(f"Error searching teams: {e}")
-        return jsonify({"error": "Failed to fetch team data"}), 500
+        current_app.logger.error(f"Error in search_teams: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Failed to fetch team data: {str(e)}"}), 500
 
 
 @scouting_bp.route("/scouting/sync", methods=["POST"])
@@ -662,7 +583,9 @@ def leaderboard():
                         ]},
                         100
                     ]
-                }
+                },
+                "human_player": {"$round": ["$human_player", 1]},
+                "defense_rating": {"$round": ["$defense_rating", 1]}
             }}
         ]
 
@@ -676,7 +599,7 @@ def leaderboard():
             'teleop_algae': 'total_teleop_algae',
             'deep_climb': 'deep_climb_success_rate',
             'human_player': 'human_player',
-            'defense_rating': 'defense_rating'
+            'defense': 'defense_rating'
         }.get(sort_type, 'total_coral')
 
         if sort_type == 'deep_climb':
@@ -724,8 +647,27 @@ def matches():
                             "teleop_coral_level4": {"$ifNull": ["$teleop_coral_level4", 0]},
                             "teleop_algae_net": {"$ifNull": ["$teleop_algae_net", 0]},
                             "teleop_algae_processor": {"$ifNull": ["$teleop_algae_processor", 0]},
+                            "human_player": {"$ifNull": ["$human_player", 0]},
                             "climb_type": "$climb_type",
                             "climb_success": "$climb_success"
+                        }
+                    },
+                    "red_human_player": {
+                        "$avg": {
+                            "$cond": [
+                                {"$eq": ["$alliance", "red"]},
+                                "$human_player",
+                                None
+                            ]
+                        }
+                    },
+                    "blue_human_player": {
+                        "$avg": {
+                            "$cond": [
+                                {"$eq": ["$alliance", "blue"]},
+                                "$human_player",
+                                None
+                            ]
                         }
                     }
                 }
@@ -774,6 +716,7 @@ def matches():
                 "coral_level4": t["auto_coral_level4"] + t["teleop_coral_level4"],
                 "algae_net": t["auto_algae_net"] + t["teleop_algae_net"],
                 "algae_processor": t["auto_algae_processor"] + t["teleop_algae_processor"],
+                "human_player": t["human_player"],
                 "climb_type": t["climb_type"],
                 "climb_success": t["climb_success"]
             } for t in red_teams]
@@ -786,10 +729,15 @@ def matches():
                 "coral_level4": t["auto_coral_level4"] + t["teleop_coral_level4"],
                 "algae_net": t["auto_algae_net"] + t["teleop_algae_net"],
                 "algae_processor": t["auto_algae_processor"] + t["teleop_algae_processor"],
+                "human_player": t["human_player"],
                 "climb_type": t["climb_type"],
                 "climb_success": t["climb_success"]
             } for t in blue_teams]
             
+            # Update alliance data structure
+            red_algae["human_player"] = match["red_human_player"] or 0
+            blue_algae["human_player"] = match["blue_human_player"] or 0
+
             matches.append({
                 "event_code": match["_id"]["event"],
                 "match_number": match["_id"]["match"],

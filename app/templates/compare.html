@@ -2,123 +2,354 @@
 {% block content %}
 
 <div class="max-w-7xl mx-auto p-4">
+    <!-- Header Section -->
     <div class="mb-8">
-        <h1 class="text-2xl font-bold mb-2">Team Comparison</h1>
-        <p>Compare statistics and scouting data between teams</p>
+        <h1 class="text-3xl font-bold mb-2">Team Comparison</h1>
+        <p class="text-gray-600">Compare statistics and scouting data between teams</p>
     </div>
 
     <!-- Input Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div>
-            <label for="team1-input" class="block text-sm font-medium text-gray-700">Team 1 (Required)</label>
-            <input type="number" 
-                   id="team1-input" 
-                   class="mt-1 block w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                   placeholder="Enter team number"
-                   required>
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">Select Teams</h2>
         </div>
-        <div>
-            <label for="team2-input" class="block text-sm font-medium text-gray-700">Team 2 (Required)</label>
-            <input type="number" 
-                   id="team2-input" 
-                   class="mt-1 block w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                   placeholder="Enter team number"
-                   required>
-        </div>
-        <div class="md:col-span-2">
-            <label for="team3-input" class="block text-sm font-medium text-gray-700">Team 3 (Optional)</label>
-            <input type="number" 
-                   id="team3-input" 
-                   class="mt-1 block w-full md:w-1/2 mx-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                   placeholder="Enter team number">
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label for="team1-input" class="block text-sm font-medium text-gray-700">Team 1 (Required)</label>
+                    <input type="number" 
+                           id="team1-input" 
+                           class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                           placeholder="Enter team number"
+                           required>
+                </div>
+                <div class="space-y-2">
+                    <label for="team2-input" class="block text-sm font-medium text-gray-700">Team 2 (Required)</label>
+                    <input type="number" 
+                           id="team2-input" 
+                           class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                           placeholder="Enter team number"
+                           required>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="team3-input" class="block text-sm font-medium text-gray-700 mb-2 text-center">Team 3 (Optional)</label>
+                    <input type="number" 
+                           id="team3-input" 
+                           class="block w-full md:w-1/2 mx-auto px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                           placeholder="Enter team number">
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-center">
+                <button id="compare-btn" 
+                        class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
+                    Compare Teams
+                </button>
+            </div>
         </div>
     </div>
-
-    <button id="compare-btn" 
-            class="mb-8 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
-        Compare Teams
-    </button>
 
     <!-- Results Section -->
     <div id="comparison-results" class="hidden space-y-8">
         <!-- Team Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="team-cards-container">
-            <!-- Team cards will be dynamically inserted here -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="team-cards-container">
+            <!-- Team 1 Card -->
             <div id="team1-info" class="bg-white shadow-lg rounded-lg overflow-hidden">
-                <div class="bg-gray-50 px-6 py-4">
-                    <h2 id="team1-header" class="text-xl font-semibold"></h2>
-                    <p id="team1-number-name" class="font-medium text-gray-600"></p>
-                    <p id="team1-location" class="text-gray-500 text-sm"></p>
+                <div class="bg-blue-50 px-6 py-4">
+                    <h2 id="team1-header" class="text-2xl font-bold text-blue-800"></h2>
+                    <p id="team1-number-name" class="text-blue-600"></p>
+                    <p id="team1-location" class="text-gray-600 text-sm"></p>
                 </div>
-                <div id="team1-stats" class="p-6">
-                    <div class="mt-4">
-                        <h3 class="text-lg font-semibold mb-2">Human Player & Defense</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <p class="text-sm text-gray-600">Human Player Rating</p>
-                                <p class="font-medium" id="team1-human-player"></p>
+                <div id="team1-stats" class="p-6 space-y-6">
+                    <!-- Auto Period Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Auto Period</h3>
+                        <div class="space-y-2">
+                            <!-- Coral Levels -->
+                            <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                <div>Level 1:</div>
+                                <div class="font-medium text-blue-600"><span id="team1-auto-l1">0.00</span> times/match</div>
+                                <div>Level 2:</div>
+                                <div class="font-medium text-blue-600"><span id="team1-auto-l2">0.00</span> times/match</div>
+                                <div>Level 3:</div>
+                                <div class="font-medium text-blue-600"><span id="team1-auto-l3">0.00</span> times/match</div>
+                                <div>Level 4:</div>
+                                <div class="font-medium text-blue-600"><span id="team1-auto-l4">0.00</span> times/match</div>
                             </div>
-                            <div>
-                                <p class="text-sm text-gray-600">Defense Rating</p>
-                                <p class="font-medium" id="team1-defense"></p>
+                            
+                            <!-- Algae Scoring -->
+                            <div class="mt-4">
+                                <h4 class="font-medium mb-2">Algae Scoring:</h4>
+                                <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                    <div>Net:</div>
+                                    <div class="font-medium text-green-600"><span id="team1-auto-net">0.00</span> times/match</div>
+                                    <div>Processor:</div>
+                                    <div class="font-medium text-green-600"><span id="team1-auto-processor">0.00</span> times/match</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="mt-2">
-                            <p class="text-sm text-gray-600">Defense Notes</p>
+                    </div>
+
+                    <!-- Teleop Period Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Teleop Period</h3>
+                        <div class="space-y-2">
+                            <!-- Coral Scoring -->
+                            <div>
+                                <h4 class="font-medium mb-2">Coral Scoring:</h4>
+                                <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                    <div>Level 1:</div>
+                                    <div class="font-medium text-blue-600"><span id="team1-teleop-l1">0.00</span> times/match</div>
+                                    <div>Level 2:</div>
+                                    <div class="font-medium text-blue-600"><span id="team1-teleop-l2">0.00</span> times/match</div>
+                                    <div>Level 3:</div>
+                                    <div class="font-medium text-blue-600"><span id="team1-teleop-l3">0.00</span> times/match</div>
+                                    <div>Level 4:</div>
+                                    <div class="font-medium text-blue-600"><span id="team1-teleop-l4">0.00</span> times/match</div>
+                                </div>
+                            </div>
+
+                            <!-- Algae Scoring -->
+                            <div class="mt-4">
+                                <h4 class="font-medium mb-2">Algae Scoring:</h4>
+                                <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                    <div>Net:</div>
+                                    <div class="font-medium text-green-600"><span id="team1-teleop-net">0.00</span> times/match</div>
+                                    <div>Processor:</div>
+                                    <div class="font-medium text-green-600"><span id="team1-teleop-processor">0.00</span> times/match</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endgame Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Endgame</h3>
+                        <div class="grid grid-cols-2 gap-x-4 text-sm">
+                            <div>Climb Success:</div>
+                            <div class="font-medium text-green-600"><span id="team1-climb-success">0.00</span>%</div>
+                            <div>Preferred Climb:</div>
+                            <div class="font-medium" id="team1-preferred-climb">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Human Player & Defense Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Human Player & Defense</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Human Player Rating</p>
+                                <p class="font-medium text-lg" id="team1-human-player">0.0/5</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Defense Rating</p>
+                                <p class="font-medium text-lg" id="team1-defense">0.0/5</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 bg-gray-50 p-3 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Defense Notes</p>
                             <p class="text-sm" id="team1-defense-notes"></p>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Team 2 Card -->
             <div id="team2-info" class="bg-white shadow-lg rounded-lg overflow-hidden">
-                <div class="bg-gray-50 px-6 py-4">
-                    <h2 id="team2-header" class="text-xl font-semibold"></h2>
-                    <p id="team2-number-name" class="font-medium text-gray-600"></p>
-                    <p id="team2-location" class="text-gray-500 text-sm"></p>
+                <div class="bg-blue-50 px-6 py-4">
+                    <h2 id="team2-header" class="text-2xl font-bold text-blue-800"></h2>
+                    <p id="team2-number-name" class="text-blue-600"></p>
+                    <p id="team2-location" class="text-gray-600 text-sm"></p>
                 </div>
-                <div id="team2-stats" class="p-6">
-                    <div class="mt-4">
-                        <h3 class="text-lg font-semibold mb-2">Human Player & Defense</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <p class="text-sm text-gray-600">Human Player Rating</p>
-                                <p class="font-medium" id="team2-human-player"></p>
+                <div id="team2-stats" class="p-6 space-y-6">
+                    <!-- Auto Period Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Auto Period</h3>
+                        <div class="space-y-2">
+                            <!-- Coral Levels -->
+                            <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                <div>Level 1:</div>
+                                <div class="font-medium text-blue-600"><span id="team2-auto-l1">0.00</span> times/match</div>
+                                <div>Level 2:</div>
+                                <div class="font-medium text-blue-600"><span id="team2-auto-l2">0.00</span> times/match</div>
+                                <div>Level 3:</div>
+                                <div class="font-medium text-blue-600"><span id="team2-auto-l3">0.00</span> times/match</div>
+                                <div>Level 4:</div>
+                                <div class="font-medium text-blue-600"><span id="team2-auto-l4">0.00</span> times/match</div>
                             </div>
-                            <div>
-                                <p class="text-sm text-gray-600">Defense Rating</p>
-                                <p class="font-medium" id="team2-defense"></p>
+                            
+                            <!-- Algae Scoring -->
+                            <div class="mt-4">
+                                <h4 class="font-medium mb-2">Algae Scoring:</h4>
+                                <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                    <div>Net:</div>
+                                    <div class="font-medium text-green-600"><span id="team2-auto-net">0.00</span> times/match</div>
+                                    <div>Processor:</div>
+                                    <div class="font-medium text-green-600"><span id="team2-auto-processor">0.00</span> times/match</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="mt-2">
-                            <p class="text-sm text-gray-600">Defense Notes</p>
+                    </div>
+
+                    <!-- Teleop Period Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Teleop Period</h3>
+                        <div class="space-y-2">
+                            <!-- Coral Scoring -->
+                            <div>
+                                <h4 class="font-medium mb-2">Coral Scoring:</h4>
+                                <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                    <div>Level 1:</div>
+                                    <div class="font-medium text-blue-600"><span id="team2-teleop-l1">0.00</span> times/match</div>
+                                    <div>Level 2:</div>
+                                    <div class="font-medium text-blue-600"><span id="team2-teleop-l2">0.00</span> times/match</div>
+                                    <div>Level 3:</div>
+                                    <div class="font-medium text-blue-600"><span id="team2-teleop-l3">0.00</span> times/match</div>
+                                    <div>Level 4:</div>
+                                    <div class="font-medium text-blue-600"><span id="team2-teleop-l4">0.00</span> times/match</div>
+                                </div>
+                            </div>
+
+                            <!-- Algae Scoring -->
+                            <div class="mt-4">
+                                <h4 class="font-medium mb-2">Algae Scoring:</h4>
+                                <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                    <div>Net:</div>
+                                    <div class="font-medium text-green-600"><span id="team2-teleop-net">0.00</span> times/match</div>
+                                    <div>Processor:</div>
+                                    <div class="font-medium text-green-600"><span id="team2-teleop-processor">0.00</span> times/match</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endgame Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Endgame</h3>
+                        <div class="grid grid-cols-2 gap-x-4 text-sm">
+                            <div>Climb Success:</div>
+                            <div class="font-medium text-green-600"><span id="team2-climb-success">0.00</span>%</div>
+                            <div>Preferred Climb:</div>
+                            <div class="font-medium" id="team2-preferred-climb">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Human Player & Defense Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Human Player & Defense</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Human Player Rating</p>
+                                <p class="font-medium text-lg" id="team2-human-player">0.0/5</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Defense Rating</p>
+                                <p class="font-medium text-lg" id="team2-defense">0.0/5</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 bg-gray-50 p-3 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Defense Notes</p>
                             <p class="text-sm" id="team2-defense-notes"></p>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Team 3 Card (Initially Hidden) -->
             <div id="team3-info" class="hidden bg-white shadow-lg rounded-lg overflow-hidden">
-                <div class="bg-gray-50 px-6 py-4">
-                    <h2 id="team3-header" class="text-xl font-semibold"></h2>
-                    <p id="team3-number-name" class="font-medium text-gray-600"></p>
-                    <p id="team3-location" class="text-gray-500 text-sm"></p>
+                <div class="bg-blue-50 px-6 py-4">
+                    <h2 id="team3-header" class="text-2xl font-bold text-blue-800"></h2>
+                    <p id="team3-number-name" class="text-blue-600"></p>
+                    <p id="team3-location" class="text-gray-600 text-sm"></p>
                 </div>
-                <div id="team3-stats" class="p-6">
-                    <div class="mt-4">
-                        <h3 class="text-lg font-semibold mb-2">Human Player & Defense</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <p class="text-sm text-gray-600">Human Player Rating</p>
-                                <p class="font-medium" id="team3-human-player"></p>
+                <div id="team3-stats" class="p-6 space-y-6">
+                    <!-- Auto Period Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Auto Period</h3>
+                        <div class="space-y-2">
+                            <!-- Coral Levels -->
+                            <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                <div>Level 1:</div>
+                                <div class="font-medium text-blue-600"><span id="team3-auto-l1">0.00</span> times/match</div>
+                                <div>Level 2:</div>
+                                <div class="font-medium text-blue-600"><span id="team3-auto-l2">0.00</span> times/match</div>
+                                <div>Level 3:</div>
+                                <div class="font-medium text-blue-600"><span id="team3-auto-l3">0.00</span> times/match</div>
+                                <div>Level 4:</div>
+                                <div class="font-medium text-blue-600"><span id="team3-auto-l4">0.00</span> times/match</div>
                             </div>
-                            <div>
-                                <p class="text-sm text-gray-600">Defense Rating</p>
-                                <p class="font-medium" id="team3-defense"></p>
+                            
+                            <!-- Algae Scoring -->
+                            <div class="mt-4">
+                                <h4 class="font-medium mb-2">Algae Scoring:</h4>
+                                <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                    <div>Net:</div>
+                                    <div class="font-medium text-green-600"><span id="team3-auto-net">0.00</span> times/match</div>
+                                    <div>Processor:</div>
+                                    <div class="font-medium text-green-600"><span id="team3-auto-processor">0.00</span> times/match</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="mt-2">
-                            <p class="text-sm text-gray-600">Defense Notes</p>
+                    </div>
+
+                    <!-- Teleop Period Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Teleop Period</h3>
+                        <div class="space-y-2">
+                            <!-- Coral Scoring -->
+                            <div>
+                                <h4 class="font-medium mb-2">Coral Scoring:</h4>
+                                <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                    <div>Level 1:</div>
+                                    <div class="font-medium text-blue-600"><span id="team3-teleop-l1">0.00</span> times/match</div>
+                                    <div>Level 2:</div>
+                                    <div class="font-medium text-blue-600"><span id="team3-teleop-l2">0.00</span> times/match</div>
+                                    <div>Level 3:</div>
+                                    <div class="font-medium text-blue-600"><span id="team3-teleop-l3">0.00</span> times/match</div>
+                                    <div>Level 4:</div>
+                                    <div class="font-medium text-blue-600"><span id="team3-teleop-l4">0.00</span> times/match</div>
+                                </div>
+                            </div>
+
+                            <!-- Algae Scoring -->
+                            <div class="mt-4">
+                                <h4 class="font-medium mb-2">Algae Scoring:</h4>
+                                <div class="grid grid-cols-2 gap-x-4 text-sm">
+                                    <div>Net:</div>
+                                    <div class="font-medium text-green-600"><span id="team3-teleop-net">0.00</span> times/match</div>
+                                    <div>Processor:</div>
+                                    <div class="font-medium text-green-600"><span id="team3-teleop-processor">0.00</span> times/match</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endgame Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Endgame</h3>
+                        <div class="grid grid-cols-2 gap-x-4 text-sm">
+                            <div>Climb Success:</div>
+                            <div class="font-medium text-green-600"><span id="team3-climb-success">0.00</span>%</div>
+                            <div>Preferred Climb:</div>
+                            <div class="font-medium" id="team3-preferred-climb">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Human Player & Defense Section -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Human Player & Defense</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Human Player Rating</p>
+                                <p class="font-medium text-lg" id="team3-human-player">0.0/5</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600 mb-1">Defense Rating</p>
+                                <p class="font-medium text-lg" id="team3-defense">0.0/5</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 bg-gray-50 p-3 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Defense Notes</p>
                             <p class="text-sm" id="team3-defense-notes"></p>
                         </div>
                     </div>
@@ -128,9 +359,9 @@
 
         <!-- Auto Paths Section -->
         <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <div class="bg-gray-50 px-6 py-4">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
                 <h3 class="text-xl font-semibold">Auto Paths</h3>
-                <p class="text-sm text-gray-500">Showing latest 5 matches</p>
+                <p class="text-sm text-gray-600">Latest 5 matches per team</p>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-1 gap-6" id="auto-paths-container">
@@ -144,8 +375,9 @@
             </div>
         </div>
 
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden mt-6">
-            <div class="bg-gray-50 px-6 py-4">
+        <!-- Performance Chart -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
                 <h3 class="text-xl font-semibold">Performance Comparison</h3>
             </div>
             <div class="p-6">
@@ -155,10 +387,11 @@
             </div>
         </div>
 
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
-            <div class="bg-gray-50 px-6 py-4">
+        <!-- Raw Data Table -->
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
                 <h3 class="text-xl font-semibold">Raw Scouting Data</h3>
-                <p class="text-sm text-gray-500">Latest matches for each team</p>
+                <p class="text-sm text-gray-600">Latest matches for each team</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -212,23 +445,21 @@
 </div>
 
 <!-- Auto Path Modal -->
-<div id="autoPathModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-    <div class="relative top-4 mx-auto p-3 border w-[95%] sm:w-[500px] shadow-lg rounded-md bg-white">
+<div id="autoPathModal" class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[95%] sm:w-[600px] shadow-lg rounded-lg bg-white">
         <div class="flex flex-col items-center">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Auto Path</h3>
-            <div class="relative w-full overflow-hidden" style="max-height: 70vh;">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Auto Path</h3>
+            <div class="relative w-full overflow-hidden rounded-lg" style="max-height: 70vh;">
                 <img id="modalAutoPathImage" 
-                     class="w-full rounded-lg object-contain" 
+                     class="w-full object-contain" 
                      alt="Auto Path">
             </div>
-            <div class="w-full mt-4">
-                <h4 class="text-md font-medium text-gray-700 mb-2">Auto Notes</h4>
-                <p id="modalAutoNotes" class="text-gray-600 bg-gray-50 p-3 rounded-lg min-h-[60px]">
-                    <!-- Auto notes will be inserted here -->
-                </p>
+            <div class="w-full mt-6">
+                <h4 class="text-lg font-medium text-gray-700 mb-2">Auto Notes</h4>
+                <p id="modalAutoNotes" class="text-gray-600 bg-gray-50 p-4 rounded-lg min-h-[60px]"></p>
             </div>
             <button onclick="closeAutoPathModal()" 
-                    class="mt-4 w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                    class="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
                 Close
             </button>
         </div>

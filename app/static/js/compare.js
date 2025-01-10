@@ -522,7 +522,7 @@ function displayRawData(teamsData) {
                         `<span class="text-gray-400">No path</span>`}
                 </td>
                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    ${match.defense_rating || 0}/20
+                    ${match.defense_rating || 0}/5
                 </td>
                 <td class="lg:table-cell px-3 sm:px-6 py-4 whitespace-normal max-w-xs truncate">
                     ${match.notes || ''}
@@ -648,3 +648,41 @@ function getTeamColor(index) {
     ];
     return colors[index % colors.length];
 }
+
+function showAutoPath(pathData, autoNotes = '') {
+    const modal = document.getElementById('autoPathModal');
+    const image = document.getElementById('modalAutoPathImage');
+    const notes = document.getElementById('modalAutoNotes');
+    
+    image.src = pathData;
+    notes.textContent = autoNotes || 'No auto notes provided';
+    modal.classList.remove('hidden');
+}
+
+function closeAutoPathModal() {
+    document.getElementById('autoPathModal').classList.add('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing initialization code ...
+
+    // Add modal event listeners
+    const modal = document.getElementById('autoPathModal');
+    if (modal) {
+        // Close on clicking outside the modal
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAutoPathModal();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAutoPathModal();
+            }
+        });
+    }
+
+    // ... rest of your initialization code ...
+});

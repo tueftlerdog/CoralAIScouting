@@ -208,9 +208,11 @@ class TeamManager(DatabaseManager):
             if not team:
                 return False, "Team not found"
 
-            # Don't allow owner to leave (they must delete the team)
+            # If owner is leaving, transfer ownership first
             if team.is_owner(user_id):
-                return False, "Team owner cannot leave. Please delete the team instead."
+                success, message = await self.transfer_ownership(team_number)
+                if not success:
+                    return False, "Cannot leave team - no available users to transfer ownership to"
 
             # Remove user from team's users and admins lists
             result = self.db.teams.update_one(
@@ -764,3 +766,40 @@ class TeamManager(DatabaseManager):
         img.save(buffer, format='PNG')
         buffer.seek(0)
         return buffer.getvalue()
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def transfer_ownership(self, team_number: int):
+        """Transfer team ownership to next admin or member"""
+        self.ensure_connected()
+        try:
+            team = await self.get_team_by_number(team_number)
+            if not team:
+                return False, "Team not found"
+
+            # First try to find an admin to promote
+            if team.admins:
+                new_owner_id = team.admins[0]  # Take first admin
+                team.admins.remove(new_owner_id)  # Remove from admins list
+            # If no admins, take first regular member
+            elif team.users:
+                new_owner_id = team.users[0]
+            else:
+                # No users left, team should be deleted
+                return False, "No users available to transfer ownership"
+
+            # Update team with new owner
+            result = self.db.teams.update_one(
+                {"team_number": team_number},
+                {
+                    "$set": {"owner_id": ObjectId(new_owner_id)},
+                    "$pull": {"admins": new_owner_id}
+                }
+            )
+
+            if result.modified_count > 0:
+                return True, "Ownership transferred successfully"
+            return False, "Failed to transfer ownership"
+
+        except Exception as e:
+            logger.error(f"Error transferring ownership: {str(e)}")
+            return False, f"Error transferring ownership: {str(e)}"

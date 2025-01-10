@@ -226,6 +226,13 @@ class ScoutingManager:
             if not data:
                 return None
 
+            # Get scouter's current team number
+            scouter = self.db.users.find_one({"_id": ObjectId(data["scouter_id"])})
+            if scouter:
+                data["scouter_team"] = scouter.get("teamNumber")
+            else:
+                data["scouter_team"] = None
+
             # Then check ownership if scouter_id is provided
             if scouter_id:
                 data["is_owner"] = str(data["scouter_id"]) == str(scouter_id)
