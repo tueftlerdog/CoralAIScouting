@@ -415,7 +415,7 @@ async def search_teams():
 
     except Exception as e:
         current_app.logger.error(f"Error in search_teams: {str(e)}", exc_info=True)
-        return jsonify({"error": f"Failed to fetch team data: {str(e)}"}), 500
+        return jsonify({"error": "Failed to fetch team data due to an internal error."}), 500
 
 
 @scouting_bp.route("/scouting/sync", methods=["POST"])
@@ -440,12 +440,13 @@ def sync_scouting_data():
             }
         )
     except Exception as e:
-        flash(f"Error during sync: {str(e)}", "error")
+        current_app.logger.error(f"Error during sync: {str(e)}", exc_info=True)
+        flash("Error during sync", "error")
         return (
             jsonify(
                 {
                     "success": False,
-                    "message": str(e),
+                    "message": "An internal error occurred during sync.",
                     "redirect": url_for("scouting.list_scouting_data"),
                 }
             ),
