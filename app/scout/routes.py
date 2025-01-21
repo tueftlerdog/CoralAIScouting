@@ -814,7 +814,8 @@ def check_team():
         
         return jsonify({"exists": existing is not None})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error checking team data: {str(e)}", exc_info=True)
+        return jsonify({"error": "An internal error has occurred."}), 500
 
 @scouting_bp.route("/scouting/pit")
 @login_required
