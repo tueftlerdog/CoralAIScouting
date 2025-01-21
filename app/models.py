@@ -2,7 +2,7 @@ from typing import Dict
 from bson import ObjectId
 from werkzeug.security import check_password_hash
 from flask_login import UserMixin
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class User(UserMixin):
@@ -172,23 +172,74 @@ class TeamData:
 class PitScouting:
     def __init__(self, data: Dict):
         self._id = data.get("_id")
-        self.swerve = data.get("swerve", "")  # string
-        self.motors = data.get("motors", "")  # string
-        self.shooter_type = data.get("shooter_type", "")  # string
-        self.intake_type = data.get("intake_type", "")  # string
-        self.broken = data.get("broken", False)  # bool
-        self.pictures = data.get("pictures", [])  # List of image URLs or IDs (assuming 1-3)
-        self.notes = data.get("notes", "")  # string
-        self.capabilities = data.get("capabilities", "")  # string (corrected from "capbalities_of")
-        self.team_friendliness = data.get("team_friendliness", 0)  # int [1-10] (corrected from "people were nice and easy going")
-        self.programming_language = data.get("programming_language", "")  # string (corrected from "programming lang")
+        self.team_number = data.get("team_number")
+        self.scouter_id = data.get("scouter_id")
+        
+        # Drive base information
+        self.drive_type = data.get("drive_type", {
+            "swerve": False,
+            "tank": False,
+            "other": ""
+        })
+        self.swerve_modules = data.get("swerve_modules", "")
+        
+        # Motor details
+        self.motor_details = data.get("motor_details", {
+            "falcons": False,
+            "neos": False,
+            "krakens": False,
+            "vortex": False,
+            "other": ""
+        })
+        self.motor_count = data.get("motor_count", 0)
+        
+        # Dimensions (in)
+        self.dimensions = data.get("dimensions", {
+            "length": 0,
+            "width": 0,
+            "height": 0,
+        })
+        
+        # Mechanisms
+        self.mechanisms = data.get("mechanisms", {
+            "coral_scoring": {
+                "notes": ""
+            },
+            "algae_scoring": {
+                "notes": ""
+            },
+            "climber": {
+                "has_climber": False,
+                "type_climber": "", # deep, shallow, park
+                "notes": ""
+            }
+        })
+        
+        # Programming and Autonomous
+        self.programming_language = data.get("programming_language", "")
+        self.autonomous_capabilities = data.get("autonomous_capabilities", {
+            "has_auto": False,
+            "num_routes": 0,
+            "preferred_start": "",
+            "notes": ""
+        })
+        
+        # Driver Experience
+        self.driver_experience = data.get("driver_experience", {
+            "years": 0,
+            "notes": ""
+        })
 
-    @property
-    def id(self):
-        return str(self._id)
+        # Analysis
+        self.notes = data.get("notes", "")
+        
+        # Metadata
+        self.created_at = data.get("created_at")
+        self.updated_at = data.get("updated_at")
 
     @staticmethod
     def create_from_db(data: Dict):
+        """Create a PitScouting instance from database data"""
         if not data:
             return None
         if "_id" in data and not isinstance(data["_id"], ObjectId):
@@ -196,20 +247,28 @@ class PitScouting:
         return PitScouting(data)
 
     def to_dict(self):
+        """Convert the object to a dictionary for database storage"""
         return {
             "id": self.id,
-            "swerve": self.swerve,
-            "motors": self.motors,
-            "shooter_type": self.shooter_type,
-            "intake_type": self.intake_type,
-            "broken": self.broken,
+            "team_number": self.team_number,
+            "scouter_id": self.scouter_id,
+            "scouter_name": self.scouter_name,
+            "drive_type": self.drive_type,
+            "swerve_modules": self.swerve_modules,
+            "drive_motors": self.drive_motors,
+            "motor_details": self.motor_details,
+            "dimensions": self.dimensions,
+            "mechanisms": self.mechanisms,
+            "programming_language": self.programming_language,
+            "autonomous_capabilities": self.autonomous_capabilities,
+            "driver_experience": self.driver_experience,
             "pictures": self.pictures,
             "notes": self.notes,
-            "capabilities": self.capabilities,
-            "team_friendliness": self.team_friendliness,
-            "programming_language": self.programming_language,
+            "strengths": self.strengths,
+            "weaknesses": self.weaknesses,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
         }
-
 
 class Team:
     def __init__(self, data: Dict):

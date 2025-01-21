@@ -226,9 +226,9 @@ class ScoutingManager:
             if not data:
                 return None
 
-            # Get scouter's current team number
-            scouter = self.db.users.find_one({"_id": ObjectId(data["scouter_id"])})
-            if scouter:
+            if scouter := self.db.users.find_one(
+                {"_id": ObjectId(data["scouter_id"])}
+            ):
                 data["scouter_team"] = scouter.get("teamNumber")
             else:
                 data["scouter_team"] = None
@@ -427,7 +427,6 @@ class ScoutingManager:
         """Get all auto paths for a specific team"""
         self.ensure_connected()
         try:
-            # Find all team data entries for this team that have auto paths
             paths = list(self.db.team_data.find(
                 {
                     "team_number": int(team_number),
@@ -440,21 +439,175 @@ class ScoutingManager:
                 }
             ).sort("match_number", 1))
 
-            # Format the paths data
-            formatted_paths = []
-            for path in paths:
-                if path.get("auto_path"):  # Only include if there's actually a path
-                    formatted_paths.append({
-                        "match_number": path.get("match_number", "Unknown"),
-                        "event_code": path.get("event_code", "Unknown"),
-                        "image_data": path["auto_path"]
-                    })
-
-            return formatted_paths
-
+            return [
+                {
+                    "match_number": path.get("match_number", "Unknown"),
+                    "event_code": path.get("event_code", "Unknown"),
+                    "image_data": path["auto_path"],
+                }
+                for path in paths
+                if path.get("auto_path")
+            ]
         except Exception as e:
             logger.error(f"Error fetching auto paths for team {team_number}: {str(e)}")
             return []
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def add_pit_scouting(self, data):
+        """Add new pit scouting data"""
+        self.ensure_connected()
+        try:
+            # Check if data already exists for this team
+            existing = self.db.pit_scouting.find_one({
+                "team_number": data["team_number"],
+                "scouter_id": data["scouter_id"]
+            })
+            if existing:
+                return False
+
+            # Ensure required fields are present
+            pit_data = {
+                "team_number": int(data["team_number"]),
+                "scouter_id": ObjectId(data["scouter_id"]),
+                
+                # Drive base information
+                "drive_type": {
+                    "swerve": data.get("drive_type", {}).get("swerve", False),
+                    "tank": data.get("drive_type", {}).get("tank", False),
+                    "other": data.get("drive_type", {}).get("other", "")
+                },
+                "swerve_modules": data.get("swerve_modules", ""),
+                
+                # Motor details
+                "motor_details": {
+                    "falcons": data.get("motor_details", {}).get("falcons", False),
+                    "neos": data.get("motor_details", {}).get("neos", False),
+                    "krakens": data.get("motor_details", {}).get("krakens", False),
+                    "vortex": data.get("motor_details", {}).get("vortex", False),
+                    "other": data.get("motor_details", {}).get("other", "")
+                },
+                "motor_count": data.get("motor_count", 0),
+                
+                # Dimensions
+                "dimensions": {
+                    "length": data.get("dimensions", {}).get("length", 0),
+                    "width": data.get("dimensions", {}).get("width", 0),
+                    "height": data.get("dimensions", {}).get("height", 0),
+                },
+                
+                # Mechanisms
+                "mechanisms": {
+                    "coral_scoring": {
+                        "notes": data.get("mechanisms", {}).get("coral_scoring", {}).get("notes", "")
+                    },
+                    "algae_scoring": {
+                        "notes": data.get("mechanisms", {}).get("algae_scoring", {}).get("notes", "")
+                    },
+                    "climber": {
+                        "has_climber": data.get("mechanisms", {}).get("climber", {}).get("has_climber", False),
+                        "type_climber": data.get("mechanisms", {}).get("climber", {}).get("type_climber", ""),
+                        "notes": data.get("mechanisms", {}).get("climber", {}).get("notes", "")
+                    }
+                },
+                
+                # Programming and Autonomous
+                "programming_language": data.get("programming_language", ""),
+                "autonomous_capabilities": {
+                    "has_auto": data.get("autonomous_capabilities", {}).get("has_auto", False),
+                    "num_routes": data.get("autonomous_capabilities", {}).get("num_routes", 0),
+                    "preferred_start": data.get("autonomous_capabilities", {}).get("preferred_start", ""),
+                    "notes": data.get("autonomous_capabilities", {}).get("notes", "")
+                },
+                
+                # Driver Experience
+                "driver_experience": {
+                    "years": data.get("driver_experience", {}).get("years", 0),
+                    "notes": data.get("driver_experience", {}).get("notes", "")
+                },
+                
+                # Analysis
+                "notes": data.get("notes", ""),
+                
+                # Metadata
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+
+            result = self.db.pit_scouting.insert_one(pit_data)
+            return result.inserted_id is not None
+        except Exception as e:
+            logger.error(f"Error adding pit scouting data: {str(e)}")
+            return False
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def get_all_pit_scouting(self):
+        """Get all pit scouting data"""
+        self.ensure_connected()
+        try:
+            # Return raw data from MongoDB
+            return list(self.db.pit_scouting.find())
+        except Exception as e:
+            logger.error(f"Error getting all pit scouting data: {str(e)}")
+            return []
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def get_pit_scouting(self, team_number):
+        """Get pit scouting data for a specific team"""
+        self.ensure_connected()
+        try:
+            # Return raw data from MongoDB
+            return self.db.pit_scouting.find_one({"team_number": int(team_number)})
+        except Exception as e:
+            logger.error(f"Error getting pit scouting data: {str(e)}")
+            return None
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def update_pit_scouting(self, team_number, data, scouter_id):
+        """Update pit scouting data"""
+        self.ensure_connected()
+        try:
+            # Use the same data structure as add_pit_scouting
+            pit_data = {
+                "team_number": int(team_number),
+                "scouter_id": ObjectId(scouter_id),
+                "drive_type": data.get("drive_type", {}),
+                "swerve_modules": data.get("swerve_modules", ""),
+                "motor_details": data.get("motor_details", {}),
+                "motor_count": data.get("motor_count", 0),
+                "dimensions": data.get("dimensions", {}),
+                "mechanisms": data.get("mechanisms", {}),
+                "programming_language": data.get("programming_language", ""),
+                "autonomous_capabilities": data.get("autonomous_capabilities", {}),
+                "driver_experience": data.get("driver_experience", {}),
+                "notes": data.get("notes", ""),
+                "updated_at": datetime.now(timezone.utc)
+            }
+            
+            result = self.db.pit_scouting.update_one(
+                {
+                    "team_number": int(team_number),
+                    "scouter_id": ObjectId(scouter_id)
+                },
+                {"$set": pit_data}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Error updating pit scouting data: {str(e)}")
+            return False
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def delete_pit_scouting(self, team_number, scouter_id):
+        """Delete pit scouting data"""
+        self.ensure_connected()
+        try:
+            result = self.db.pit_scouting.delete_one({
+                "team_number": int(team_number),
+                "scouter_id": ObjectId(scouter_id)
+            })
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Error deleting pit scouting data: {str(e)}")
+            return False
 
     def __del__(self):
         """Cleanup MongoDB connection"""

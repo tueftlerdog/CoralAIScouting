@@ -3,13 +3,13 @@ from functools import wraps
 import aiohttp
 from flask import Blueprint, current_app, flash, render_template, request, redirect, url_for, jsonify
 from flask_login import login_required, current_user
+from app.models import PitScouting
 from app.scout.scouting_utils import ScoutingManager
 from .TBA import TBAInterface
 from bson import ObjectId
-from gridfs import GridFS
-import base64
 from bson import json_util
 import json
+from datetime import datetime, timezone
 
 scouting_bp = Blueprint("scouting", __name__)
 scouting_manager = None
@@ -143,8 +143,7 @@ def compare_teams():
     try:
         teams = []
         for i in range(1, 4):  # Support up to 3 teams
-            team_num = request.args.get(f'team{i}')
-            if team_num:
+            if team_num := request.args.get(f'team{i}'):
                 teams.append(team_num)
 
         if len(teams) < 2:
@@ -199,7 +198,7 @@ def compare_teams():
                 ]
 
                 stats = list(scouting_manager.db.team_data.aggregate(pipeline))
-                
+
                 # Get the 5 most recent matches and convert ObjectId to string
                 matches = list(scouting_manager.db.team_data.aggregate([
                     {"$match": {"team_number": int(team_num)}},
@@ -816,3 +815,179 @@ def check_team():
         return jsonify({"exists": existing is not None})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@scouting_bp.route("/scouting/pit")
+@login_required
+def pit_scouting_list():
+    try:
+        pit_data_list = scouting_manager.get_all_pit_scouting()
+        pit_data = [PitScouting.create_from_db(data) for data in pit_data_list]
+        return render_template("scouting/pit-scouting.html", pit_data=pit_data)
+    except Exception as e:
+        current_app.logger.error(f"Error fetching pit scouting data: {str(e)}", exc_info=True)
+        flash(f"Error fetching pit scouting data: {str(e)}", "error")
+        return render_template("scouting/pit-scouting.html", pit_data=[])
+
+@scouting_bp.route("/scouting/pit/add", methods=["GET", "POST"])
+@login_required
+def pit_scouting_add():
+    if request.method == "POST":
+        # Process form data
+        pit_data = {
+            "team_number": int(request.form.get("team_number")),
+            "scouter_id": current_user.id,
+            
+            # Drive base information
+            "drive_type": {
+                "swerve": "swerve" in request.form.getlist("drive_type"),
+                "tank": "tank" in request.form.getlist("drive_type"),
+                "other": request.form.get("drive_type_other", "")
+            },
+            "swerve_modules": request.form.get("swerve_modules", ""),
+            
+            # Motor details
+            "motor_details": {
+                "falcons": "falcons" in request.form.getlist("motors"),
+                "neos": "neos" in request.form.getlist("motors"),
+                "krakens": "krakens" in request.form.getlist("motors"),
+                "vortex": "vortex" in request.form.getlist("motors"),
+                "other": request.form.get("motors_other", "")
+            },
+            "motor_count": int(request.form.get("motor_count", 0)),
+            
+            # Dimensions
+            "dimensions": {
+                "length": float(request.form.get("length", 0)),
+                "width": float(request.form.get("width", 0)),
+                "height": float(request.form.get("height", 0))
+            },
+            
+            # Mechanisms
+            "mechanisms": {
+                "coral_scoring": {
+                    "notes": request.form.get("coral_scoring_notes", "")
+                },
+                "algae_scoring": {
+                    "notes": request.form.get("algae_scoring_notes", "")
+                },
+                "climber": {
+                    "has_climber": "has_climber" in request.form,
+                    "type_climber": request.form.get("climber_type", ""),
+                    "notes": request.form.get("climber_notes", "")
+                }
+            },
+            
+            # Programming and Autonomous
+            "programming_language": request.form.get("programming_language", ""),
+            "autonomous_capabilities": {
+                "has_auto": "has_auto" in request.form,
+                "num_routes": int(request.form.get("auto_routes", 0)),
+                "preferred_start": request.form.get("auto_preferred_start", ""),
+                "notes": request.form.get("auto_notes", "")
+            },
+            
+            # Driver Experience
+            "driver_experience": {
+                "years": int(request.form.get("driver_years", 0)),
+                "notes": request.form.get("driver_notes", "")
+            },
+            
+            # General Notes
+            "notes": request.form.get("notes", ""),
+            
+            # Timestamps
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }
+
+        # Add to database
+        if scouting_manager.add_pit_scouting(pit_data):
+            flash("Pit scouting data added successfully!", "success")
+            return redirect(url_for("scouting.pit_scouting_list"))
+        else:
+            flash("Error adding pit scouting data. Please try again.", "error")
+
+    return render_template("scouting/pit-scouting-add.html")
+
+@scouting_bp.route("/scouting/pit/edit/<int:team_number>", methods=["GET", "POST"])
+@login_required
+def pit_scouting_edit(team_number):
+    pit_data = scouting_manager.get_pit_scouting(team_number)
+    if not pit_data:
+        flash("Pit scouting data not found", "error")
+        return redirect(url_for("scouting.pit_scouting_list"))
+
+    if str(pit_data["scouter_id"]) != current_user.get_id():
+        flash("You don't have permission to edit this data", "error")
+        return redirect(url_for("scouting.pit_scouting_list"))
+
+    if request.method == "POST":
+        try:
+            data = {
+                "team_number": int(request.form["team_number"]),
+                "scouter_id": ObjectId(current_user.get_id()),
+                "drive_type": {
+                    "swerve": "swerve" in request.form.getlist("drive_type"),
+                    "tank": "tank" in request.form.getlist("drive_type"),
+                    "other": request.form.get("drive_type_other", "")
+                },
+                "swerve_modules": request.form.get("swerve_modules", ""),
+                "motor_details": {
+                    "falcons": "falcons" in request.form.getlist("motors"),
+                    "neos": "neos" in request.form.getlist("motors"),
+                    "krakens": "krakens" in request.form.getlist("motors"),
+                    "vortex": "vortex" in request.form.getlist("motors"),
+                    "other": request.form.get("motors_other", "")
+                },
+                "motor_count": int(request.form.get("motor_count", 0)),
+                "dimensions": {
+                    "length": float(request.form.get("length", 0)),
+                    "width": float(request.form.get("width", 0)),
+                    "height": float(request.form.get("height", 0))
+                },
+                "mechanisms": {
+                    "coral_scoring": {
+                        "notes": request.form.get("coral_scoring_notes", "")
+                    },
+                    "algae_scoring": {
+                        "notes": request.form.get("algae_scoring_notes", "")
+                    },
+                    "climber": {
+                        "has_climber": "has_climber" in request.form,
+                        "type_climber": request.form.get("climber_type", ""),
+                        "notes": request.form.get("climber_notes", "")
+                    }
+                },
+                "programming_language": request.form.get("programming_language", ""),
+                "autonomous_capabilities": {
+                    "has_auto": "has_auto" in request.form,
+                    "num_routes": int(request.form.get("auto_routes", 0)),
+                    "preferred_start": request.form.get("auto_preferred_start", ""),
+                    "notes": request.form.get("auto_notes", "")
+                },
+                "driver_experience": {
+                    "years": int(request.form.get("driver_years", 0)),
+                    "notes": request.form.get("driver_notes", "")
+                },
+                "notes": request.form.get("notes", ""),
+                "updated_at": datetime.now(timezone.utc)
+            }
+            
+            if scouting_manager.update_pit_scouting(team_number, data, current_user.get_id()):
+                flash("Pit scouting data updated successfully", "success")
+                return redirect(url_for("scouting.pit_scouting_list"))
+            else:
+                flash("Error updating pit scouting data", "error")
+        except Exception as e:
+            flash(f"Error: {str(e)}", "error")
+
+    return render_template("scouting/pit-scouting-edit.html", pit_data=pit_data)
+
+@scouting_bp.route("/scouting/pit/delete/<int:team_number>")
+@login_required
+def pit_scouting_delete(team_number):
+    if scouting_manager.delete_pit_scouting(team_number, current_user.get_id()):
+        flash("Pit scouting data deleted successfully", "success")
+    else:
+        flash("Error deleting pit scouting data", "error")
+    return redirect(url_for("scouting.pit_scouting_list"))

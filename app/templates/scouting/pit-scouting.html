@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-md {{ 'bg-red-50 text-red-700' if category == 'error' else 'bg-green-50 text-green-700' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto">
+            <h1 class="text-2xl font-semibold text-gray-900">Pit Scouting Data</h1>
+            <p class="mt-2 text-sm text-gray-700">A list of all pit scouting data collected by the team.</p>
+        </div>
+        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <a href="{{ url_for('scouting.pit_scouting_add') }}"
+               class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
+                Add Pit Data
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-8 flex flex-col">
+        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Team</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Drive Type</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Motors</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Dimensions (L x W x H)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Coral Scoring</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Algae Scoring</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Climber</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Programming/Autonomous</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Driver</th>
+                                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                    <span class="sr-only">Actions</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for data in pit_data %}
+                            <tr>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900">{{ data.team_number }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {% if data.drive_type.swerve %}Swerve{% endif %}
+                                    {% if data.drive_type.tank %}Tank{% endif %}
+                                    {% if data.drive_type.other %}{{ data.drive_type.other }}{% endif %}
+                                    {% if data.drive_type.swerve and data.swerve_modules %}
+                                        <br /> {{ data.swerve_modules }}
+                                    {% endif %}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {{ data.motor_count }}
+                                    {% set separator = joiner(" / ") %}
+                                    {% if data.motor_details.falcons %}{{ separator() }}Falcons{% endif %}
+                                    {% if data.motor_details.neos %}{{ separator() }}Neos{% endif %}
+                                    {% if data.motor_details.krakens %}{{ separator() }}Krakens{% endif %}
+                                    {% if data.motor_details.vortex %}{{ separator() }}Vortex{% endif %}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {{ data.dimensions.length }} in x {{ data.dimensions.width }} in x {{ data.dimensions.height }} in
+                                </td>
+                                <td class="px-3 py-4 text-sm text-gray-500">
+                                    {{ data.mechanisms.coral_scoring.notes }}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {{ data.mechanisms.algae_scoring.notes }}
+                                </td>
+                                {% if data.mechanisms.climber.has_climber %}
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {{ data.mechanisms.climber.type_climber }} - {{ data.mechanisms.climber.notes }}
+                                </td>
+                                {% else %}
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    🗙
+                                </td>
+                                {% endif %}
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    Programming Language: {{ data.programming_language }}
+                                    <br />
+                                    {% if data.autonomous_capabilities %}
+                                        <br/>
+                                        {% if data.autonomous_capabilities.has_auto %}✅{% else %}🗙{% endif %}
+                                        {{ data.autonomous_capabilities.num_routes }} routes
+                                        {% if data.autonomous_capabilities.preferred_start %} - {{ data.autonomous_capabilities.preferred_start }}{% endif %}
+                                        {% if data.autonomous_capabilities.notes %}<br/>
+                                        Auton Notes: {{ data.autonomous_capabilities.notes }}{% endif %}
+                                    {% endif %}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {{ data.driver_experience.years }} years - {{ data.driver_experience.notes }}
+                                </td>
+                                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                    <a href="{{ url_for('scouting.pit_scouting_edit', team_number=data.team_number) }}" 
+                                       class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                    <a href="{{ url_for('scouting.pit_scouting_delete', team_number=data.team_number) }}"
+                                       class="text-red-600 hover:text-red-900 ml-4"
+                                       onclick="return confirm('Are you sure you want to delete this pit scouting data?')">Delete</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

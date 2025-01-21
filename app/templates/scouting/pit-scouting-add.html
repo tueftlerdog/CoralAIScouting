@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
+    <div class="border-b pb-4 mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Add Pit Scouting Data</h1>
+        <p class="text-gray-600 mt-2">Enter pit scouting information for a team</p>
+    </div>
+
+    <form method="POST" class="space-y-6">
+        <!-- Basic Info -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Team Number</label>
+            <input type="number" name="team_number" required
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
+
+        <!-- Drive Base -->
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900">Drive Base</h3>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Drive Type</label>
+                <div class="mt-2 space-x-4">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="drive_type" value="swerve" class="rounded border-gray-300 text-indigo-600">
+                        <span class="ml-2">Swerve</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="drive_type" value="tank" class="rounded border-gray-300 text-indigo-600">
+                        <span class="ml-2">Tank</span>
+                    </label>
+                </div>
+                <input type="text" name="drive_type_other" placeholder="Other drive type..."
+                       class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Swerve Modules (if applicable)</label>
+                <input type="text" name="swerve_modules" placeholder="e.g., SDS MK4i"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        <!-- Motors -->
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900">Motors</h3>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Motor Types</label>
+                <div class="mt-2 space-x-4">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="motors" value="falcons" class="rounded border-gray-300 text-indigo-600">
+                        <span class="ml-2">Falcons</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="motors" value="neos" class="rounded border-gray-300 text-indigo-600">
+                        <span class="ml-2">NEOs</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="motors" value="krakens" class="rounded border-gray-300 text-indigo-600">
+                        <span class="ml-2">Krakens</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="motors" value="vortex" class="rounded border-gray-300 text-indigo-600">
+                        <span class="ml-2">Vortex</span>
+                    </label>
+                </div>
+                <input type="text" name="motors_other" placeholder="Other motors..."
+                       class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Total Motor Count</label>
+                <input type="number" name="motor_count" min="0"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        <!-- Dimensions -->
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900">Robot Dimensions (inches)</h3>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Length</label>
+                    <input type="number" name="length" step="0.1" min="0"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Width</label>
+                    <input type="number" name="width" step="0.1" min="0"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Height</label>
+                    <input type="number" name="height" step="0.1" min="0"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Mechanisms -->
+        <div class="space-y-6">
+            <h3 class="text-lg font-medium text-gray-900">Mechanisms</h3>
+            
+            <!-- Coral Scoring -->
+            <div class="space-y-4 border-b pb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Coral Scoring Notes</label>
+                    <textarea name="coral_scoring_notes" rows="2"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </div>
+            </div>
+
+            <!-- Algae Scoring -->
+            <div class="space-y-4 border-b pb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Algae Scoring Notes</label>
+                    <textarea name="algae_scoring_notes" rows="2"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </div>
+            </div>
+
+            <!-- Climber -->
+            <div class="space-y-4">
+                <div>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="has_climber" class="rounded border-gray-300 text-indigo-600">
+                        <span class="ml-2 text-sm font-medium text-gray-700">Has Climber</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Climber Type</label>
+                    <select name="climber_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">Select type...</option>
+                        <option value="deep">Deep</option>
+                        <option value="shallow">Shallow</option>
+                        <option value="park">Park</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Climber Notes</label>
+                    <textarea name="climber_notes" rows="2"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Programming -->
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900">Programming</h3>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Programming Language</label>
+                <input type="text" name="programming_language"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        <!-- Autonomous -->
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900">Autonomous</h3>
+            
+            <div>
+                <label class="inline-flex items-center">
+                    <input type="checkbox" name="has_auto" class="rounded border-gray-300 text-indigo-600">
+                    <span class="ml-2 text-sm font-medium text-gray-700">Has Autonomous</span>
+                </label>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Number of Auto Routes</label>
+                <input type="number" name="auto_routes" min="0"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Preferred Starting Position</label>
+                <input type="text" name="auto_preferred_start"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Auto Notes</label>
+                <textarea name="auto_notes" rows="2"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+            </div>
+        </div>
+
+        <!-- Driver Experience -->
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900">Driver Experience</h3>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Years of Experience</label>
+                <input type="number" name="driver_years" min="0"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Driver Notes</label>
+                <textarea name="driver_notes" rows="2"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+            </div>
+        </div>
+
+        <!-- General Notes -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Additional Notes</label>
+            <textarea name="notes" rows="4"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-5">
+            <div class="flex justify-end">
+                <a href="{{ url_for('scouting.pit_scouting_list') }}"
+                   class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Cancel</a>
+                <button type="submit"
+                        class="ml-3 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    Save
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %} 
