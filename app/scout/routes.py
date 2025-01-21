@@ -866,10 +866,12 @@ def pit_scouting_add():
             # Mechanisms
             "mechanisms": {
                 "coral_scoring": {
-                    "notes": request.form.get("coral_scoring_notes", "")
+                    "enabled": request.form.get("coral_scoring_enabled") == "true",
+                    "notes": request.form.get("coral_scoring_notes", "") if request.form.get("coral_scoring_enabled") == "true" else ""
                 },
                 "algae_scoring": {
-                    "notes": request.form.get("algae_scoring_notes", "")
+                    "enabled": request.form.get("algae_scoring_enabled") == "true",
+                    "notes": request.form.get("algae_scoring_notes", "") if request.form.get("algae_scoring_enabled") == "true" else ""
                 },
                 "climber": {
                     "has_climber": "has_climber" in request.form,
@@ -881,10 +883,10 @@ def pit_scouting_add():
             # Programming and Autonomous
             "programming_language": request.form.get("programming_language", ""),
             "autonomous_capabilities": {
-                "has_auto": "has_auto" in request.form,
-                "num_routes": int(request.form.get("auto_routes", 0)),
-                "preferred_start": request.form.get("auto_preferred_start", ""),
-                "notes": request.form.get("auto_notes", "")
+                "has_auto": request.form.get("has_auto") == "true",
+                "num_routes": int(request.form.get("auto_routes", 0)) if request.form.get("has_auto") == "true" else 0,
+                "preferred_start": request.form.get("auto_preferred_start", "") if request.form.get("has_auto") == "true" else "",
+                "notes": request.form.get("auto_notes", "") if request.form.get("has_auto") == "true" else ""
             },
             
             # Driver Experience
@@ -948,10 +950,12 @@ def pit_scouting_edit(team_number):
                 },
                 "mechanisms": {
                     "coral_scoring": {
-                        "notes": request.form.get("coral_scoring_notes", "")
+                        "enabled": request.form.get("coral_scoring_enabled") == "true",
+                        "notes": request.form.get("coral_scoring_notes", "") if request.form.get("coral_scoring_enabled") == "true" else ""
                     },
                     "algae_scoring": {
-                        "notes": request.form.get("algae_scoring_notes", "")
+                        "enabled": request.form.get("algae_scoring_enabled") == "true",
+                        "notes": request.form.get("algae_scoring_notes", "") if request.form.get("algae_scoring_enabled") == "true" else ""
                     },
                     "climber": {
                         "has_climber": "has_climber" in request.form,
@@ -961,10 +965,10 @@ def pit_scouting_edit(team_number):
                 },
                 "programming_language": request.form.get("programming_language", ""),
                 "autonomous_capabilities": {
-                    "has_auto": "has_auto" in request.form,
-                    "num_routes": int(request.form.get("auto_routes", 0)),
-                    "preferred_start": request.form.get("auto_preferred_start", ""),
-                    "notes": request.form.get("auto_notes", "")
+                    "has_auto": request.form.get("has_auto") == "true",
+                    "num_routes": int(request.form.get("auto_routes", 0)) if request.form.get("has_auto") == "true" else 0,
+                    "preferred_start": request.form.get("auto_preferred_start", "") if request.form.get("has_auto") == "true" else "",
+                    "notes": request.form.get("auto_notes", "") if request.form.get("has_auto") == "true" else ""
                 },
                 "driver_experience": {
                     "years": int(request.form.get("driver_years", 0)),
