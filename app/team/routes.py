@@ -22,39 +22,20 @@ from io import BytesIO
 import asyncio
 from PIL import Image
 from bson import ObjectId
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def run_async(coro):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
-
-
-def async_route(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return run_async(f(*args, **kwargs))
-
-    return wrapper
-
+from app.utils import (
+    async_route, handle_route_errors,
+    success_response, error_response,
+    save_file_to_gridfs, send_gridfs_file,
+    allowed_file, ALLOWED_EXTENSIONS
+)
 
 team_bp = Blueprint("team", __name__)
-mongo = None
+team_manager = None
 
 @team_bp.record
 def on_blueprint_init(state):
-    global team_manager, mongo
+    global team_manager
     app = state.app
-    mongo = PyMongo(app)
     team_manager = TeamManager(app.config["MONGO_URI"])
 
 @team_bp.route("/join", methods=["GET", "POST"])
@@ -467,49 +448,31 @@ async def view_team(team_number):
 @team_bp.route("/<int:team_number>/update_logo", methods=["POST"])
 @login_required
 @async_route
+@handle_route_errors
 async def update_team_logo(team_number):
     """Update team logo"""
     team = await team_manager.get_team_by_number(team_number)
     
     if not team or not team.is_admin(current_user.get_id()):
-        flash("Unauthorized to update team logo", "error")
-        return redirect(url_for("team.manage_team"))
+        return error_response("Unauthorized to update team logo")
     
-    try:
-        if 'team_logo' not in request.files:
-            flash("No file provided", "error")
-            return redirect(url_for("team.manage_team"))
-            
-        file = request.files['team_logo']
-        if file.filename == '':
-            flash("No file selected", "error")
-            return redirect(url_for("team.manage_team"))
-            
-        if file and allowed_file(file.filename):
-            # Save new logo to GridFS
-            fs = GridFS(team_manager.db)
-            filename = secure_filename(f"team_{team_number}_logo_{file.filename}")
-            new_logo_id = fs.put(
-                file.stream.read(),
-                filename=filename,
-                content_type=file.content_type
-            )
-            
-            # Update team and clean up old logo
-            success, message = await team_manager.update_team_logo(team_number, new_logo_id)
-            
-            if not success:
-                # If update failed, delete the newly uploaded file
-                fs.delete(new_logo_id)
-                
-            flash(message, "success" if success else "error")
-        else:
-            flash("Invalid file type. Please use PNG, JPG, or JPEG", "error")
-            
-    except Exception as e:
-        flash(f"Error updating team logo: {str(e)}", "error")
+    if 'team_logo' not in request.files:
+        return error_response("No file provided")
         
-    return redirect(url_for("team.manage_team"))
+    file = request.files['team_logo']
+    if file.filename == '':
+        return error_response("No file selected")
+        
+    new_logo_id = await save_file_to_gridfs(file, team_manager.db)
+    if not new_logo_id:
+        return error_response("Invalid file type")
+        
+    success, message = await team_manager.update_team_logo(team_number, new_logo_id)
+    if not success:
+        fs = GridFS(team_manager.db)
+        fs.delete(new_logo_id)
+        
+    return success_response(message) if success else error_response(message)
 
 
 @team_bp.route("/<int:team_number>/settings")

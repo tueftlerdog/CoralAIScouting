@@ -6,38 +6,24 @@ from app.models import TeamData
 import logging
 import time
 from functools import wraps
+from app.utils import DatabaseManager, with_mongodb_retry
 
 logger = logging.getLogger(__name__)
 
 
-def with_mongodb_retry(retries=3, delay=2):
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            last_error = None
-            for attempt in range(retries):
-                try:
-                    return f(*args, **kwargs)
-                except (ServerSelectionTimeoutError, ConnectionFailure) as e:
-                    last_error = e
-                    if attempt < retries - 1:
-                        logger.warning(f"Attempt {attempt + 1} failed: {str(e)}.")
-                        time.sleep(delay)
-                    else:
-                        logger.error(f"All {retries} attempts failed: {str(e)}")
-            raise last_error
-
-        return wrapper
-
-    return decorator
-
-
-class ScoutingManager:
+class ScoutingManager(DatabaseManager):
     def __init__(self, mongo_uri):
-        self.mongo_uri = mongo_uri
-        self.client = None
-        self.db = None
-        self.connect()
+        super().__init__(mongo_uri)
+        self._ensure_collections()
+
+    def _ensure_collections(self):
+        """Ensure required collections exist"""
+        if "team_data" not in self.db.list_collection_names():
+            self.db.create_collection("team_data")
+            # Create indexes
+            self.db.team_data.create_index([("team_number", 1)])
+            self.db.team_data.create_index([("scouter_id", 1)])
+            logger.info("Created team_data collection and indexes")
 
     def connect(self):
         """Establish connection to MongoDB with basic error handling"""

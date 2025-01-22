@@ -12,6 +12,11 @@ from flask import (
 )
 from flask_login import login_required, login_user, current_user, logout_user
 from app.auth.auth_utils import UserManager
+from app.utils import (
+    async_route, handle_route_errors, is_safe_url,
+    success_response, error_response, save_file_to_gridfs,
+    send_gridfs_file
+)
 import asyncio
 from functools import wraps
 import os
@@ -103,37 +108,32 @@ def is_safe_url(target):
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 @async_route
+@handle_route_errors
 async def login():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
 
-    form_data = {}
     if request.method == "POST":
         login = request.form.get("login", "").strip()
         password = request.form.get("password", "").strip()
         remember = bool(request.form.get("remember", False))
 
-        form_data = {"login": login, "remember": remember}
-
         if not login or not password:
             flash("Please provide both login and password", "error")
-            return render_template("auth/login.html", form_data=form_data)
+            return render_template("auth/login.html", form_data={"login": login})
 
-        try:
-            success, user = await user_manager.authenticate_user(login, password)
-            if success and user:
-                login_user(user, remember=remember)
-                next_page = request.args.get('next')
-                if not next_page or not is_safe_url(next_page):
-                    next_page = url_for('index')
-                flash("Successfully logged in", "success")
-                return redirect(next_page)
-            else:
-                flash("Invalid login credentials", "error")
-        except Exception as e:
-            flash(f"An error occurred during login: {str(e)}", "error")
+        success, user = await user_manager.authenticate_user(login, password)
+        if success and user:
+            login_user(user, remember=remember)
+            next_page = request.args.get('next')
+            if not next_page or not is_safe_url(next_page):
+                next_page = url_for('index')
+            flash("Successfully logged in", "success")
+            return redirect(next_page)
+        
+        flash("Invalid login credentials", "error")
 
-    return render_template("auth/login.html", form_data=form_data)
+    return render_template("auth/login.html", form_data={})
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -223,12 +223,16 @@ def profile(username):
 
 @auth_bp.route("/profile/picture/<user_id>")
 def profile_picture(user_id):
+    """Get user's profile picture"""
     user = user_manager.get_user_by_id(user_id)
     if not user or not user.profile_picture_id:
-        return send_file("static/images/default_profile.png")  # Create a default profile picture
+        return send_file("static/images/default_profile.png")
     
-    # Implement this to retrieve from MongoDB GridFS
-    return send_profile_picture(user.profile_picture_id)
+    return send_gridfs_file(
+        user.profile_picture_id,
+        user_manager.db,
+        "static/images/default_profile.png"
+    )
 
 
 @auth_bp.route("/check_username", methods=["POST"])

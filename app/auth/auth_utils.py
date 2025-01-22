@@ -8,6 +8,7 @@ import time
 from functools import wraps
 from gridfs import GridFS
 from flask_login import current_user
+from app.utils import DatabaseManager, with_mongodb_retry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,28 +21,6 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def with_mongodb_retry(retries=3, delay=2):
-    def decorator(f):
-        @wraps(f)
-        async def wrapper(*args, **kwargs):
-            last_error = None
-            for attempt in range(retries):
-                try:
-                    return await f(*args, **kwargs)
-                except (ServerSelectionTimeoutError, ConnectionFailure) as e:
-                    last_error = e
-                    if attempt < retries - 1:  # don't sleep on last attempt
-                        logger.warning(f"Attempt {attempt + 1} failed: {str(e)}.")
-                        time.sleep(delay)
-                    else:
-                        logger.error(f"All {retries} attempts failed: {str(e)}")
-            raise last_error
-
-        return wrapper
-
-    return decorator
-
-
 async def check_password_strength(password):
     """
     Check if password meets minimum requirements:
@@ -52,42 +31,16 @@ async def check_password_strength(password):
     return True, "Password meets all requirements"
 
 
-class UserManager:
+class UserManager(DatabaseManager):
     def __init__(self, mongo_uri):
-        self.mongo_uri = mongo_uri
-        self.client = None
-        self.db = None
-        self.connect()
+        super().__init__(mongo_uri)
+        self._ensure_collections()
 
-    def connect(self):
-        """Establish connection to MongoDB with basic error handling"""
-        try:
-            if self.client is None:
-                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
-                # Test the connection
-                self.client.server_info()
-                self.db = self.client.get_default_database()
-                logger.info("Successfully connected to MongoDB")
-
-                # Ensure users collection exists
-                if "users" not in self.db.list_collection_names():
-                    self.db.create_collection("users")
-                    logger.info("Created users collection")
-        except Exception as e:
-            logger.error(f"Failed to connect to MongoDB: {str(e)}")
-            raise
-
-    def ensure_connected(self):
-        """Ensure we have a valid connection, reconnect if necessary"""
-        try:
-            if self.client is None:
-                self.connect()
-            else:
-                # Test if connection is still alive
-                self.client.server_info()
-        except Exception:
-            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
-            self.connect()
+    def _ensure_collections(self):
+        """Ensure required collections exist"""
+        if "users" not in self.db.list_collection_names():
+            self.db.create_collection("users")
+            logger.info("Created users collection")
 
     @with_mongodb_retry(retries=3, delay=2)
     async def create_user(
@@ -327,8 +280,3 @@ class UserManager:
         except Exception as e:
             logger.error(f"Error updating user settings: {str(e)}")
             return False
-
-    def __del__(self):
-        """Cleanup MongoDB connection"""
-        if self.client:
-            self.client.close()

@@ -10,6 +10,9 @@ from bson import ObjectId
 from bson import json_util
 import json
 from datetime import datetime, timezone
+from app.utils import (
+    async_route, handle_route_errors,
+)
 
 scouting_bp = Blueprint("scouting", __name__)
 scouting_manager = None
@@ -32,21 +35,19 @@ def async_route(f):
 
 @scouting_bp.route("/scouting/add", methods=["GET", "POST"])
 @login_required
+@handle_route_errors
 def add_scouting_data():
     if request.method == "POST":
         data = request.get_json() if request.is_json else request.form.to_dict()
+        success, message = scouting_manager.add_scouting_data(data, current_user.get_id())
         
-        success, message = scouting_manager.add_scouting_data(
-            data, current_user.get_id()
-        )
-
         if success:
             flash("Team data added successfully", "success")
         else:
             flash(f"Error adding data: {message}", "error")
-
+            
         return redirect(url_for("scouting.list_scouting_data"))
-
+        
     return render_template("scouting/add.html")
 
 

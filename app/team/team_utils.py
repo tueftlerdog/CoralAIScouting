@@ -12,6 +12,7 @@ from typing import Dict, Tuple, Optional, List, Any, Union
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import gridfs
+from app.utils import DatabaseManager, with_mongodb_retry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,62 +22,6 @@ TeamResult = Tuple[bool, Union[str, Team, Tuple[Team, User]]]
 UserResult = Tuple[bool, Union[str, User]]
 AssignmentResult = Tuple[bool, str]
 DatabaseID = Union[str, ObjectId]
-
-def with_mongodb_retry(retries=3, delay=2):
-    """Decorator for retrying MongoDB operations"""
-    def decorator(f):
-        @wraps(f)
-        async def wrapper(*args, **kwargs):
-            last_error = None
-            for attempt in range(retries):
-                try:
-                    return await f(*args, **kwargs)
-                except (ServerSelectionTimeoutError, ConnectionFailure) as e:
-                    last_error = e
-                    if attempt < retries - 1:
-                        logger.warning(f"Attempt {attempt + 1} failed: {str(e)}")
-                        time.sleep(delay)
-                    else:
-                        logger.error(f"All {retries} attempts failed: {str(e)}")
-            raise last_error
-        return wrapper
-    return decorator
-
-class DatabaseManager:
-    """Base class for database operations"""
-    def __init__(self, mongo_uri: str):
-        self.mongo_uri = mongo_uri
-        self.client: Optional[MongoClient] = None
-        self.db = None
-        self.connect()
-
-    def connect(self) -> None:
-        """Establish connection to MongoDB"""
-        try:
-            if self.client is None:
-                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
-                self.client.server_info()
-                self.db = self.client.get_default_database()
-                logger.info("Successfully connected to MongoDB")
-        except Exception as e:
-            logger.error(f"Failed to connect to MongoDB: {str(e)}")
-            raise
-
-    def ensure_connected(self) -> None:
-        """Ensure database connection is active"""
-        try:
-            if self.client is None:
-                self.connect()
-            else:
-                self.client.server_info()
-        except Exception:
-            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
-            self.connect()
-
-    def __del__(self):
-        """Cleanup MongoDB connection"""
-        if self.client:
-            self.client.close()
 
 class TeamManager(DatabaseManager):
     """Handles all team-related operations"""
