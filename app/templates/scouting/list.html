@@ -179,10 +179,7 @@
                             <!-- In the team number cell -->
                             <td class="px-3 sm:px-6 py-4">
                                 {% if data.team_number %}
-                                    <a href="{{ url_for('scouting.view_team', team_number=data.team_number) }}" 
-                                       class="text-blue-600 hover:text-blue-900">
-                                        {{ data.team_number }}
-                                    </a>
+                                    {{ data.team_number }}
                                 {% endif %}
                             </td>
                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap">

@@ -756,41 +756,6 @@ def matches():
         flash(f"Error fetching matches: {str(e)}", "error")
         return render_template("scouting/matches.html", matches=[])
 
-@scouting_bp.route("/team/<int:team_number>")
-@login_required
-def view_team(team_number):
-    try:
-        matches = scouting_manager.get_team_matches(team_number)
-        stats = scouting_manager.get_team_stats(team_number)
-        
-        # Calculate averages and success rates
-        if stats["matches_played"] > 0:
-            stats["avg_coral"] = (
-                stats["total_coral"] / stats["matches_played"]
-            )
-            stats["avg_algae"] = (
-                stats["total_algae"] / stats["matches_played"]
-            )
-            stats["climb_success_rate"] = (
-                stats["successful_climbs"] / stats["matches_played"]
-            )
-        else:
-            stats.update({
-                "avg_coral": 0,
-                "avg_algae": 0,
-                "climb_success_rate": 0
-            })
-            
-        return render_template(
-            "scouting/team.html",
-            team_number=team_number,
-            matches=matches,
-            stats=stats
-        )
-    except Exception as e:
-        flash(f"Error fetching team data: {str(e)}", "error")
-        return redirect(url_for("scouting.list_scouting_data"))
-
 @scouting_bp.route("/scouting/check_team")
 @login_required
 def check_team():

@@ -93,10 +93,7 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ loop.index }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <a href="{{ url_for('scouting.view_team', team_number=team.team_number) }}" 
-                                   class="text-sm font-medium text-blue-600 hover:text-blue-900">
-                                    Team {{ team.team_number }}
-                                </a>
+                                Team {{ team.team_number }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ team.matches_played }}</td>
                             
