@@ -93,8 +93,8 @@ def handle_route_errors(f):
             return await f(*args, **kwargs)
         except Exception as e:
             logger.error(f"Route error: {str(e)}", exc_info=True)
-            flash(str(e), "error")
-            return error_response(str(e), 500)
+            flash("An internal error has occurred.", "error")
+            return error_response("An internal error has occurred.", 500)
     return wrapper
 
 # ============ File Handling Utilities ============
@@ -132,7 +132,7 @@ def send_gridfs_file(file_id, db, default_path: str = None):
         logger.error(f"Error retrieving file: {str(e)}")
         if default_path:
             return send_file(default_path)
-        raise e
+        return error_response("An internal error has occurred.", 500)
 
 # ============ Response Utilities ============
 
