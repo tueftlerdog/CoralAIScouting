@@ -1,29 +1,20 @@
 from __future__ import annotations
 
-from flask import (
-    Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    flash,
-    jsonify,
-    send_file,
-    current_app,
-)
-from flask_login import login_required, login_user, current_user, logout_user
-from app.auth.auth_utils import UserManager
-from app.utils import (
-    async_route, handle_route_errors, is_safe_url,
-    send_gridfs_file
-)
 import asyncio
 from functools import wraps
-from werkzeug.utils import secure_filename
+from urllib.parse import urljoin, urlparse
+
 from bson import ObjectId
-from gridfs import GridFS
-from urllib.parse import urlparse, urljoin
+from flask import (Blueprint, current_app, flash, jsonify, redirect,
+                   render_template, request, send_file, url_for)
+from flask_login import current_user, login_required, login_user, logout_user
 from flask_pymongo import PyMongo
+from gridfs import GridFS
+from werkzeug.utils import secure_filename
+
+from app.auth.auth_utils import UserManager
+from app.utils import (async_route, handle_route_errors, is_safe_url,
+                       send_gridfs_file)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 

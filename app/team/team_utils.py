@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-import secrets
-from bson.objectid import ObjectId
-from datetime import datetime, timezone
-from app.models import Team, User, Assignment
 import logging
+import secrets
 import string
-from typing import Dict, Tuple, Optional, Union
-from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime, timezone
 from io import BytesIO
+from typing import Dict, Optional, Tuple, Union
+
 import gridfs
+from bson.objectid import ObjectId
+from PIL import Image, ImageDraw, ImageFont
+
+from app.models import Assignment, Team, User
 from app.utils import DatabaseManager, with_mongodb_retry
 
 logging.basicConfig(level=logging.INFO)
@@ -598,7 +600,7 @@ class TeamManager(DatabaseManager):
         """Update team logo and clean up old one"""
         try:
             from gridfs import GridFS
-            
+
             # Get current team data
             team = await self.get_team_by_number(team_number)
             if not team:

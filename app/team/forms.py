@@ -1,8 +1,9 @@
-from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed, FileSize
-from wtforms import StringField, TextAreaField, IntegerField
-from wtforms.validators import DataRequired, Length, NumberRange
 import logging
+
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField, FileSize
+from wtforms import IntegerField, StringField, TextAreaField
+from wtforms.validators import DataRequired, Length, NumberRange
 
 logger = logging.getLogger(__name__)
 

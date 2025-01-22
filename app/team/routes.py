@@ -1,29 +1,21 @@
 from __future__ import annotations
 
-from flask import (
-    Blueprint,
-    flash,
-    render_template,
-    request,
-    jsonify,
-    current_app,
-    redirect,
-    url_for,
-    send_file,
-)
-from flask_login import login_required, current_user
-from app.team.team_utils import TeamManager
-from werkzeug.utils import secure_filename
-from .forms import CreateTeamForm
-from gridfs import GridFS
 from io import BytesIO
-from PIL import Image
+
 from bson import ObjectId
-from app.utils import (
-    async_route, handle_route_errors,
-    success_response, error_response,
-    save_file_to_gridfs, allowed_file
-)
+from flask import (Blueprint, current_app, flash, jsonify, redirect,
+                   render_template, request, send_file, url_for)
+from flask_login import current_user, login_required
+from gridfs import GridFS
+from PIL import Image
+from werkzeug.utils import secure_filename
+
+from app.team.team_utils import TeamManager
+from app.utils import (allowed_file, async_route, error_response,
+                       handle_route_errors, save_file_to_gridfs,
+                       success_response)
+
+from .forms import CreateTeamForm
 
 team_bp = Blueprint("team", __name__)
 team_manager = None

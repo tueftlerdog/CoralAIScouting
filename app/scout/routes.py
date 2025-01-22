@@ -1,20 +1,21 @@
 from __future__ import annotations
 
 import asyncio
-from functools import wraps
-import aiohttp
-from flask import Blueprint, current_app, flash, render_template, request, redirect, url_for, jsonify
-from flask_login import login_required, current_user
-from app.models import PitScouting
-from app.scout.scouting_utils import ScoutingManager
-from .TBA import TBAInterface
-from bson import ObjectId
-from bson import json_util
 import json
 from datetime import datetime, timezone
-from app.utils import (
-    async_route, handle_route_errors,
-)
+from functools import wraps
+
+import aiohttp
+from bson import ObjectId, json_util
+from flask import (Blueprint, current_app, flash, jsonify, redirect,
+                   render_template, request, url_for)
+from flask_login import current_user, login_required
+
+from app.models import PitScouting
+from app.scout.scouting_utils import ScoutingManager
+from app.utils import async_route, handle_route_errors
+
+from .TBA import TBAInterface
 
 scouting_bp = Blueprint("scouting", __name__)
 scouting_manager = None

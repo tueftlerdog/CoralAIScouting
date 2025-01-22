@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from werkzeug.security import generate_password_hash
-from datetime import datetime, timezone
-from app.models import User
 import logging
-from gridfs import GridFS
+from datetime import datetime, timezone
+
 from flask_login import current_user
+from gridfs import GridFS
+from werkzeug.security import generate_password_hash
+
+from app.models import User
 from app.utils import DatabaseManager, allowed_file, with_mongodb_retry
 
 logging.basicConfig(level=logging.INFO)
@@ -161,7 +163,7 @@ class UserManager(DatabaseManager):
         try:
             from bson.objectid import ObjectId
             from gridfs import GridFS
-            
+
             # Get the old profile picture ID first
             user_data = self.db.users.find_one({"_id": ObjectId(user_id)})
             old_picture_id = user_data.get('profile_picture_id') if user_data else None

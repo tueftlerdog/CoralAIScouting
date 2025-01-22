@@ -1,7 +1,9 @@
-from app.app import create_app
-from waitress import serve
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
+from waitress import serve
+
+from app.app import create_app
 
 load_dotenv()
 
