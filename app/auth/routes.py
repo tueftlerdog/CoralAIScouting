@@ -128,6 +128,8 @@ async def login():
             next_page = request.args.get('next')
             if not next_page or not is_safe_url(next_page):
                 next_page = url_for('index')
+            else:
+                next_page = url_for(next_page)
             flash("Successfully logged in", "success")
             return redirect(next_page)
         
