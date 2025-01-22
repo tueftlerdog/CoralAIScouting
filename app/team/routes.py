@@ -107,7 +107,7 @@ async def create_team():
             if form.logo.data:
                 # Open and resize image
                 image = Image.open(form.logo.data)
-                image = image.convert('RGBA')  # Convert to RGB mode
+                image = image.convert('RGBA')  # Convert to RGBA mode
                 image.thumbnail((200, 200))  # Resize maintaining aspect ratio
                 
                 # Save to BytesIO
