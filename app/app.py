@@ -1,7 +1,8 @@
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, make_response, render_template, send_from_directory
+from flask import (Flask, jsonify, make_response, render_template,
+                   send_from_directory)
 from flask_login import LoginManager
 from flask_pymongo import PyMongo
 from flask_wtf.csrf import CSRFProtect
@@ -75,14 +76,12 @@ def create_app():
         response.headers["Service-Worker-Allowed"] = "/"
         return response
 
-    # @app.errorhandler(Exception)
-    # def handle_exception(e):
-    #     # Log the real error with stack trace
-    #     app.logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
-    #     # Return generic message to user
-    #     return jsonify({
-    #         "error": "An unexpected error occurred"
-    #     }), 500
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        app.logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+        return jsonify({
+            "error": "An unexpected error occurred"
+        }), 500
 
     return app
 
