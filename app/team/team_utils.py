@@ -1,14 +1,12 @@
-from functools import wraps
+from __future__ import annotations
+
 import secrets
-from pymongo import MongoClient
-from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 from bson.objectid import ObjectId
 from datetime import datetime, timezone
 from app.models import Team, User, Assignment
 import logging
-import time
 import string
-from typing import Dict, Tuple, Optional, List, Any, Union
+from typing import Dict, Tuple, Optional, Union
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import gridfs
@@ -106,7 +104,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error creating team: {str(e)}")
-            return False, f"Failed to create team: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def join_team(self, user_id: str, team_join_code: str):
@@ -141,7 +139,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error joining team: {str(e)}")
-            return False, f"Error joining team: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def leave_team(self, user_id: str, team_number: int):
@@ -178,7 +176,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error leaving team: {str(e)}")
-            return False, f"Error leaving team: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def get_team_by_number(self, team_number: int):
@@ -252,7 +250,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error adding admin: {str(e)}")
-            return False, f"Error adding admin: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def remove_admin(
@@ -289,7 +287,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error removing admin: {str(e)}")
-            return False, f"Error removing admin: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def remove_user(self, team_number: int, user_id: str, admin_id: str):
@@ -330,7 +328,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error removing user: {str(e)}")
-            return False, f"Error removing user: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def create_assignment(
@@ -370,7 +368,7 @@ class TeamManager(DatabaseManager):
             )
         except Exception as e:
             logger.error(f"Error creating assignment: {str(e)}")
-            return False, f"Error creating assignment: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def update_assignment_status(
@@ -397,7 +395,7 @@ class TeamManager(DatabaseManager):
             return True, "Assignment status updated successfully"
         except Exception as e:
             logger.error(f"Error updating assignment status: {str(e)}")
-            return False, f"Error updating assignment status: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def get_team_assignments(self, team_number: int):
@@ -555,7 +553,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error updating assignment: {str(e)}")
-            return False, f"Error updating assignment: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def reset_user_team(self, user_id: str):
@@ -593,7 +591,7 @@ class TeamManager(DatabaseManager):
             return True, team
         except Exception as e:
             logger.error(f"Error validating user team: {str(e)}")
-            return False, f"Error validating team membership: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def update_team_logo(self, team_number: int, new_logo_id) -> Tuple[bool, str]:
@@ -629,12 +627,7 @@ class TeamManager(DatabaseManager):
             
         except Exception as e:
             logger.error(f"Error updating team logo: {str(e)}")
-            return False, str(e)
-
-    def __del__(self):
-        """Cleanup MongoDB connection"""
-        if self.client:
-            self.client.close()
+            return False, "An internal error has occurred."
 
     def cleanup_gridfs(self):
         """Clean up orphaned chunks in GridFS"""
@@ -676,7 +669,7 @@ class TeamManager(DatabaseManager):
             
         except Exception as e:
             logger.error(f"Error updating team info: {str(e)}")
-            return False, str(e)
+            return False, "An internal error has occurred."
 
     def create_default_team_logo(self, team_number: int) -> bytes:
         """Create a default team logo with centered text"""
@@ -747,4 +740,4 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error transferring ownership: {str(e)}")
-            return False, f"Error transferring ownership: {str(e)}"
+            return False, "An internal error has occurred."

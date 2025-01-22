@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import wraps
 from flask import (
     Blueprint,
     flash,
@@ -13,20 +12,17 @@ from flask import (
     send_file,
 )
 from flask_login import login_required, current_user
-from flask_pymongo import PyMongo
 from app.team.team_utils import TeamManager
 from werkzeug.utils import secure_filename
 from .forms import CreateTeamForm
 from gridfs import GridFS
 from io import BytesIO
-import asyncio
 from PIL import Image
 from bson import ObjectId
 from app.utils import (
     async_route, handle_route_errors,
     success_response, error_response,
-    save_file_to_gridfs, send_gridfs_file,
-    allowed_file, ALLOWED_EXTENSIONS
+    save_file_to_gridfs, allowed_file
 )
 
 team_bp = Blueprint("team", __name__)
@@ -127,7 +123,7 @@ async def create_team():
 
         except Exception as e:
             current_app.logger.error(f"Error in create_team route: {str(e)}")
-            flash(f"Error creating team: {str(e)}", "error")
+            flash("An internal error has occurred.", "error")
 
     return render_template("team/create.html", form=form)
 
@@ -224,7 +220,7 @@ async def create_assignment(team_number):
 
     except Exception as e:
         current_app.logger.error(f"Error creating assignment: {str(e)}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({"success": False, "message": "An internal error has occurred."}), 500
 
 
 @team_bp.route("/assignments/<assignment_id>/status", methods=["PUT"])
@@ -416,7 +412,7 @@ async def edit_assignment(assignment_id):
 
     except Exception as e:
         current_app.logger.error(f"Error editing assignment: {str(e)}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({"success": False, "message": "An internal error has occurred."}), 500
 
 
 @team_bp.route("/view/<int:team_number>")
@@ -472,7 +468,7 @@ async def update_team_logo(team_number):
         fs = GridFS(team_manager.db)
         fs.delete(new_logo_id)
         
-    return success_response(message) if success else error_response(message)
+    return success_response(message) if success else error_response("An internal error has occurred.", log_message="Error updating team logo")
 
 
 @team_bp.route("/<int:team_number>/settings")
@@ -519,7 +515,7 @@ async def update_team_info(team_number):
                             # Also clean up any orphaned chunks
                             team_manager.db.fs.chunks.delete_many({"files_id": team.logo_id})
                         except Exception as e:
-                            flash(f"Error deleting old logo: {str(e)}")
+                            flash("An internal error has occurred.")
                     
                     filename = secure_filename(f"team_{team_number}_logo_{file.filename}")
                     file_id = fs.put(

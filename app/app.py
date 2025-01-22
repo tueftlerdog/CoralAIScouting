@@ -1,4 +1,4 @@
-from flask import Flask, make_response, render_template, send_from_directory, jsonify
+from flask import Flask, make_response, render_template, send_from_directory
 from flask_login import LoginManager
 from flask_pymongo import PyMongo
 import os

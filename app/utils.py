@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 from functools import wraps
-from flask import jsonify, request, flash, redirect, url_for, send_file
+from flask import jsonify, request, flash, send_file
 from werkzeug.utils import secure_filename
 from urllib.parse import urlparse, urljoin
 from io import BytesIO
@@ -146,8 +146,10 @@ def success_response(message: str = "Success", data: dict = None, status_code: i
         response["data"] = data
     return jsonify(response), status_code
 
-def error_response(message: str = "Error", status_code: int = 400):
+def error_response(message: str = "Error", status_code: int = 400, log_message: str = None):
     """Standard error response"""
+    if log_message:
+        logger.error(log_message)
     return jsonify({
         "success": False,
         "message": message

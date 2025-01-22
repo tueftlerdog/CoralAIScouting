@@ -2,7 +2,7 @@ from typing import Dict
 from bson import ObjectId
 from werkzeug.security import check_password_hash
 from flask_login import UserMixin
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 class User(UserMixin):

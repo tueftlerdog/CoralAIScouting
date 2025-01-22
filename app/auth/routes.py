@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from flask import (
     Blueprint,
     render_template,
@@ -8,18 +10,15 @@ from flask import (
     jsonify,
     send_file,
     current_app,
-    abort,
 )
 from flask_login import login_required, login_user, current_user, logout_user
 from app.auth.auth_utils import UserManager
 from app.utils import (
     async_route, handle_route_errors, is_safe_url,
-    success_response, error_response, save_file_to_gridfs,
     send_gridfs_file
 )
 import asyncio
 from functools import wraps
-import os
 from werkzeug.utils import secure_filename
 from bson import ObjectId
 from gridfs import GridFS
@@ -172,7 +171,7 @@ async def register():
                 return redirect(url_for("auth.login"))
             flash(message, "error")
         except Exception as e:
-            flash(f"An error occurred during registration: {str(e)}", "error")
+            flash("An internal error has occurred.", "error")
 
     return render_template("auth/register.html", form_data=form_data)
 
@@ -259,7 +258,7 @@ async def check_username():
     except Exception as e:
         return jsonify({
             "available": False,
-            "error": str(e)
+            "error": "An internal error has occurred."
         }), 500
 
 
@@ -282,4 +281,4 @@ async def delete_account():
 
     except Exception as e:
         current_app.logger.error(f"Error deleting account: {str(e)}")
-        return jsonify({"success": False, "message": "An error occurred while deleting your account"})
+        return jsonify({"success": False, "message": "An internal error has occurred."})

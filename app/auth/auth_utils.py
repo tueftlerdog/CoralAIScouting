@@ -1,25 +1,15 @@
-from pymongo import MongoClient
-from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
+from __future__ import annotations
+
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timezone
 from app.models import User
 import logging
-import time
-from functools import wraps
 from gridfs import GridFS
 from flask_login import current_user
-from app.utils import DatabaseManager, with_mongodb_retry
+from app.utils import DatabaseManager, allowed_file, with_mongodb_retry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 async def check_password_strength(password):
     """
@@ -84,7 +74,7 @@ class UserManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error creating user: {str(e)}")
-            return False, f"Error creating user: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def authenticate_user(self, login, password):
@@ -152,7 +142,7 @@ class UserManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error updating profile: {str(e)}")
-            return False, f"Error updating profile: {str(e)}"
+            return False, "An internal error has occurred."
 
     def get_user_profile(self, username):
         """Get user profile by username"""
@@ -196,7 +186,7 @@ class UserManager(DatabaseManager):
             
         except Exception as e:
             logger.error(f"Error updating profile picture: {str(e)}")
-            return False, f"Error updating profile picture: {str(e)}"
+            return False, "An internal error has occurred."
 
     def get_profile_picture(self, user_id):
         """Get user's profile picture ID"""
@@ -238,7 +228,7 @@ class UserManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error deleting user: {str(e)}")
-            return False, f"Error deleting account: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def update_user_settings(self, user_id, form_data, profile_picture=None):
@@ -276,7 +266,7 @@ class UserManager(DatabaseManager):
                 success, message = await self.update_user_profile(user_id, updates)
                 return success
 
-            return True
+            return True, "Profile updated successfully"
         except Exception as e:
             logger.error(f"Error updating user settings: {str(e)}")
-            return False
+            return False, "An internal error has occurred."

@@ -1,11 +1,10 @@
+from __future__ import annotations
+
 from pymongo import MongoClient
-from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 from bson import ObjectId
 from datetime import datetime, timezone
 from app.models import TeamData
 import logging
-import time
-from functools import wraps
 from app.utils import DatabaseManager, with_mongodb_retry
 
 logger = logging.getLogger(__name__)
@@ -146,7 +145,7 @@ class ScoutingManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error adding team data: {str(e)}")
-            return False, str(e)
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     def get_all_scouting_data(self):
@@ -594,8 +593,3 @@ class ScoutingManager(DatabaseManager):
         except Exception as e:
             logger.error(f"Error deleting pit scouting data: {str(e)}")
             return False
-
-    def __del__(self):
-        """Cleanup MongoDB connection"""
-        if self.client:
-            self.client.close()

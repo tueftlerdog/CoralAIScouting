@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 from functools import wraps
 import aiohttp
@@ -100,7 +102,7 @@ def delete_scouting_data(id):
         else:
             flash("Error deleting record or permission denied", "error")
     except Exception as e:
-        flash(f"Error: {str(e)}", "error")
+        flash("An internal error has occurred.", "error")
     return redirect(url_for("scouting.list_scouting_data"))
 
 
@@ -754,7 +756,7 @@ def matches():
         
     except Exception as e:
         current_app.logger.error(f"Error fetching matches: {str(e)}", exc_info=True)
-        flash(f"Error fetching matches: {str(e)}", "error")
+        flash("An internal error has occurred.", "error")
         return render_template("scouting/matches.html", matches=[])
 
 @scouting_bp.route("/scouting/check_team")
@@ -792,7 +794,7 @@ def pit_scouting_list():
         return render_template("scouting/pit-scouting.html", pit_data=pit_data)
     except Exception as e:
         current_app.logger.error(f"Error fetching pit scouting data: {str(e)}", exc_info=True)
-        flash(f"Error fetching pit scouting data: {str(e)}", "error")
+        flash("An internal error has occurred.", "error")
         return render_template("scouting/pit-scouting.html", pit_data=[])
 
 @scouting_bp.route("/scouting/pit/add", methods=["GET", "POST"])
@@ -950,7 +952,7 @@ def pit_scouting_edit(team_number):
             else:
                 flash("Error updating pit scouting data", "error")
         except Exception as e:
-            flash(f"Error: {str(e)}", "error")
+            flash("An internal error has occurred.", "error")
 
     return render_template("scouting/pit-scouting-edit.html", pit_data=pit_data)
 
