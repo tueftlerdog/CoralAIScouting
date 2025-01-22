@@ -25,11 +25,11 @@ def with_mongodb_retry(retries=3, delay=2):
     """Decorator for retrying MongoDB operations"""
     def decorator(f):
         @wraps(f)
-        async def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs):
             last_error = None
             for attempt in range(retries):
                 try:
-                    return await f(*args, **kwargs)
+                    return f(*args, **kwargs)
                 except (ServerSelectionTimeoutError, ConnectionFailure) as e:
                     last_error = e
                     if attempt < retries - 1:

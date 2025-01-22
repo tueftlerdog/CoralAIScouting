@@ -357,21 +357,21 @@
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="title">
                             Title
                         </label>
-                        <input type="text" name="title" id="title" required
+                        <input type="text" name="title" id="title" required autocomplete="off"
                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
                             Description
                         </label>
-                        <textarea name="description" id="description"
+                        <textarea name="description" id="description" autocomplete="off"
                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="assigned_to">
                             Assign To
                         </label>
-                        <select name="assigned_to" id="assigned_to" multiple required
+                        <select name="assigned_to" id="assigned_to" multiple required autocomplete="off"
                                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             {% for member in team_members %}
                             <option value="{{ member.get_id() }}">{{ member.username }}</option>
@@ -382,7 +382,7 @@
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
                             Due Date
                         </label>
-                        <input type="datetime-local" name="due_date" id="due_date"
+                        <input type="datetime-local" name="due_date" id="due_date" autocomplete="off"
                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                     </div>
                     <div class="flex items-center justify-between mt-4">
@@ -411,21 +411,21 @@
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_title">
                             Title
                         </label>
-                        <input type="text" name="title" id="edit_title" required
+                        <input type="text" name="title" id="edit_title" required autocomplete="off"
                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_description">
                             Description
                         </label>
-                        <textarea name="description" id="edit_description"
+                        <textarea name="description" id="edit_description" autocomplete="off"
                                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_assigned_to">
                             Assign To
                         </label>
-                        <select name="assigned_to" id="edit_assigned_to" multiple required
+                        <select name="assigned_to" id="edit_assigned_to" multiple required autocomplete="off"
                                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             {% for member in team_members %}
                             <option value="{{ member.get_id() }}">{{ member.username }}</option>
@@ -436,7 +436,7 @@
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_due_date">
                             Due Date
                         </label>
-                        <input type="datetime-local" name="due_date" id="edit_due_date"
+                        <input type="datetime-local" name="due_date" id="edit_due_date" autocomplete="off"
                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                     </div>
                     <div class="flex items-center justify-between mt-4">
@@ -458,7 +458,6 @@
     <script>
     function confirmDeleteTeam() {
         if (confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
-            // Create and submit a form programmatically
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = "{{ url_for('team.delete_team', team_number=team.team_number) }}";

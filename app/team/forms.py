@@ -9,6 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 class CreateTeamForm(FlaskForm):
+    class Meta:
+        csrf = True
+
     team_number = IntegerField(
         "Team Number",
         validators=[

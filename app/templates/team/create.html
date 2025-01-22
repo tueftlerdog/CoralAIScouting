@@ -19,7 +19,7 @@
 
         <div>
             <label class="block text-sm font-medium mb-2">Team Number</label>
-            {{ form.team_number(class="w-full px-3 py-2 border rounded-lg" + (" border-red-500" if form.team_number.errors else "")) }}
+            {{ form.team_number(autocomplete="off", class="w-full px-3 py-2 border rounded-lg" + (" border-red-500" if form.team_number.errors else "")) }}
             {% if form.team_number.errors %}
                 {% for error in form.team_number.errors %}
                     <p class="text-red-500 text-sm mt-1">{{ error }}</p>
@@ -29,7 +29,7 @@
 
         <div>
             <label class="block text-sm font-medium mb-2">Team Name</label>
-            {{ form.team_name(class="w-full px-3 py-2 border rounded-lg" + (" border-red-500" if form.team_name.errors else "")) }}
+            {{ form.team_name(autocomplete="off", class="w-full px-3 py-2 border rounded-lg" + (" border-red-500" if form.team_name.errors else "")) }}
             {% if form.team_name.errors %}
                 {% for error in form.team_name.errors %}
                     <p class="text-red-500 text-sm mt-1">{{ error }}</p>
@@ -39,7 +39,7 @@
         
         <div>
             <label class="block text-sm font-medium mb-2">Description</label>
-            {{ form.description(class="w-full px-3 py-2 border rounded-lg h-32" + (" border-red-500" if form.description.errors else "")) }}
+            {{ form.description(autocomplete="off", class="w-full px-3 py-2 border rounded-lg h-32" + (" border-red-500" if form.description.errors else "")) }}
             {% if form.description.errors %}
                 {% for error in form.description.errors %}
                     <p class="text-red-500 text-sm mt-1">{{ error }}</p>
@@ -49,7 +49,7 @@
         
         <div>
             <label class="block text-sm font-medium mb-2">Team Logo</label>
-            {{ form.logo(class="w-full" + (" border-red-500" if form.logo.errors else "")) }}
+            {{ form.logo(autocomplete="off", class="w-full" + (" border-red-500" if form.logo.errors else "")) }}
             {% if form.logo.errors %}
                 {% for error in form.logo.errors %}
                     <p class="text-red-500 text-sm mt-1">{{ error }}</p>

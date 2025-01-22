@@ -28,7 +28,7 @@
                 <h3 class="text-lg font-semibold text-gray-900 mb-6">Basic Information</h3>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Team Number</label>
-                    <input type="number" name="team_number" required value="{{ pit_data.team_number }}"
+                    <input type="number" name="team_number" required value="{{ pit_data.team_number }}" autocomplete="off"
                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg transition-colors duration-200">
                 </div>
             </div>
@@ -42,7 +42,7 @@
                         <div class="flex flex-wrap gap-4 mb-4">
                             {% for type in ['Swerve', 'Tank'] %}
                             <label class="relative flex items-center group">
-                                <input type="checkbox" name="drive_type" value="{{ type.lower() }}"
+                                <input type="checkbox" name="drive_type" value="{{ type.lower() }}" autocomplete="off"
                                        {{ 'checked' if pit_data.drive_type[type.lower()] }}
                                        class="peer sr-only">
                                 <div class="px-5 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-sm font-medium text-gray-700
@@ -60,7 +60,7 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Swerve Modules</label>
-                        <input type="text" name="swerve_modules" value="{{ pit_data.swerve_modules }}"
+                        <input type="text" name="swerve_modules" value="{{ pit_data.swerve_modules }}" autocomplete="off"
                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200">
                     </div>
                 </div>
@@ -75,7 +75,7 @@
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                             {% for motor in ['Falcons', 'NEOs', 'Krakens', 'Vortex'] %}
                             <label class="relative flex items-center group">
-                                <input type="checkbox" name="motors" value="{{ motor.lower() }}"
+                                <input type="checkbox" name="motors" value="{{ motor.lower() }}" autocomplete="off"
                                        {{ 'checked' if pit_data.motor_details[motor.lower()] }}
                                        class="peer sr-only">
                                 <div class="w-full px-5 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-sm font-medium text-gray-700
@@ -91,7 +91,7 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Total Motor Count</label>
-                        <input type="number" name="motor_count" min="0" value="{{ pit_data.motor_count }}"
+                        <input type="number" name="motor_count" min="0" value="{{ pit_data.motor_count }}" autocomplete="off"
                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200">
                     </div>
                 </div>
@@ -104,7 +104,7 @@
                     {% for dim in ['Length', 'Width', 'Height'] %}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">{{ dim }}</label>
-                        <input type="number" name="{{ dim.lower() }}" step="0.1" min="0" 
+                        <input type="number" name="{{ dim.lower() }}" step="0.1" min="0" autocomplete="off"
                                value="{{ pit_data.dimensions[dim.lower()] }}"
                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200">
                     </div>
@@ -123,7 +123,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-3">{{ type }} Scoring</label>
                         <div class="flex items-center mb-4">
                             <label class="relative flex items-center group">
-                                <input type="radio" name="{{ type.lower() }}_scoring_enabled" value="false"
+                                <input type="radio" name="{{ type.lower() }}_scoring_enabled" value="false" autocomplete="off"
                                        {{ 'checked' if not pit_data.mechanisms[type.lower() + '_scoring'].enabled }}
                                        class="peer sr-only">
                                 <div class="px-5 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-sm font-medium text-gray-700
@@ -134,7 +134,7 @@
                                 </div>
                             </label>
                             <label class="relative flex items-center group ml-4">
-                                <input type="radio" name="{{ type.lower() }}_scoring_enabled" value="true"
+                                <input type="radio" name="{{ type.lower() }}_scoring_enabled" value="true" autocomplete="off"
                                        {{ 'checked' if pit_data.mechanisms[type.lower() + '_scoring'].enabled }}
                                        class="peer sr-only">
                                 <div class="px-5 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-sm font-medium text-gray-700
@@ -145,7 +145,7 @@
                                 </div>
                             </label>
                         </div>
-                        <textarea name="{{ type.lower() }}_scoring_notes" rows="2"
+                        <textarea name="{{ type.lower() }}_scoring_notes" rows="2" autocomplete="off"
                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200">{{ pit_data.mechanisms[type.lower() + '_scoring'].notes }}</textarea>
                     </div>
                     {% endfor %}
@@ -154,7 +154,7 @@
                 <!-- Climber -->
                 <div class="space-y-4">
                     <label class="relative flex items-center group mb-4">
-                        <input type="checkbox" name="has_climber" 
+                        <input type="checkbox" name="has_climber" autocomplete="off"
                                {{ 'checked' if pit_data.mechanisms.climber.has_climber }}
                                class="peer sr-only">
                         <div class="w-full sm:w-auto px-5 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-sm font-medium text-gray-700
@@ -178,7 +178,7 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Climber Notes</label>
-                        <textarea name="climber_notes" rows="2"
+                        <textarea name="climber_notes" rows="2" autocomplete="off"
                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200">{{ pit_data.mechanisms.climber.notes }}</textarea>
                     </div>
                 </div>
@@ -237,7 +237,7 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Auto Notes</label>
-                        <textarea name="auto_notes" rows="2"
+                        <textarea name="auto_notes" rows="2" autocomplete="off"
                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200">{{ pit_data.autonomous_capabilities.notes }}</textarea>
                     </div>
                 </div>
@@ -255,7 +255,7 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Driver Notes</label>
-                        <textarea name="driver_notes" rows="2"
+                        <textarea name="driver_notes" rows="2" autocomplete="off"
                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200">{{ pit_data.driver_experience.notes }}</textarea>
                     </div>
                 </div>
@@ -265,7 +265,7 @@
             <div class="p-8 bg-gray-50">
                 <h3 class="text-lg font-semibold text-gray-900 mb-6">Additional Notes</h3>
                 <div>
-                    <textarea name="notes" rows="4"
+                    <textarea name="notes" rows="4" autocomplete="off"
                               class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200">{{ pit_data.notes }}</textarea>
                 </div>
             </div>

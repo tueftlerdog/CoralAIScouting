@@ -28,7 +28,7 @@ def create_app():
     )
 
     mongo.init_app(app)
-    # csrf.init_app(app) # TODO: Enable this in production for security
+    csrf.init_app(app)
 
     with app.app_context():
         if "team_data" not in mongo.db.list_collection_names():
@@ -76,12 +76,12 @@ def create_app():
         response.headers["Service-Worker-Allowed"] = "/"
         return response
 
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        app.logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
-        return jsonify({
-            "error": "An unexpected error occurred"
-        }), 500
+    # @app.errorhandler(Exception)
+    # def handle_exception(e):
+    #     app.logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+    #     return jsonify({
+    #         "error": "An unexpected error occurred"
+    #     }), 500
 
     return app
 

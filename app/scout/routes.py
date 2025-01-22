@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import asyncio
 import json
 from datetime import datetime, timezone
-from functools import wraps
 
 import aiohttp
 from bson import ObjectId, json_util
@@ -26,14 +24,6 @@ def on_blueprint_init(state):
     global scouting_manager
     app = state.app
     scouting_manager = ScoutingManager(app.config["MONGO_URI"])
-
-
-def async_route(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 @scouting_bp.route("/scouting/add", methods=["GET", "POST"])
