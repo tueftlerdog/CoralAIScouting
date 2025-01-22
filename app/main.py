@@ -1,7 +1,8 @@
-from app.app import create_app
-import sys
 import logging
 import os
+import sys
+
+from app.app import create_app
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

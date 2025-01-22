@@ -1,38 +1,17 @@
-from pymongo import MongoClient
-from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
-from werkzeug.security import generate_password_hash
-from datetime import datetime, timezone
-from app.models import User
+from __future__ import annotations
+
 import logging
-import time
-from functools import wraps
+from datetime import datetime, timezone
+
+from flask_login import current_user
 from gridfs import GridFS
+from werkzeug.security import generate_password_hash
+
+from app.models import User
+from app.utils import DatabaseManager, allowed_file, with_mongodb_retry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-def with_mongodb_retry(retries=3, delay=2):
-    def decorator(f):
-        @wraps(f)
-        async def wrapper(*args, **kwargs):
-            last_error = None
-            for attempt in range(retries):
-                try:
-                    return await f(*args, **kwargs)
-                except (ServerSelectionTimeoutError, ConnectionFailure) as e:
-                    last_error = e
-                    if attempt < retries - 1:  # don't sleep on last attempt
-                        logger.warning(f"Attempt {attempt + 1} failed: {str(e)}.")
-                        time.sleep(delay)
-                    else:
-                        logger.error(f"All {retries} attempts failed: {str(e)}")
-            raise last_error
-
-        return wrapper
-
-    return decorator
-
 
 async def check_password_strength(password):
     """
@@ -44,42 +23,16 @@ async def check_password_strength(password):
     return True, "Password meets all requirements"
 
 
-class UserManager:
+class UserManager(DatabaseManager):
     def __init__(self, mongo_uri):
-        self.mongo_uri = mongo_uri
-        self.client = None
-        self.db = None
-        self.connect()
+        super().__init__(mongo_uri)
+        self._ensure_collections()
 
-    def connect(self):
-        """Establish connection to MongoDB with basic error handling"""
-        try:
-            if self.client is None:
-                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
-                # Test the connection
-                self.client.server_info()
-                self.db = self.client.get_default_database()
-                logger.info("Successfully connected to MongoDB")
-
-                # Ensure users collection exists
-                if "users" not in self.db.list_collection_names():
-                    self.db.create_collection("users")
-                    logger.info("Created users collection")
-        except Exception as e:
-            logger.error(f"Failed to connect to MongoDB: {str(e)}")
-            raise
-
-    def ensure_connected(self):
-        """Ensure we have a valid connection, reconnect if necessary"""
-        try:
-            if self.client is None:
-                self.connect()
-            else:
-                # Test if connection is still alive
-                self.client.server_info()
-        except Exception:
-            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
-            self.connect()
+    def _ensure_collections(self):
+        """Ensure required collections exist"""
+        if "users" not in self.db.list_collection_names():
+            self.db.create_collection("users")
+            logger.info("Created users collection")
 
     @with_mongodb_retry(retries=3, delay=2)
     async def create_user(
@@ -123,7 +76,7 @@ class UserManager:
 
         except Exception as e:
             logger.error(f"Error creating user: {str(e)}")
-            return False, f"Error creating user: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def authenticate_user(self, login, password):
@@ -191,7 +144,7 @@ class UserManager:
 
         except Exception as e:
             logger.error(f"Error updating profile: {str(e)}")
-            return False, f"Error updating profile: {str(e)}"
+            return False, "An internal error has occurred."
 
     def get_user_profile(self, username):
         """Get user profile by username"""
@@ -210,7 +163,7 @@ class UserManager:
         try:
             from bson.objectid import ObjectId
             from gridfs import GridFS
-            
+
             # Get the old profile picture ID first
             user_data = self.db.users.find_one({"_id": ObjectId(user_id)})
             old_picture_id = user_data.get('profile_picture_id') if user_data else None
@@ -235,7 +188,7 @@ class UserManager:
             
         except Exception as e:
             logger.error(f"Error updating profile picture: {str(e)}")
-            return False, f"Error updating profile picture: {str(e)}"
+            return False, "An internal error has occurred."
 
     def get_profile_picture(self, user_id):
         """Get user's profile picture ID"""
@@ -277,9 +230,45 @@ class UserManager:
 
         except Exception as e:
             logger.error(f"Error deleting user: {str(e)}")
-            return False, f"Error deleting account: {str(e)}"
+            return False, "An internal error has occurred."
 
-    def __del__(self):
-        """Cleanup MongoDB connection"""
-        if self.client:
-            self.client.close()
+    @with_mongodb_retry(retries=3, delay=2)
+    async def update_user_settings(self, user_id, form_data, profile_picture=None):
+        """Update user settings including profile picture"""
+        self.ensure_connected()
+        try:
+            updates = {}
+            
+            # Handle username update if provided
+            if new_username := form_data.get('username'):
+                if new_username != current_user.username:
+                    # Check if username is taken
+                    if self.db.users.find_one({"username": new_username}):
+                        return False
+                    updates['username'] = new_username
+
+            # Handle description update
+            if description := form_data.get('description'):
+                updates['description'] = description
+
+            # Handle profile picture
+            if profile_picture:
+                from werkzeug.utils import secure_filename
+                if profile_picture and allowed_file(profile_picture.filename):
+                    fs = GridFS(self.db)
+                    filename = secure_filename(profile_picture.filename)
+                    file_id = fs.put(
+                        profile_picture.stream.read(),
+                        filename=filename,
+                        content_type=profile_picture.content_type
+                    )
+                    updates['profile_picture_id'] = file_id
+
+            if updates:
+                success, message = await self.update_user_profile(user_id, updates)
+                return success
+
+            return True, "Profile updated successfully"
+        except Exception as e:
+            logger.error(f"Error updating user settings: {str(e)}")
+            return False, "An internal error has occurred."

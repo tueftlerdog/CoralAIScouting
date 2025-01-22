@@ -1,17 +1,18 @@
-from functools import wraps
-import secrets
-from pymongo import MongoClient
-from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
-from bson.objectid import ObjectId
-from datetime import datetime, timezone
-from app.models import Team, User, Assignment
+from __future__ import annotations
+
 import logging
-import time
+import secrets
 import string
-from typing import Dict, Tuple, Optional, List, Any, Union
-from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime, timezone
 from io import BytesIO
+from typing import Dict, Optional, Tuple, Union
+
 import gridfs
+from bson.objectid import ObjectId
+from PIL import Image, ImageDraw, ImageFont
+
+from app.models import Assignment, Team, User
+from app.utils import DatabaseManager, with_mongodb_retry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,62 +22,6 @@ TeamResult = Tuple[bool, Union[str, Team, Tuple[Team, User]]]
 UserResult = Tuple[bool, Union[str, User]]
 AssignmentResult = Tuple[bool, str]
 DatabaseID = Union[str, ObjectId]
-
-def with_mongodb_retry(retries=3, delay=2):
-    """Decorator for retrying MongoDB operations"""
-    def decorator(f):
-        @wraps(f)
-        async def wrapper(*args, **kwargs):
-            last_error = None
-            for attempt in range(retries):
-                try:
-                    return await f(*args, **kwargs)
-                except (ServerSelectionTimeoutError, ConnectionFailure) as e:
-                    last_error = e
-                    if attempt < retries - 1:
-                        logger.warning(f"Attempt {attempt + 1} failed: {str(e)}")
-                        time.sleep(delay)
-                    else:
-                        logger.error(f"All {retries} attempts failed: {str(e)}")
-            raise last_error
-        return wrapper
-    return decorator
-
-class DatabaseManager:
-    """Base class for database operations"""
-    def __init__(self, mongo_uri: str):
-        self.mongo_uri = mongo_uri
-        self.client: Optional[MongoClient] = None
-        self.db = None
-        self.connect()
-
-    def connect(self) -> None:
-        """Establish connection to MongoDB"""
-        try:
-            if self.client is None:
-                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
-                self.client.server_info()
-                self.db = self.client.get_default_database()
-                logger.info("Successfully connected to MongoDB")
-        except Exception as e:
-            logger.error(f"Failed to connect to MongoDB: {str(e)}")
-            raise
-
-    def ensure_connected(self) -> None:
-        """Ensure database connection is active"""
-        try:
-            if self.client is None:
-                self.connect()
-            else:
-                self.client.server_info()
-        except Exception:
-            logger.warning("Lost connection to MongoDB, attempting to reconnect...")
-            self.connect()
-
-    def __del__(self):
-        """Cleanup MongoDB connection"""
-        if self.client:
-            self.client.close()
 
 class TeamManager(DatabaseManager):
     """Handles all team-related operations"""
@@ -161,7 +106,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error creating team: {str(e)}")
-            return False, f"Failed to create team: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def join_team(self, user_id: str, team_join_code: str):
@@ -196,7 +141,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error joining team: {str(e)}")
-            return False, f"Error joining team: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def leave_team(self, user_id: str, team_number: int):
@@ -208,9 +153,11 @@ class TeamManager(DatabaseManager):
             if not team:
                 return False, "Team not found"
 
-            # Don't allow owner to leave (they must delete the team)
+            # If owner is leaving, transfer ownership first
             if team.is_owner(user_id):
-                return False, "Team owner cannot leave. Please delete the team instead."
+                success, message = await self.transfer_ownership(team_number)
+                if not success:
+                    return False, "Cannot leave team - no available users to transfer ownership to"
 
             # Remove user from team's users and admins lists
             result = self.db.teams.update_one(
@@ -231,7 +178,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error leaving team: {str(e)}")
-            return False, f"Error leaving team: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def get_team_by_number(self, team_number: int):
@@ -305,7 +252,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error adding admin: {str(e)}")
-            return False, f"Error adding admin: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def remove_admin(
@@ -342,7 +289,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error removing admin: {str(e)}")
-            return False, f"Error removing admin: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def remove_user(self, team_number: int, user_id: str, admin_id: str):
@@ -383,7 +330,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error removing user: {str(e)}")
-            return False, f"Error removing user: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def create_assignment(
@@ -423,7 +370,7 @@ class TeamManager(DatabaseManager):
             )
         except Exception as e:
             logger.error(f"Error creating assignment: {str(e)}")
-            return False, f"Error creating assignment: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def update_assignment_status(
@@ -450,7 +397,7 @@ class TeamManager(DatabaseManager):
             return True, "Assignment status updated successfully"
         except Exception as e:
             logger.error(f"Error updating assignment status: {str(e)}")
-            return False, f"Error updating assignment status: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def get_team_assignments(self, team_number: int):
@@ -608,7 +555,7 @@ class TeamManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error updating assignment: {str(e)}")
-            return False, f"Error updating assignment: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def reset_user_team(self, user_id: str):
@@ -646,14 +593,14 @@ class TeamManager(DatabaseManager):
             return True, team
         except Exception as e:
             logger.error(f"Error validating user team: {str(e)}")
-            return False, f"Error validating team membership: {str(e)}"
+            return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
     async def update_team_logo(self, team_number: int, new_logo_id) -> Tuple[bool, str]:
         """Update team logo and clean up old one"""
         try:
             from gridfs import GridFS
-            
+
             # Get current team data
             team = await self.get_team_by_number(team_number)
             if not team:
@@ -682,12 +629,7 @@ class TeamManager(DatabaseManager):
             
         except Exception as e:
             logger.error(f"Error updating team logo: {str(e)}")
-            return False, str(e)
-
-    def __del__(self):
-        """Cleanup MongoDB connection"""
-        if self.client:
-            self.client.close()
+            return False, "An internal error has occurred."
 
     def cleanup_gridfs(self):
         """Clean up orphaned chunks in GridFS"""
@@ -729,7 +671,7 @@ class TeamManager(DatabaseManager):
             
         except Exception as e:
             logger.error(f"Error updating team info: {str(e)}")
-            return False, str(e)
+            return False, "An internal error has occurred."
 
     def create_default_team_logo(self, team_number: int) -> bytes:
         """Create a default team logo with centered text"""
@@ -764,3 +706,40 @@ class TeamManager(DatabaseManager):
         img.save(buffer, format='PNG')
         buffer.seek(0)
         return buffer.getvalue()
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def transfer_ownership(self, team_number: int):
+        """Transfer team ownership to next admin or member"""
+        self.ensure_connected()
+        try:
+            team = await self.get_team_by_number(team_number)
+            if not team:
+                return False, "Team not found"
+
+            # First try to find an admin to promote
+            if team.admins:
+                new_owner_id = team.admins[0]  # Take first admin
+                team.admins.remove(new_owner_id)  # Remove from admins list
+            # If no admins, take first regular member
+            elif team.users:
+                new_owner_id = team.users[0]
+            else:
+                # No users left, team should be deleted
+                return False, "No users available to transfer ownership"
+
+            # Update team with new owner
+            result = self.db.teams.update_one(
+                {"team_number": team_number},
+                {
+                    "$set": {"owner_id": ObjectId(new_owner_id)},
+                    "$pull": {"admins": new_owner_id}
+                }
+            )
+
+            if result.modified_count > 0:
+                return True, "Ownership transferred successfully"
+            return False, "Failed to transfer ownership"
+
+        except Exception as e:
+            logger.error(f"Error transferring ownership: {str(e)}")
+            return False, "An internal error has occurred."

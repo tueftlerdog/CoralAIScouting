@@ -1,82 +1,61 @@
 from __future__ import annotations
 
-from functools import wraps
-from flask import (
-    Blueprint,
-    flash,
-    render_template,
-    request,
-    jsonify,
-    current_app,
-    redirect,
-    url_for,
-    send_file,
-)
-from flask_login import login_required, current_user
-from app.team.team_utils import TeamManager
-from werkzeug.utils import secure_filename
-from .forms import CreateTeamForm
-from gridfs import GridFS
 from io import BytesIO
-import asyncio
+
+from bson import ObjectId
+from flask import (Blueprint, current_app, flash, jsonify, redirect,
+                   render_template, request, send_file, url_for)
+from flask_login import current_user, login_required
+from gridfs import GridFS
 from PIL import Image
+from werkzeug.utils import secure_filename
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+from app.team.team_utils import TeamManager
+from app.utils import (allowed_file, async_route, error_response,
+                       handle_route_errors, save_file_to_gridfs,
+                       success_response)
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def run_async(coro):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
-
-
-def async_route(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return run_async(f(*args, **kwargs))
-
-    return wrapper
-
+from .forms import CreateTeamForm
 
 team_bp = Blueprint("team", __name__)
+team_manager = None
 
+@team_bp.record
+def on_blueprint_init(state):
+    global team_manager
+    app = state.app
+    team_manager = TeamManager(app.config["MONGO_URI"])
 
 @team_bp.route("/join", methods=["GET", "POST"])
 @login_required
 @async_route
 async def join_team_page():
-    """Display team join page"""
-    # If user already has a team, redirect to manage page
-    if current_user.teamNumber:
-        return redirect(url_for("team.manage_team"))
+    try:
+        if current_user.teamNumber:
+            return redirect(url_for("team.manage_team"))
 
-    if request.method == "POST":
-        join_code = request.form.get("join_code")
-        if not join_code:
-            flash("Join code is required", "error")
+        if request.method == "POST":
+            join_code = request.form.get("join_code")
+            if not join_code:
+                flash("Join code is required", "error")
+                return redirect(url_for("team.join_team_page"))
+
+            success, result = await team_manager.join_team(current_user.get_id(), join_code)
+
+            if success:
+                team, updated_user = result
+                current_user.teamNumber = updated_user.teamNumber
+                flash(f"Successfully joined team {team.team_number}", "success")
+                return redirect(url_for("team.manage_team", team_number=team.team_number))
+            
+            flash("Invalid join code", "error")
             return redirect(url_for("team.join_team_page"))
 
-        team_manager = TeamManager(current_app.config["MONGO_URI"])
-        success, result = await team_manager.join_team(current_user.get_id(), join_code)
-
-        if success:
-            team, updated_user = result
-            # Update the current_user object with new team number
-            current_user.teamNumber = updated_user.teamNumber
-            flash(f"Successfully joined team {team.team_number}", "success")
-            return redirect(url_for("team.manage_team", team_number=team.team_number))
-        else:
-            flash(f"Failed to join team: {result}", "error")
-            return redirect(url_for("team.join_team_page"))
-
-    return render_template("team/join.html")
+        return render_template("team/join.html")
+    except Exception as e:
+        current_app.logger.error(f"Error in join_team_page: {str(e)}", exc_info=True)
+        flash("Unable to process your request. Please try again later.", "error")
+        return redirect(url_for("team.join_team_page"))
 
 
 @team_bp.route("/create", methods=["GET", "POST"])
@@ -92,14 +71,12 @@ async def create_team():
     if form.validate_on_submit():
         current_app.logger.debug("Form validated successfully")
         try:
-            team_manager = TeamManager(current_app.config["MONGO_URI"])
-
             # Handle logo upload if provided
             logo_id = None
             if form.logo.data:
                 # Open and resize image
                 image = Image.open(form.logo.data)
-                image = image.convert('RGB')  # Convert to RGB mode
+                image = image.convert('RGBA')  # Convert to RGBA mode
                 image.thumbnail((200, 200))  # Resize maintaining aspect ratio
                 
                 # Save to BytesIO
@@ -138,17 +115,16 @@ async def create_team():
 
         except Exception as e:
             current_app.logger.error(f"Error in create_team route: {str(e)}")
-            flash(f"Error creating team: {str(e)}", "error")
+            flash("An internal error has occurred.", "error")
 
     return render_template("team/create.html", form=form)
 
 
-@team_bp.route("/<int:team_number>/leave", methods=["POST"])
+@team_bp.route("/<int:team_number>/leave", methods=["GET", "POST"])
 @login_required
 @async_route
 async def leave_team(team_number):
     """Leave a team"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     success, message = await team_manager.leave_team(current_user.get_id(), team_number)
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -168,7 +144,6 @@ async def leave_team(team_number):
 @async_route
 async def get_team_members(team_number):
     """Get all members of a team"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     members = await team_manager.get_team_members(team_number)
 
     return (
@@ -188,7 +163,6 @@ async def add_admin(team_number):
     if not user_id:
         return jsonify({"success": False, "message": "User ID is required"}), 400
 
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     success, message = await team_manager.add_admin(
         team_number, user_id, current_user.get_id()
     )
@@ -207,7 +181,6 @@ async def remove_admin(team_number):
     if not user_id:
         return jsonify({"success": False, "message": "User ID is required"}), 400
 
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     success, message = await team_manager.remove_admin(
         team_number, user_id, current_user.get_id()
     )
@@ -222,7 +195,6 @@ async def create_assignment(team_number):
     """Create a new assignment"""
     try:
         data = request.get_json()
-        team_manager = TeamManager(current_app.config["MONGO_URI"])
         success, result = await team_manager.create_assignment(
             team_number=team_number,
             creator_id=current_user.get_id(),
@@ -240,7 +212,7 @@ async def create_assignment(team_number):
 
     except Exception as e:
         current_app.logger.error(f"Error creating assignment: {str(e)}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({"success": False, "message": "An internal error has occurred."}), 500
 
 
 @team_bp.route("/assignments/<assignment_id>/status", methods=["PUT"])
@@ -254,7 +226,6 @@ async def update_assignment_status(assignment_id):
     if not new_status:
         return jsonify({"success": False, "message": "Status is required"}), 400
 
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     success, message = await team_manager.update_assignment_status(
         assignment_id, current_user.get_id(), new_status
     )
@@ -268,7 +239,6 @@ async def update_assignment_status(assignment_id):
 async def update_assignment(assignment_id):
     """Update assignment"""
     data = request.get_json()
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     success, message = await team_manager.update_assignment(
         assignment_id, current_user.get_id(), data
     )
@@ -280,7 +250,6 @@ async def update_assignment(assignment_id):
 @async_route
 async def delete_assignment(assignment_id):
     """Delete assignment"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     success, message = await team_manager.delete_assignment(
         assignment_id, current_user.get_id()
     )
@@ -294,7 +263,6 @@ async def delete_assignment(assignment_id):
 @async_route
 async def manage_team(team_number=None):
     """Manage team"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
 
     if not current_user.teamNumber:
         return redirect(url_for("team.join_team_page"))
@@ -339,7 +307,6 @@ async def manage_team(team_number=None):
 @async_route
 async def remove_user(team_number, user_id):
     """Remove a user from the team (admin only)"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     success, message = await team_manager.remove_user(
         team_number, user_id, current_user.get_id()
     )
@@ -364,7 +331,6 @@ async def remove_user(team_number, user_id):
 @async_route
 async def clear_assignments(team_number):
     """Clear all assignments for a team (admin only)"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     success, message = await team_manager.clear_assignments(
         team_number, current_user.get_id()
     )
@@ -387,7 +353,6 @@ async def clear_assignments(team_number):
 @async_route
 async def delete_team(team_number):
     """Delete team (owner only)"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     success, message = await team_manager.delete_team(team_number, current_user.get_id())
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -401,34 +366,25 @@ async def delete_team(team_number):
         return redirect(url_for("team.manage_team"))
 
 
-@team_bp.route("/team_logo/<team_number>")
-@async_route
-async def team_logo(team_number):
-    """Serve team logo from GridFS"""
+@team_bp.route("/team/<int:team_number>/logo")
+def team_logo(team_number):
     try:
-        team_manager = TeamManager(current_app.config["MONGO_URI"])
-        team = await team_manager.get_team_by_number(int(team_number))
-
-        if team and team.logo_id:
-            fs = GridFS(team_manager.db)
-            try:
-                # team.logo_id should already be ObjectId from the model
-                logo_file = fs.get(team.logo_id)
-                return send_file(
-                    BytesIO(logo_file.read()),
-                    mimetype=logo_file.content_type,
-                    download_name=logo_file.filename,  # Add this for better browser handling
-                    as_attachment=False,
-                )
-            except Exception as e:
-                current_app.logger.error(f"Error retrieving logo from GridFS: {str(e)}")
-
-        # Return default logo path relative to the application root
-        return send_file("static/images/default_team_logo.png", mimetype="image/png")
-
+        fs = GridFS(team_manager.db)
+        team = team_manager.db.teams.find_one({"team_number": team_number})
+        
+        if team and team.get("logo_id"):
+            logo_id = ObjectId(team["logo_id"]) if isinstance(team["logo_id"], str) else team["logo_id"]
+            logo = fs.get(logo_id)
+            return send_file(
+                BytesIO(logo.read()),
+                mimetype=logo.content_type,
+                download_name=logo.filename
+            )
     except Exception as e:
-        current_app.logger.error(f"Error in team_logo route: {str(e)}")
-        return send_file("static/images/default_team_logo.png", mimetype="image/png")
+        current_app.logger.error(f"Error fetching team logo: {str(e)}", exc_info=True)
+    
+    # Return default logo on any error
+    return send_file("static/images/default_logo.png")
 
 
 @team_bp.route("/assignments/<assignment_id>/edit", methods=["PUT"])
@@ -438,7 +394,6 @@ async def edit_assignment(assignment_id):
     """Edit an existing assignment"""
     try:
         data = request.get_json()
-        team_manager = TeamManager(current_app.config["MONGO_URI"])
         success, result = await team_manager.update_assignment(
             assignment_id=assignment_id,
             user_id=current_user.get_id(),
@@ -449,14 +404,13 @@ async def edit_assignment(assignment_id):
 
     except Exception as e:
         current_app.logger.error(f"Error editing assignment: {str(e)}")
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({"success": False, "message": "An internal error has occurred."}), 500
 
 
 @team_bp.route("/view/<int:team_number>")
 @async_route
 async def view_team(team_number):
     """Public view of team with limited information"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     team = await team_manager.get_team_by_number(team_number)
     
     if not team:
@@ -482,50 +436,31 @@ async def view_team(team_number):
 @team_bp.route("/<int:team_number>/update_logo", methods=["POST"])
 @login_required
 @async_route
+@handle_route_errors
 async def update_team_logo(team_number):
     """Update team logo"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     team = await team_manager.get_team_by_number(team_number)
     
     if not team or not team.is_admin(current_user.get_id()):
-        flash("Unauthorized to update team logo", "error")
-        return redirect(url_for("team.manage_team"))
+        return error_response("Unauthorized to update team logo")
     
-    try:
-        if 'team_logo' not in request.files:
-            flash("No file provided", "error")
-            return redirect(url_for("team.manage_team"))
-            
-        file = request.files['team_logo']
-        if file.filename == '':
-            flash("No file selected", "error")
-            return redirect(url_for("team.manage_team"))
-            
-        if file and allowed_file(file.filename):
-            # Save new logo to GridFS
-            fs = GridFS(team_manager.db)
-            filename = secure_filename(f"team_{team_number}_logo_{file.filename}")
-            new_logo_id = fs.put(
-                file.stream.read(),
-                filename=filename,
-                content_type=file.content_type
-            )
-            
-            # Update team and clean up old logo
-            success, message = await team_manager.update_team_logo(team_number, new_logo_id)
-            
-            if not success:
-                # If update failed, delete the newly uploaded file
-                fs.delete(new_logo_id)
-                
-            flash(message, "success" if success else "error")
-        else:
-            flash("Invalid file type. Please use PNG, JPG, or JPEG", "error")
-            
-    except Exception as e:
-        flash(f"Error updating team logo: {str(e)}", "error")
+    if 'team_logo' not in request.files:
+        return error_response("No file provided")
         
-    return redirect(url_for("team.manage_team"))
+    file = request.files['team_logo']
+    if file.filename == '':
+        return error_response("No file selected")
+        
+    new_logo_id = await save_file_to_gridfs(file, team_manager.db)
+    if not new_logo_id:
+        return error_response("Invalid file type")
+        
+    success, message = await team_manager.update_team_logo(team_number, new_logo_id)
+    if not success:
+        fs = GridFS(team_manager.db)
+        fs.delete(new_logo_id)
+        
+    return success_response(message) if success else error_response("An internal error has occurred.", log_message="Error updating team logo")
 
 
 @team_bp.route("/<int:team_number>/settings")
@@ -533,7 +468,6 @@ async def update_team_logo(team_number):
 @async_route
 async def team_settings(team_number):
     """Team settings page for admins"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     team = await team_manager.get_team_by_number(team_number)
     
     if not team or not team.is_admin(current_user.get_id()):
@@ -548,7 +482,6 @@ async def team_settings(team_number):
 @async_route
 async def update_team_info(team_number):
     """Update team information including logo and description"""
-    team_manager = TeamManager(current_app.config["MONGO_URI"])
     team = await team_manager.get_team_by_number(team_number)
     
     if not team or not team.is_admin(current_user.get_id()):
@@ -574,7 +507,7 @@ async def update_team_info(team_number):
                             # Also clean up any orphaned chunks
                             team_manager.db.fs.chunks.delete_many({"files_id": team.logo_id})
                         except Exception as e:
-                            flash(f"Error deleting old logo: {str(e)}")
+                            flash("An internal error has occurred.")
                     
                     filename = secure_filename(f"team_{team_number}_logo_{file.filename}")
                     file_id = fs.put(

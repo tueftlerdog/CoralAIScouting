@@ -58,10 +58,13 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Match</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auto</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teleop</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Endgame</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auto Coral (1-4)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auto Algae (Net/Proc)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teleop Coral (1-4)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teleop Algae (Net/Proc/HP)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Climb</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auto Path</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Defense</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scouter</th>
                             </tr>
@@ -75,82 +78,30 @@
     </div>
 </div>
 
-<script>
-document.getElementById('team-search').addEventListener('input', debounce(async (e) => {
-    const query = e.target.value.trim();
-    if (query.length === 0) {
-        document.getElementById('selected-team-info').classList.add('hidden');
-        return;
-    }
+<!-- Add the Auto Path Modal -->
+<div id="autoPathModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+    <div class="relative top-4 mx-auto p-3 border w-[95%] sm:w-[500px] shadow-lg rounded-md bg-white">
+        <div class="flex flex-col items-center">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Auto Path</h3>
+            <div class="relative w-full overflow-hidden" style="max-height: 70vh;">
+                <img id="modalAutoPathImage" 
+                     class="w-full rounded-lg object-contain" 
+                     alt="Auto Path">
+            </div>
+            <div class="w-full mt-4">
+                <h4 class="text-md font-medium text-gray-700 mb-2">Auto Notes</h4>
+                <p id="modalAutoNotes" class="text-gray-600 bg-gray-50 p-3 rounded-lg min-h-[60px]">
+                    <!-- Auto notes will be inserted here -->
+                </p>
+            </div>
+            <button onclick="closeAutoPathModal()" 
+                    class="mt-4 w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
 
-    try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        const data = await response.json();
-
-        if (data.length > 0) {
-            const team = data[0];
-            displayTeamInfo(team);
-        }
-    } catch (error) {
-        console.error('Error fetching team data:', error);
-    }
-}, 300));
-
-function displayTeamInfo(team) {
-    document.getElementById('selected-team-info').classList.remove('hidden');
-    document.getElementById('team-number').textContent = team.team_number;
-    document.getElementById('nickname').textContent = team.nickname;
-    document.getElementById('school').textContent = team.school_name || 'N/A';
-    document.getElementById('location').textContent = [team.city, team.state_prov, team.country].filter(Boolean).join(', ');
-
-    const teamProfileContainer = document.getElementById('team-profile-container');
-    const teamProfileLink = document.getElementById('team-profile-link');
-    
-    if (team.has_team_page) {
-        teamProfileContainer.classList.remove('hidden');
-        teamProfileLink.href = `/team/view/${team.team_number}`;
-    } else {
-        teamProfileContainer.classList.add('hidden');
-    }
-
-    const scoutingTableBody = document.getElementById('scouting-data');
-    scoutingTableBody.innerHTML = '';
-
-    if (team.scouting_data && team.scouting_data.length > 0) {
-        team.scouting_data.forEach(entry => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">${entry.event_code}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${entry.match_number}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${entry.auto_points}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${entry.teleop_points}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${entry.endgame_points}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${entry.total_points}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${entry.notes}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${entry.scouter}</td>
-            `;
-            scoutingTableBody.appendChild(row);
-        });
-    } else {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td colspan="8" class="px-6 py-4 text-center text-gray-500">No scouting data available for this team</td>
-        `;
-        scoutingTableBody.appendChild(row);
-    }
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-</script>
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
 
 {% endblock %}

@@ -1,22 +1,20 @@
-from flask import (
-    Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    flash,
-    jsonify,
-    send_file,
-    current_app,
-)
-from flask_login import login_required, login_user, current_user, logout_user
-from app.auth.auth_utils import UserManager
+from __future__ import annotations
+
 import asyncio
 from functools import wraps
-import os
-from werkzeug.utils import secure_filename
+from urllib.parse import urljoin, urlparse
+
 from bson import ObjectId
+from flask import (Blueprint, current_app, flash, jsonify, redirect,
+                   render_template, request, send_file, url_for)
+from flask_login import current_user, login_required, login_user, logout_user
+from flask_pymongo import PyMongo
 from gridfs import GridFS
+from werkzeug.utils import secure_filename
+
+from app.auth.auth_utils import UserManager
+from app.utils import (async_route, handle_route_errors, is_safe_url,
+                       send_gridfs_file)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -80,47 +78,54 @@ def async_route(f):
 
 auth_bp = Blueprint("auth", __name__)
 user_manager = None
+mongo = None
 
 
 @auth_bp.record
 def on_blueprint_init(state):
-    global user_manager
-    user_manager = UserManager(state.app.config["MONGO_URI"])
+    global user_manager, mongo
+    app = state.app
+    mongo = PyMongo(app)
+    user_manager = UserManager(app.config["MONGO_URI"])
+
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and \
+           ref_url.netloc == test_url.netloc
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 @async_route
+@handle_route_errors
 async def login():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
 
-    form_data = {}
     if request.method == "POST":
         login = request.form.get("login", "").strip()
         password = request.form.get("password", "").strip()
         remember = bool(request.form.get("remember", False))
 
-        form_data = {"login": login, "remember": remember}
-
         if not login or not password:
             flash("Please provide both login and password", "error")
-            return render_template("auth/login.html", form_data=form_data)
+            return render_template("auth/login.html", form_data={"login": login})
 
-        try:
-            success, user = await user_manager.authenticate_user(login, password)
-            if success and user:
-                login_user(user, remember=remember)
-                next_page = request.args.get("next")
-                if not next_page or not next_page.startswith("/"):
-                    next_page = url_for("index")
-                flash("Successfully logged in", "success")
-                return redirect(next_page)
+        success, user = await user_manager.authenticate_user(login, password)
+        if success and user:
+            login_user(user, remember=remember)
+            next_page = request.args.get('next')
+            if not next_page or not is_safe_url(next_page):
+                next_page = url_for('index')
             else:
-                flash("Invalid login credentials", "error")
-        except Exception as e:
-            flash(f"An error occurred during login: {str(e)}", "error")
+                next_page = url_for(next_page)
+            flash("Successfully logged in", "success")
+            return redirect(next_page)
+        
+        flash("Invalid login credentials", "error")
 
-    return render_template("auth/login.html", form_data=form_data)
+    return render_template("auth/login.html", form_data={})
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -157,7 +162,7 @@ async def register():
                 return redirect(url_for("auth.login"))
             flash(message, "error")
         except Exception as e:
-            flash(f"An error occurred during registration: {str(e)}", "error")
+            flash("An internal error has occurred.", "error")
 
     return render_template("auth/register.html", form_data=form_data)
 
@@ -174,48 +179,28 @@ def logout():
 @login_required
 @async_route
 async def settings():
-    if request.method == "POST":
-        updates = {}
-        
-        # Handle profile picture upload
-        if 'profile_picture' in request.files:
-            file = request.files['profile_picture']
-            if file and allowed_file(file.filename):
-                try:
-                    # Save new file to GridFS
-                    fs = GridFS(user_manager.db)
-                    filename = secure_filename(f"profile_{current_user.id}_{file.filename}")
-                    file_id = fs.put(
-                        file.stream.read(),
-                        filename=filename,
-                        content_type=file.content_type
-                    )
-                    
-                    # Update user's profile picture and clean up old one
-                    success, message = await user_manager.update_profile_picture(current_user.id, file_id)
-                    if not success:
-                        # If update failed, delete the newly uploaded file
-                        fs.delete(file_id)
-                        flash(message, "error")
-                    else:
-                        updates['profile_picture_id'] = file_id
-                except Exception as e:
-                    flash(f"Error uploading profile picture: {str(e)}", "error")
-
-        # Handle other profile updates
-        if username := request.form.get('username'):
-            updates['username'] = username
-        if description := request.form.get('description'):
-            updates['description'] = description
-
-        if updates:
-            success, message = await user_manager.update_user_profile(current_user.id, updates)
-            flash(message, "success" if success else "error")
+    try:
+        if request.method == "POST":
+            # Handle form submission
+            form_data = request.form
+            file = request.files.get("profile_picture")
+            
+            success = await user_manager.update_user_settings(
+                current_user.get_id(),
+                form_data,
+                file
+            )
             
             if success:
-                return redirect(url_for('auth.settings'))
-
-    return render_template("auth/settings.html", user=current_user)
+                flash("Settings updated successfully", "success")
+            else:
+                flash("Unable to update settings", "error")
+                
+        return render_template("auth/settings.html")
+    except Exception as e:
+        current_app.logger.error(f"Error in settings: {str(e)}", exc_info=True)
+        flash("An error occurred while processing your request", "error")
+        return redirect(url_for("auth.settings"))
 
 
 @auth_bp.route("/profile/<username>")
@@ -230,12 +215,16 @@ def profile(username):
 
 @auth_bp.route("/profile/picture/<user_id>")
 def profile_picture(user_id):
+    """Get user's profile picture"""
     user = user_manager.get_user_by_id(user_id)
     if not user or not user.profile_picture_id:
-        return send_file("static/images/default_profile.png")  # Create a default profile picture
+        return send_file("static/images/default_profile.png")
     
-    # Implement this to retrieve from MongoDB GridFS
-    return send_profile_picture(user.profile_picture_id)
+    return send_gridfs_file(
+        user.profile_picture_id,
+        user_manager.db,
+        "static/images/default_profile.png"
+    )
 
 
 @auth_bp.route("/check_username", methods=["POST"])
@@ -260,7 +249,7 @@ async def check_username():
     except Exception as e:
         return jsonify({
             "available": False,
-            "error": str(e)
+            "error": "An internal error has occurred."
         }), 500
 
 
@@ -283,4 +272,4 @@ async def delete_account():
 
     except Exception as e:
         current_app.logger.error(f"Error deleting account: {str(e)}")
-        return jsonify({"success": False, "message": "An error occurred while deleting your account"})
+        return jsonify({"success": False, "message": "An internal error has occurred."})

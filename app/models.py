@@ -1,8 +1,9 @@
-from typing import Dict
-from bson import ObjectId
-from werkzeug.security import check_password_hash
-from flask_login import UserMixin
 from datetime import datetime
+from typing import Dict
+
+from bson import ObjectId
+from flask_login import UserMixin
+from werkzeug.security import check_password_hash
 
 
 class User(UserMixin):
@@ -71,19 +72,56 @@ class TeamData:
         self.team_number = data.get('team_number')
         self.match_number = data.get('match_number')
         self.event_code = data.get('event_code')
-        self.auto_points = data.get('auto_points', 0)
-        self.teleop_points = data.get('teleop_points', 0)
-        self.endgame_points = data.get('endgame_points', 0)
-        self.total_points = data.get('total_points', 0)
-        self.notes = data.get('notes', '')
         self.alliance = data.get('alliance', '')
-        self.match_result = data.get('match_result', '')
+        
+        # Algae scoring
+        self.algae_net = data.get('algae_net', 0)
+        self.algae_processor = data.get('algae_processor', 0)
+        self.human_player = data.get('human_player', 0)  # Total successful shots
+        
+        # Climb
+        self.climb_type = data.get('climb_type', '')  # 'shallow', 'deep', 'park', or ''
+        self.climb_success = data.get('climb_success', False)
+        
+        # Defense
+        self.defense_rating = data.get('defense_rating', 1)  # 1-5 scale
+        self.defense_notes = data.get('defense_notes', '')
+        
+        # Auto
+        self.auto_path = data.get('auto_path', '')  # Store canvas data as base64
+        self.auto_notes = data.get('auto_notes', '')
+        
+        # Notes
+        self.notes = data.get('notes', '')
         
         # Scouter information
         self.scouter_id = data.get('scouter_id')
         self.scouter_name = data.get('scouter_name')
         self.scouter_team = data.get('scouter_team')
-        self.is_owner = data.get('is_owner', True)  # Default to False if not set
+        self.is_owner = data.get('is_owner', True)
+        
+        # Auto Coral scoring
+        self.auto_coral_level1 = data.get('auto_coral_level1', 0)
+        self.auto_coral_level2 = data.get('auto_coral_level2', 0)
+        self.auto_coral_level3 = data.get('auto_coral_level3', 0)
+        self.auto_coral_level4 = data.get('auto_coral_level4', 0)
+        
+        # Teleop Coral scoring
+        self.teleop_coral_level1 = data.get('teleop_coral_level1', 0)
+        self.teleop_coral_level2 = data.get('teleop_coral_level2', 0)
+        self.teleop_coral_level3 = data.get('teleop_coral_level3', 0)
+        self.teleop_coral_level4 = data.get('teleop_coral_level4', 0)
+        
+        # Auto Algae scoring
+        self.auto_algae_net = data.get('auto_algae_net', 0)
+        self.auto_algae_processor = data.get('auto_algae_processor', 0)
+        
+        # Teleop Algae scoring
+        self.teleop_algae_net = data.get('teleop_algae_net', 0)
+        self.teleop_algae_processor = data.get('teleop_algae_processor', 0)
+        
+        # Human Player (single field)
+        self.human_player = data.get('human_player', 0)
 
     @classmethod
     def create_from_db(cls, data):
@@ -95,17 +133,31 @@ class TeamData:
             'team_number': self.team_number,
             'match_number': self.match_number,
             'event_code': self.event_code,
-            'auto_points': self.auto_points,
-            'teleop_points': self.teleop_points,
-            'endgame_points': self.endgame_points,
-            'total_points': self.total_points,
-            'notes': self.notes,
             'alliance': self.alliance,
-            'match_result': self.match_result,
+            'auto_coral_level1': self.auto_coral_level1,
+            'auto_coral_level2': self.auto_coral_level2,
+            'auto_coral_level3': self.auto_coral_level3,
+            'auto_coral_level4': self.auto_coral_level4,
+            'teleop_coral_level1': self.teleop_coral_level1,
+            'teleop_coral_level2': self.teleop_coral_level2,
+            'teleop_coral_level3': self.teleop_coral_level3,
+            'teleop_coral_level4': self.teleop_coral_level4,
+            'auto_algae_net': self.auto_algae_net,
+            'auto_algae_processor': self.auto_algae_processor,
+            'teleop_algae_net': self.teleop_algae_net,
+            'teleop_algae_processor': self.teleop_algae_processor,
+            'human_player': self.human_player,
+            'climb_type': self.climb_type,
+            'climb_success': self.climb_success,
+            'defense_rating': self.defense_rating,
+            'defense_notes': self.defense_notes,
+            'auto_path': self.auto_path,
+            'auto_notes': self.auto_notes,
+            'notes': self.notes,
             'scouter_id': self.scouter_id,
             'scouter_name': self.scouter_name,
             'scouter_team': self.scouter_team,
-            'is_owner': self.is_owner
+            'is_owner': self.is_owner,
         }
 
     @property
@@ -121,23 +173,74 @@ class TeamData:
 class PitScouting:
     def __init__(self, data: Dict):
         self._id = data.get("_id")
-        self.swerve = data.get("swerve", "")  # string
-        self.motors = data.get("motors", "")  # string
-        self.shooter_type = data.get("shooter_type", "")  # string
-        self.intake_type = data.get("intake_type", "")  # string
-        self.broken = data.get("broken", False)  # bool
-        self.pictures = data.get("pictures", [])  # List of image URLs or IDs (assuming 1-3)
-        self.notes = data.get("notes", "")  # string
-        self.capabilities = data.get("capabilities", "")  # string (corrected from "capbalities_of")
-        self.team_friendliness = data.get("team_friendliness", 0)  # int [1-10] (corrected from "people were nice and easy going")
-        self.programming_language = data.get("programming_language", "")  # string (corrected from "programming lang")
+        self.team_number = data.get("team_number")
+        self.scouter_id = data.get("scouter_id")
+        
+        # Drive base information
+        self.drive_type = data.get("drive_type", {
+            "swerve": False,
+            "tank": False,
+            "other": ""
+        })
+        self.swerve_modules = data.get("swerve_modules", "")
+        
+        # Motor details
+        self.motor_details = data.get("motor_details", {
+            "falcons": False,
+            "neos": False,
+            "krakens": False,
+            "vortex": False,
+            "other": ""
+        })
+        self.motor_count = data.get("motor_count", 0)
+        
+        # Dimensions (in)
+        self.dimensions = data.get("dimensions", {
+            "length": 0,
+            "width": 0,
+            "height": 0,
+        })
+        
+        # Mechanisms
+        self.mechanisms = data.get("mechanisms", {
+            "coral_scoring": {
+                "notes": ""
+            },
+            "algae_scoring": {
+                "notes": ""
+            },
+            "climber": {
+                "has_climber": False,
+                "type_climber": "", # deep, shallow, park
+                "notes": ""
+            }
+        })
+        
+        # Programming and Autonomous
+        self.programming_language = data.get("programming_language", "")
+        self.autonomous_capabilities = data.get("autonomous_capabilities", {
+            "has_auto": False,
+            "num_routes": 0,
+            "preferred_start": "",
+            "notes": ""
+        })
+        
+        # Driver Experience
+        self.driver_experience = data.get("driver_experience", {
+            "years": 0,
+            "notes": ""
+        })
 
-    @property
-    def id(self):
-        return str(self._id)
+        # Analysis
+        self.notes = data.get("notes", "")
+        
+        # Metadata
+        self.created_at = data.get("created_at")
+        self.updated_at = data.get("updated_at")
 
     @staticmethod
     def create_from_db(data: Dict):
+        """Create a PitScouting instance from database data"""
         if not data:
             return None
         if "_id" in data and not isinstance(data["_id"], ObjectId):
@@ -145,20 +248,28 @@ class PitScouting:
         return PitScouting(data)
 
     def to_dict(self):
+        """Convert the object to a dictionary for database storage"""
         return {
             "id": self.id,
-            "swerve": self.swerve,
-            "motors": self.motors,
-            "shooter_type": self.shooter_type,
-            "intake_type": self.intake_type,
-            "broken": self.broken,
+            "team_number": self.team_number,
+            "scouter_id": self.scouter_id,
+            "scouter_name": self.scouter_name,
+            "drive_type": self.drive_type,
+            "swerve_modules": self.swerve_modules,
+            "drive_motors": self.drive_motors,
+            "motor_details": self.motor_details,
+            "dimensions": self.dimensions,
+            "mechanisms": self.mechanisms,
+            "programming_language": self.programming_language,
+            "autonomous_capabilities": self.autonomous_capabilities,
+            "driver_experience": self.driver_experience,
             "pictures": self.pictures,
             "notes": self.notes,
-            "capabilities": self.capabilities,
-            "team_friendliness": self.team_friendliness,
-            "programming_language": self.programming_language,
+            "strengths": self.strengths,
+            "weaknesses": self.weaknesses,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
         }
-
 
 class Team:
     def __init__(self, data: Dict):

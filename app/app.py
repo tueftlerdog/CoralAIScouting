@@ -1,8 +1,10 @@
-from flask import Flask, make_response, render_template, send_from_directory
+import os
+
+from dotenv import load_dotenv
+from flask import (Flask, jsonify, make_response, render_template,
+                   send_from_directory)
 from flask_login import LoginManager
 from flask_pymongo import PyMongo
-import os
-from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 
 from app.auth.auth_utils import UserManager
@@ -26,6 +28,7 @@ def create_app():
     )
 
     mongo.init_app(app)
+    # csrf.init_app(app)
 
     with app.app_context():
         if "team_data" not in mongo.db.list_collection_names():
@@ -72,6 +75,17 @@ def create_app():
         response.headers["Content-Type"] = "application/javascript"
         response.headers["Service-Worker-Allowed"] = "/"
         return response
+    
+    @app.errorhandler(404)
+    def not_found(e):
+        return render_template("404.html")
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        app.logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
+        return jsonify({
+            "error": "An unexpected error occurred"
+        }), 500
 
     return app
 
