@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Team 334 Scouting App{% endblock %}</title>
+    <title>{% block title %}RoboRecon{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
@@ -18,17 +18,17 @@
 
     <meta property="twitter:image" content="{{ url_for('static', filename='logo.png') }}">
     <meta property="twitter:card" content="{{ url_for('static', filename='logo.png') }}">
-    <meta property="twitter:title" content="Team 334 Scouting App">
-    <meta property="twitter:description" content="The unofficial website for Team 334's Scouting App">
-    <meta property="og:site_name" content="Team 334 Scouting App">
+    <meta property="twitter:title" content="RoboRecon">
+    <meta property="twitter:description" content="The Official Scouting App Presented By Team 334">
+    <meta property="og:site_name" content="RoboRecon | 334 Scouting App">
 
 
-    <meta property="og:title" content="Team 334 Scouting App"/>
+    <meta property="og:title" content="RoboRecon"/>
     <meta property="og:description"
-        content="The unofficial website for Team 334's Scouting App"/>
+        content="The Official Scouting App Presented By Team 334"/>
     <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}"/>
     <meta property="og:url" content=""/>
-    <meta name="description" content="The unofficial website for Team 334's Scouting App"/>
+    <meta name="description" content="The Official Scouting App Presented By Team 334"/>
 
 
     <meta name="viewport" content="initial-scale=1, width=device-width"/>
@@ -114,19 +114,8 @@
       </nav>
 
     <div class="container mx-auto px-4 sm:my-10 my-20">
-        <!-- {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="mb-4 p-4 rounded {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %} -->
-
         {% block content %}{% endblock %}
     </div>
-    <!-- <script src="{{ url_for('static', filename='js/search.js') }}"></script> -->
     <script>
         const menuButton = document.querySelector('.mobile-menu-button');
         const mobileMenu = document.querySelector('.mobile-menu');
@@ -137,6 +126,5 @@
     </script>
     <script src="{{ url_for('static', filename='js/offline-storage.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <!-- <script src="{{ url_for('static', filename='js/team.manage.js') }}"></script> -->
 </body>
 </html>

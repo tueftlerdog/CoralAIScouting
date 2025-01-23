@@ -1,4 +1,5 @@
-# 334 Scouting App
+# RoboRecon
+> The Official Scouting App Presented By Team 334
 
 | Images | Images |
 | ---- | ----- |

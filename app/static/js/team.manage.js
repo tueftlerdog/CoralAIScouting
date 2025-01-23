@@ -404,30 +404,43 @@ async function clearAllAssignments() {
     }
 }
 
-async function deleteTeam() {
-    if (!confirm('Are you sure you want to delete this team? This action cannot be undone and will remove all team data, assignments, and members.')) {
-        return;
+function confirmDeleteTeam() {
+    if (confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('team.delete_team', team_number=team.team_number) }}";
+        document.body.appendChild(form);
+        form.submit();
     }
+}
 
-    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+function confirmLeaveTeam() {
+    if (confirm('Are you sure you want to leave this team?')) {
+        window.location.href = "{{ url_for('team.leave_team', team_number=team.team_number) }}";
+    }
+}
 
-    try {
-        const response = await fetch(`/team/${teamNumber}/delete`, {
-            method: 'DELETE',
+function deleteTeam(teamNumber) {
+    if (confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
+        fetch(`/team/${teamNumber}/delete`, {
+            method: 'POST',
             headers: {
+                'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/team/join';
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the team');
         });
-
-        const data = await response.json();
-        if (data.success) {
-            window.location.href = '/team/join';
-        } else {
-            alert(data.message || 'Failed to delete team');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred while deleting the team');
     }
 }
 
