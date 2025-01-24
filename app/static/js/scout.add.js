@@ -259,6 +259,6 @@ window.addEventListener('load', () => {
     bgImage.onload = () => {
         resizeCanvas();
     };
-    bgImage.src = "{{ url_for('static', filename='images/field-2025.png') }}";
+    bgImage.src = "/static/images/field-2025.png";
 });
 window.addEventListener('resize', resizeCanvas);

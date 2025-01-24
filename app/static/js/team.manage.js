@@ -405,18 +405,20 @@ async function clearAllAssignments() {
 }
 
 function confirmDeleteTeam() {
+    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
     if (confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = "{{ url_for('team.delete_team', team_number=team.team_number) }}";
+        form.action = `/team/${teamNumber}/delete`;
         document.body.appendChild(form);
         form.submit();
     }
 }
 
 function confirmLeaveTeam() {
+    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
     if (confirm('Are you sure you want to leave this team?')) {
-        window.location.href = "{{ url_for('team.leave_team', team_number=team.team_number) }}";
+        window.location.href = `/team/${teamNumber}/leave`;
     }
 }
 

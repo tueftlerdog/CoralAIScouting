@@ -99,21 +99,33 @@ function resizeCanvas() {
 function drawBackground() {
     if (!bgImage.complete) return; // Wait for image to load
     
+    // Get the actual canvas dimensions
+    const canvasWidth = canvas.width / window.devicePixelRatio;
+    const canvasHeight = canvas.height / window.devicePixelRatio;
+    
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Calculate scaling to fit while maintaining aspect ratio
     const scale = Math.min(
-        canvas.width / bgImage.width,
-        canvas.height / bgImage.height
+        canvasWidth / bgImage.width,
+        canvasHeight / bgImage.height
     );
     
     // Calculate position to center the image
-    const x = (canvas.width - bgImage.width * scale) / 2;
-    const y = (canvas.height - bgImage.height * scale) / 2;
+    const x = (canvasWidth - bgImage.width * scale) / 2;
+    const y = (canvasHeight - bgImage.height * scale) / 2;
     
     // Draw background
     ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
+}
+
+function getPointerPosition(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width) / window.devicePixelRatio,
+        y: (e.clientY - rect.top) * (canvas.height / rect.height) / window.devicePixelRatio
+    };
 }
 
 // Load existing path if available
@@ -218,6 +230,6 @@ window.addEventListener('load', () => {
             pathImage.src = existingPath;
         }
     };
-    bgImage.src = "{{ url_for('static', filename='images/field-2025.png') }}";
+    bgImage.src = "/static/images/field-2025.png";
 });
 window.addEventListener('resize', resizeCanvas);

@@ -89,9 +89,9 @@ def async_route(f):
 def handle_route_errors(f):
     """Decorator to handle common route errors"""
     @wraps(f)
-    async def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         try:
-            return await f(*args, **kwargs)
+            return f(*args, **kwargs)
         except Exception as e:
             logger.error(f"Route error: {str(e)}", exc_info=True)
             flash("An internal error has occurred.", "error")
