@@ -21,7 +21,12 @@ const offlineStorage = {
     savePendingRequest(request) {
         try {
             const requests = this.getPendingRequests();
-            requests.push({ ...request, id: Date.now() });
+            requests.push({ 
+                ...request,
+                id: Date.now(),
+                action: request.action,
+                params: request.params
+            });
             localStorage.setItem('pendingRequests', JSON.stringify(requests));
         } catch (error) {
             console.error('Error saving pending request:', error);
@@ -169,9 +174,9 @@ async function handleAssignmentSubmit(e) {
         if (!navigator.onLine) {
             // Save to pending requests
             offlineStorage.savePendingRequest({
-                type: 'create_assignment',
-                url: `/team/${teamNumber}/assignments`,
+                action: 'create_assignment',
                 method: 'POST',
+                params: { teamNumber },
                 data: formData
             });
 
@@ -225,7 +230,28 @@ async function syncPendingTeamActions() {
 
     for (const request of pendingRequests) {
         try {
-            const response = await fetch(request.url, {
+            let url;
+            switch (request.action) {
+                case 'create_assignment':
+                    url = teamApi.createAssignment(request.params.teamNumber);
+                    break;
+                case 'update_status':
+                    url = teamApi.updateAssignmentStatus(request.params.assignmentId);
+                    break;
+                case 'edit_assignment':
+                    url = teamApi.editAssignment(request.params.assignmentId);
+                    break;
+                case 'delete_assignment':
+                    url = teamApi.deleteAssignment(request.params.assignmentId);
+                    break;
+                case 'leave_team':
+                    url = teamApi.leaveTeam(request.params.teamNumber);
+                    break;
+                default:
+                    throw new Error('Invalid action type');
+            }
+
+            const response = await fetch(url, {
                 method: request.method,
                 headers: {
                     'Content-Type': 'application/json',
@@ -255,7 +281,6 @@ async function syncPendingTeamActions() {
     // Update localStorage with only failed requests
     localStorage.setItem('pendingRequests', JSON.stringify(failedRequests));
 
-    // Show sync results
     if (successfulSyncs > 0) {
         alert(`Successfully synced ${successfulSyncs} pending actions`);
         window.location.reload();
@@ -273,9 +298,9 @@ async function updateAssignmentStatus(selectElement, assignmentId) {
     try {
         if (!navigator.onLine) {
             offlineStorage.savePendingRequest({
-                type: 'status_update',
-                url: `/team/assignments/${assignmentId}/status`,
+                action: 'update_status',
                 method: 'PUT',
+                params: { assignmentId },
                 data: { status: newStatus }
             });
             updateStatusBadge(selectElement, newStatus);
@@ -336,7 +361,6 @@ function updateStatusBadge(selectElement, newStatus) {
                     sanitizedStatus.charAt(0).toUpperCase() + sanitizedStatus.slice(1);
     }
     
-    // Use textContent instead of innerHTML
     statusCell.textContent = statusText;
     statusCell.className = `px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge ${statusClasses[sanitizedStatus] || statusClasses['pending']}`;
 }
@@ -349,9 +373,9 @@ async function deleteAssignment(assignmentId) {
     try {
         if (!navigator.onLine) {
             offlineStorage.savePendingRequest({
-                type: 'delete_assignment',
-                url: `/team/assignments/${assignmentId}/delete`,
-                method: 'DELETE'
+                action: 'delete_assignment',
+                method: 'DELETE',
+                params: { assignmentId }
             });
             showOfflineNotification('Assignment will be deleted when online');
             return;
@@ -404,45 +428,69 @@ async function clearAllAssignments() {
     }
 }
 
-function confirmDeleteTeam() {
-    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
-    if (confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/team/${teamNumber}/delete`;
-        document.body.appendChild(form);
-        form.submit();
+async function confirmDeleteTeam() {
+    if (!confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
+        return;
     }
-}
 
-function confirmLeaveTeam() {
     const teamNumber = document.getElementById('teamData').dataset.teamNumber;
-    if (confirm('Are you sure you want to leave this team?')) {
-        window.location.href = `/team/${teamNumber}/leave`;
-    }
-}
 
-function deleteTeam(teamNumber) {
-    if (confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
-        fetch(`/team/${teamNumber}/delete`, {
+    try {
+        const response = await fetch(`/team/${teamNumber}/delete`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.href = '/team/join';
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while deleting the team');
         });
+
+        const data = await response.json();
+        if (data.success) {
+            window.location.href = '/team/join';
+        } else {
+            throw new Error(data.message || 'Failed to delete team');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || 'An error occurred while deleting the team');
+    }
+}
+
+async function confirmLeaveTeam() {
+    if (!confirm('Are you sure you want to leave this team?')) {
+        return;
+    }
+
+    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+
+    try {
+        if (!navigator.onLine) {
+            offlineStorage.savePendingRequest({
+                action: 'leave_team',
+                method: 'POST',
+                params: { teamNumber }
+            });
+            showOfflineNotification('Team leave request will be processed when online');
+            return;
+        }
+
+        const response = await fetch(`/team/${teamNumber}/leave`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            window.location.href = '/team/join';
+        } else {
+            throw new Error(data.message || 'Failed to leave team');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || 'An error occurred while leaving the team');
     }
 }
 
@@ -556,9 +604,9 @@ async function handleEditAssignmentSubmit(e) {
     try {
         if (!navigator.onLine) {
             offlineStorage.savePendingRequest({
-                type: 'edit_assignment',
-                url: `/team/assignments/${assignmentId}/edit`,
+                action: 'edit_assignment',
                 method: 'PUT',
+                params: { assignmentId },
                 data: formData
             });
 
@@ -666,34 +714,6 @@ function createAssignmentRow(assignment) {
     return row;
 }
 
-async function leaveTeam() {
-    if (!confirm('Are you sure you want to leave this team?')) {
-        return;
-    }
-
-    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
-
-    try {
-        const response = await fetch(`/team/${teamNumber}/leave`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-            window.location.href = '/team/join';
-        } else {
-            throw new Error(data.message || 'Failed to leave team');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert(error.message || 'An error occurred while leaving the team');
-    }
-}
-
 async function syncPendingData() {
     try {
         const clients = await self.clients.matchAll();
@@ -712,3 +732,12 @@ async function syncPendingData() {
         alert('Sync failed. Please try again later.');
     }
 }
+
+// Define API endpoints as functions that build URLs
+const teamApi = {
+    createAssignment: (teamNumber) => `/team/${teamNumber}/assignments`,
+    updateAssignmentStatus: (assignmentId) => `/team/assignments/${assignmentId}/status`,
+    editAssignment: (assignmentId) => `/team/assignments/${assignmentId}/edit`,
+    deleteAssignment: (assignmentId) => `/team/assignments/${assignmentId}/delete`,
+    leaveTeam: (teamNumber) => `/team/${teamNumber}/leave`,
+};

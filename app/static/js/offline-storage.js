@@ -95,7 +95,15 @@ async function syncPendingRequests() {
   
   for (const request of pendingRequests) {
     try {
-      const response = await fetch(request.url, {
+      const url = new URL(request.url, window.location.origin);
+
+      if (url.origin !== window.location.origin) {
+        console.error(`Invalid URL origin for request ${request.id}`);
+        await offlineStorage.removePendingRequest(request.id);
+        continue;
+      }
+
+      const response = await fetch(url.toString(), {
         method: request.method,
         headers: new Headers(request.headers),
         body: request.body

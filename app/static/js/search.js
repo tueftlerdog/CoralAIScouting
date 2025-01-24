@@ -91,47 +91,70 @@ document.addEventListener('DOMContentLoaded', function() {
             team.scouting_data.forEach(entry => {
                 const row = document.createElement('tr');
                 
-                // Format coral scores as L1/L2/L3/L4
+                const createCell = (content) => {
+                    const td = document.createElement('td');
+                    td.className = 'px-6 py-4 whitespace-nowrap';
+                    if (typeof content === 'string' || typeof content === 'number') {
+                        td.textContent = content;
+                    } else {
+                        td.appendChild(content);
+                    }
+                    return td;
+                };
+
+                // Format scores
                 const autoCoral = `${entry.auto_coral_level1}/${entry.auto_coral_level2}/${entry.auto_coral_level3}/${entry.auto_coral_level4}`;
                 const teleopCoral = `${entry.teleop_coral_level1}/${entry.teleop_coral_level2}/${entry.teleop_coral_level3}/${entry.teleop_coral_level4}`;
-                
-                // Format algae scores as net/processor
                 const autoAlgae = `${entry.auto_algae_net}/${entry.auto_algae_processor}`;
                 const teleopAlgae = `${entry.teleop_algae_net}/${entry.teleop_algae_processor}/${entry.human_player || 0}`;
-                
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.event_code}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.match_number}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${autoCoral}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${autoAlgae}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${teleopCoral}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${teleopAlgae}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${entry.climb_success ? 
-                          `<span class="text-green-600">✓ ${entry.climb_type}</span>` : 
-                          `<span class="text-red-600">✗ ${entry.climb_type || 'Failed'}</span>`}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${entry.auto_path ? 
-                          `<button onclick="showAutoPath('${entry.auto_path}', '${entry.auto_notes}')" 
-                                   class="text-blue-600 hover:text-blue-900">
-                               View Path
-                           </button>` : 
-                          `<span class="text-gray-400">No path</span>`}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.defense_rating}/5</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.notes || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${entry.scouter_name}</td>
-                `;
+
+                // Create climb status cell
+                const climbSpan = document.createElement('span');
+                climbSpan.className = entry.climb_success ? 'text-green-600' : 'text-red-600';
+                climbSpan.textContent = `${entry.climb_success ? '✓' : '✗'} ${entry.climb_type || 'Failed'}`;
+
+                // Create auto path cell
+                const pathCell = document.createElement('td');
+                pathCell.className = 'px-6 py-4 whitespace-nowrap';
+                if (entry.auto_path) {
+                    const pathButton = document.createElement('button');
+                    pathButton.className = 'text-blue-600 hover:text-blue-900';
+                    pathButton.textContent = 'View Path';
+                    pathButton.addEventListener('click', () => {
+                        showAutoPath(entry.auto_path, entry.auto_notes);
+                    });
+                    pathCell.appendChild(pathButton);
+                } else {
+                    const noPath = document.createElement('span');
+                    noPath.className = 'text-gray-400';
+                    noPath.textContent = 'No path';
+                    pathCell.appendChild(noPath);
+                }
+
+                // Add all cells to the row
+                row.append(
+                    createCell(entry.event_code),
+                    createCell(entry.match_number),
+                    createCell(autoCoral),
+                    createCell(autoAlgae),
+                    createCell(teleopCoral),
+                    createCell(teleopAlgae),
+                    createCell(climbSpan),
+                    pathCell,
+                    createCell(`${entry.defense_rating}/5`),
+                    createCell(entry.notes || ''),
+                    createCell(entry.scouter_name)
+                );
+
                 scoutingTableBody.appendChild(row);
             });
         } else {
             const row = document.createElement('tr');
-            row.innerHTML = `
-                <td colspan="11" class="px-6 py-4 text-center text-gray-500">
-                    No scouting data available for this team
-                </td>
-            `;
+            const cell = document.createElement('td');
+            cell.colSpan = 11;
+            cell.className = 'px-6 py-4 text-center text-gray-500';
+            cell.textContent = 'No scouting data available for this team';
+            row.appendChild(cell);
             scoutingTableBody.appendChild(row);
         }
         

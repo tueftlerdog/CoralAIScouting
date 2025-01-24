@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from functools import wraps
+import os
 from urllib.parse import urljoin, urlparse
 
 from bson import ObjectId
@@ -90,10 +91,17 @@ def on_blueprint_init(state):
 
 
 def is_safe_url(target):
+    if not target:
+        return False
+    
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
-    return test_url.scheme in ('http', 'https') and \
-           ref_url.netloc == test_url.netloc
+    
+    return (
+        test_url.scheme in ('http', 'https') and
+        ref_url.netloc == test_url.netloc and
+        not any(c in target for c in ['\\', '//', '..'])
+    )
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -118,8 +126,7 @@ async def login():
             next_page = request.args.get('next')
             if not next_page or not is_safe_url(next_page):
                 next_page = url_for('index')
-            else:
-                next_page = url_for(next_page)
+
             flash("Successfully logged in", "success")
             return redirect(next_page)
         
@@ -218,7 +225,7 @@ def profile_picture(user_id):
     """Get user's profile picture"""
     user = user_manager.get_user_by_id(user_id)
     if not user or not user.profile_picture_id:
-        return send_file("static/images/default_profile.png")
+        return send_file(os.path.join(current_app.root_path, "static", "images", "default_profile.png"))
     
     return send_gridfs_file(
         user.profile_picture_id,
