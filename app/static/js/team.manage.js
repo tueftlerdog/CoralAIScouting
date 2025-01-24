@@ -623,31 +623,45 @@ function initializeEditAssignment() {
     });
 }
 
-// Add this new function to render a single assignment row
 function createAssignmentRow(assignment) {
     const isCurrentUserAssigned = assignment.assigned_to.includes(currentUserId);
     const row = document.createElement('tr');
     row.className = `assignment-row ${isCurrentUserAssigned ? 'bg-blue-50' : ''} hover:bg-gray-50`;
     
-    // Format the date if it exists
     const formattedDate = assignment.due_date ? 
         new Date(assignment.due_date).toLocaleString() : 
         'No due date';
 
-    row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap">${assignment.title}</td>
-        <td class="px-6 py-4 whitespace-normal">${assignment.description}</td>
-        <td class="px-6 py-4 whitespace-nowrap">${assignment.assigned_to_names.join(', ')}</td>
-        <td class="px-6 py-4 whitespace-nowrap">${formattedDate}</td>
-        <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge bg-gray-100 text-gray-800">
-                Pending (Offline)
-            </span>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm">
-            <span class="text-gray-500">Pending sync...</span>
-        </td>
-    `;
+    const cells = [
+        { text: assignment.title, class: 'px-6 py-4 whitespace-nowrap' },
+        { text: assignment.description, class: 'px-6 py-4 whitespace-normal' },
+        { text: assignment.assigned_to_names.join(', '), class: 'px-6 py-4 whitespace-nowrap' },
+        { text: formattedDate, class: 'px-6 py-4 whitespace-nowrap' }
+    ];
+
+    cells.forEach(cellData => {
+        const td = document.createElement('td');
+        td.className = cellData.class;
+        td.textContent = cellData.text;
+        row.appendChild(td);
+    });
+
+    // Status cell
+    const statusTd = document.createElement('td');
+    statusTd.className = 'px-6 py-4 whitespace-nowrap';
+    const statusSpan = document.createElement('span');
+    statusSpan.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge bg-gray-100 text-gray-800';
+    statusSpan.textContent = 'Pending (Offline)';
+    statusTd.appendChild(statusSpan);
+    row.appendChild(statusTd);
+
+    const actionTd = document.createElement('td');
+    actionTd.className = 'px-6 py-4 whitespace-nowrap text-sm';
+    const actionSpan = document.createElement('span');
+    actionSpan.className = 'text-gray-500';
+    actionSpan.textContent = 'Pending sync...';
+    actionTd.appendChild(actionSpan);
+    row.appendChild(actionTd);
     
     return row;
 }
