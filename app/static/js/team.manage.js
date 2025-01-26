@@ -47,20 +47,30 @@ const offlineStorage = {
 // Online/Offline status handling
 let isOnline = navigator.onLine;
 
-function showOfflineNotification(message) {
+const updateOnlineStatus = () => {
+    isOnline = navigator.onLine;
+    if (isOnline) {
+        hideOfflineNotification();
+        syncPendingData();
+    } else {
+        showOfflineNotification('You are currently offline. Changes will be synced when you reconnect.');
+    }
+};
+
+const showOfflineNotification = (message) => {
     const offlineAlert = document.getElementById('offlineAlert');
     if (offlineAlert) {
         offlineAlert.textContent = message;
         offlineAlert.classList.remove('hidden');
     }
-}
+};
 
-function hideOfflineNotification() {
+const hideOfflineNotification = () => {
     const offlineAlert = document.getElementById('offlineAlert');
     if (offlineAlert) {
         offlineAlert.classList.add('hidden');
     }
-}
+};
 
 // Main initialization
 document.addEventListener('DOMContentLoaded', function() {
@@ -75,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Initialize search functionality
-function initializeSearch() {
+const initializeSearch = () => {
     const memberSearch = document.getElementById('memberSearch');
     const assignmentSearch = document.getElementById('assignmentSearch');
 
@@ -112,40 +122,30 @@ function initializeSearch() {
             });
         });
     }
-}
+};
 
 // Initialize assignment form
-function initializeAssignmentForm() {
+const initializeAssignmentForm = () => {
     const form = document.getElementById('createAssignmentForm');
     if (form) {
         form.addEventListener('submit', handleAssignmentSubmit);
     }
-}
+};
 
 // Initialize status handlers
-function initializeStatusHandlers() {
+const initializeStatusHandlers = () => {
     const statusSelects = document.querySelectorAll('select[name="status"]');
     statusSelects.forEach(select => {
         select.addEventListener('click', function() {
             this.setAttribute('data-previous-value', this.value);
         });
     });
-}
+};
 
 // Initialize offline support
 document.addEventListener('DOMContentLoaded', function() {
     const offlineAlert = document.getElementById('offlineAlert');
     
-    function updateOnlineStatus() {
-        isOnline = navigator.onLine;
-        if (isOnline) {
-            hideOfflineNotification();
-            syncPendingTeamActions();
-        } else {
-            showOfflineNotification('You are currently offline. Actions will be synced when you\'re back online.');
-        }
-    }
-
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
     window.addEventListener('load', updateOnlineStatus);
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Handle assignment form submission
 async function handleAssignmentSubmit(e) {
-    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+    const {teamNumber} = document.getElementById('teamData').dataset;
     e.preventDefault();
     
     // Get the selected users' names
@@ -220,10 +220,14 @@ async function handleAssignmentSubmit(e) {
 
 // Sync pending actions
 async function syncPendingTeamActions() {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) {
+      return;
+    }
 
     const pendingRequests = offlineStorage.getPendingRequests();
-    if (pendingRequests.length === 0) return;
+    if (pendingRequests.length === 0) {
+      return;
+    }
 
     let successfulSyncs = 0;
     const failedRequests = [];
@@ -406,7 +410,7 @@ async function clearAllAssignments() {
         return;
     }
 
-    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+    const {teamNumber} = document.getElementById('teamData').dataset;
 
     try {
         const response = await fetch(`/team/${teamNumber}/assignments/clear`, {
@@ -433,7 +437,7 @@ async function confirmDeleteTeam() {
         return;
     }
 
-    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+    const {teamNumber} = document.getElementById('teamData').dataset;
 
     try {
         const response = await fetch(`/team/${teamNumber}/delete`, {
@@ -461,7 +465,7 @@ async function confirmLeaveTeam() {
         return;
     }
 
-    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+    const {teamNumber} = document.getElementById('teamData').dataset;
 
     try {
         if (!navigator.onLine) {
@@ -495,7 +499,7 @@ async function confirmLeaveTeam() {
 }
 
 async function updateAdminStatus(userId, action) {
-    const teamNumber = document.getElementById('teamData').dataset.teamNumber;
+    const {teamNumber} = document.getElementById('teamData').dataset;
     const url = action === 'add' 
         ? `/team/${teamNumber}/admin/add`
         : `/team/${teamNumber}/admin/remove`;
@@ -548,8 +552,12 @@ function openEditAssignmentModal(assignmentId) {
         const assignedToCell = cells[2];
         const dueDateCell = cells[3];
 
-        if (titleCell) document.getElementById('edit_title').value = titleCell.textContent.trim();
-        if (descriptionCell) document.getElementById('edit_description').value = descriptionCell.textContent.trim();
+        if (titleCell) {
+          document.getElementById('edit_title').value = titleCell.textContent.trim();
+        }
+        if (descriptionCell) {
+          document.getElementById('edit_description').value = descriptionCell.textContent.trim();
+        }
 
         // Handle assigned users
         if (assignedToCell) {

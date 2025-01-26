@@ -444,19 +444,19 @@ class ScoutingManager(DatabaseManager):
         """Add new pit scouting data"""
         self.ensure_connected()
         try:
-            # Check if data already exists for this team
-            existing = self.db.pit_scouting.find_one({
-                "team_number": data["team_number"],
-                "scouter_id": data["scouter_id"]
-            })
-            if existing:
+            if existing := self.db.pit_scouting.find_one(
+                {
+                    "team_number": data["team_number"],
+                    "scouter_id": data["scouter_id"],
+                }
+            ):
                 return False
 
             # Ensure required fields are present
             pit_data = {
                 "team_number": int(data["team_number"]),
                 "scouter_id": ObjectId(data["scouter_id"]),
-                
+
                 # Drive base information
                 "drive_type": {
                     "swerve": data.get("drive_type", {}).get("swerve", False),
@@ -464,7 +464,7 @@ class ScoutingManager(DatabaseManager):
                     "other": data.get("drive_type", {}).get("other", "")
                 },
                 "swerve_modules": data.get("swerve_modules", ""),
-                
+
                 # Motor details
                 "motor_details": {
                     "falcons": data.get("motor_details", {}).get("falcons", False),
@@ -474,14 +474,14 @@ class ScoutingManager(DatabaseManager):
                     "other": data.get("motor_details", {}).get("other", "")
                 },
                 "motor_count": data.get("motor_count", 0),
-                
+
                 # Dimensions
                 "dimensions": {
                     "length": data.get("dimensions", {}).get("length", 0),
                     "width": data.get("dimensions", {}).get("width", 0),
                     "height": data.get("dimensions", {}).get("height", 0),
                 },
-                
+
                 # Mechanisms
                 "mechanisms": {
                     "coral_scoring": {
@@ -496,7 +496,7 @@ class ScoutingManager(DatabaseManager):
                         "notes": data.get("mechanisms", {}).get("climber", {}).get("notes", "")
                     }
                 },
-                
+
                 # Programming and Autonomous
                 "programming_language": data.get("programming_language", ""),
                 "autonomous_capabilities": {
@@ -505,16 +505,16 @@ class ScoutingManager(DatabaseManager):
                     "preferred_start": data.get("autonomous_capabilities", {}).get("preferred_start", ""),
                     "notes": data.get("autonomous_capabilities", {}).get("notes", "")
                 },
-                
+
                 # Driver Experience
                 "driver_experience": {
                     "years": data.get("driver_experience", {}).get("years", 0),
                     "notes": data.get("driver_experience", {}).get("notes", "")
                 },
-                
+
                 # Analysis
                 "notes": data.get("notes", ""),
-                
+
                 # Metadata
                 "created_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc)

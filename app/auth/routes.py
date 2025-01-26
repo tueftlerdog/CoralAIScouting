@@ -93,14 +93,14 @@ def on_blueprint_init(state):
 def is_safe_url(target):
     if not target:
         return False
-    
+
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
-    
+
     return (
-        test_url.scheme in ('http', 'https') and
-        ref_url.netloc == test_url.netloc and
-        not any(c in target for c in ['\\', '//', '..'])
+        test_url.scheme in ('http', 'https')
+        and ref_url.netloc == test_url.netloc
+        and all(c not in target for c in ['\\', '//', '..'])
     )
 
 

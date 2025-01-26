@@ -1,3 +1,55 @@
+const updateTotal = () => {
+    // Auto Coral Points
+    const autoCoralPoints = [1, 2, 3, 4].reduce((sum, level) => {
+        return sum + (parseInt(document.querySelector(`input[name="auto_coral_level${level}"]`).value) || 0) * level;
+    }, 0);
+    
+    // Teleop Coral Points
+    const teleopCoralPoints = [1, 2, 3, 4].reduce((sum, level) => {
+        return sum + (parseInt(document.querySelector(`input[name="teleop_coral_level${level}"]`).value) || 0) * level;
+    }, 0);
+    
+    // Auto Algae Points
+    const autoAlgaeNet = (parseInt(document.querySelector('input[name="auto_algae_net"]').value) || 0) * 2;
+    const autoAlgaeProcessor = (parseInt(document.querySelector('input[name="auto_algae_processor"]').value) || 0) * 3;
+    
+    // Teleop Algae Points
+    const teleopAlgaeNet = (parseInt(document.querySelector('input[name="teleop_algae_net"]').value) || 0) * 2;
+    const teleopAlgaeProcessor = (parseInt(document.querySelector('input[name="teleop_algae_processor"]').value) || 0) * 3;
+    
+    const humanPlayerPoints = (parseInt(document.querySelector('input[name="human_player"]').value) || 0) * 2;
+    
+    const climbType = document.querySelector('select[name="climb_type"]').value;
+    const climbSuccess = document.querySelector('input[name="climb_success"]').checked;
+    let climbPoints = 0;
+    if (climbSuccess) {
+        switch(climbType) {
+            case 'shallow': climbPoints = 3; break;
+            case 'deep': climbPoints = 5; break;
+            case 'park': climbPoints = 1; break;
+        }
+    }
+    
+    const total = autoCoralPoints + teleopCoralPoints + 
+                 autoAlgaeNet + autoAlgaeProcessor + 
+                 teleopAlgaeNet + teleopAlgaeProcessor + 
+                 humanPlayerPoints + climbPoints;
+    document.getElementById('totalPoints').textContent = total;
+};
+
+const updateMatchResult = () => {
+    const allianceScore = parseInt(allianceScoreInput.value) || 0;
+    const opponentScore = parseInt(opponentScoreInput.value) || 0;
+    
+    if (allianceScore > opponentScore) {
+        matchResultInput.value = 'won';
+    } else if (allianceScore < opponentScore) {
+        matchResultInput.value = 'lost';
+    } else {
+        matchResultInput.value = 'tie';
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Auto-capitalize event code
     const eventCodeInput = document.querySelector('input[name="event_code"]');
@@ -13,45 +65,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelector(`input[name="${inputName}"]`).addEventListener('input', updateTotal);
     });
 
-    function updateTotal() {
-        // Auto Coral Points
-        const autoCoralPoints = [1, 2, 3, 4].reduce((sum, level) => {
-            return sum + (parseInt(document.querySelector(`input[name="auto_coral_level${level}"]`).value) || 0) * level;
-        }, 0);
-        
-        // Teleop Coral Points
-        const teleopCoralPoints = [1, 2, 3, 4].reduce((sum, level) => {
-            return sum + (parseInt(document.querySelector(`input[name="teleop_coral_level${level}"]`).value) || 0) * level;
-        }, 0);
-        
-        // Auto Algae Points
-        const autoAlgaeNet = (parseInt(document.querySelector('input[name="auto_algae_net"]').value) || 0) * 2;
-        const autoAlgaeProcessor = (parseInt(document.querySelector('input[name="auto_algae_processor"]').value) || 0) * 3;
-        
-        // Teleop Algae Points
-        const teleopAlgaeNet = (parseInt(document.querySelector('input[name="teleop_algae_net"]').value) || 0) * 2;
-        const teleopAlgaeProcessor = (parseInt(document.querySelector('input[name="teleop_algae_processor"]').value) || 0) * 3;
-        
-        const humanPlayerPoints = (parseInt(document.querySelector('input[name="human_player"]').value) || 0) * 2;
-        
-        const climbType = document.querySelector('select[name="climb_type"]').value;
-        const climbSuccess = document.querySelector('input[name="climb_success"]').checked;
-        let climbPoints = 0;
-        if (climbSuccess) {
-            switch(climbType) {
-                case 'shallow': climbPoints = 3; break;
-                case 'deep': climbPoints = 5; break;
-                case 'park': climbPoints = 1; break;
-            }
-        }
-        
-        const total = autoCoralPoints + teleopCoralPoints + 
-                     autoAlgaeNet + autoAlgaeProcessor + 
-                     teleopAlgaeNet + teleopAlgaeProcessor + 
-                     humanPlayerPoints + climbPoints;
-        document.getElementById('totalPoints').textContent = total;
-    }
-
     // Add event listeners for all scoring inputs
     document.querySelectorAll('input[type="number"], input[type="checkbox"], select[name="climb_type"]')
         .forEach(input => input.addEventListener('input', updateTotal));
@@ -63,19 +76,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const allianceScoreInput = document.querySelector('input[name="alliance_score"]');
     const opponentScoreInput = document.querySelector('input[name="opponent_score"]');
     const matchResultInput = document.getElementById('match_result');
-
-    function updateMatchResult() {
-        const allianceScore = parseInt(allianceScoreInput.value) || 0;
-        const opponentScore = parseInt(opponentScoreInput.value) || 0;
-        
-        if (allianceScore > opponentScore) {
-            matchResultInput.value = 'won';
-        } else if (allianceScore < opponentScore) {
-            matchResultInput.value = 'lost';
-        } else {
-            matchResultInput.value = 'tie';
-        }
-    }
 
     allianceScoreInput.addEventListener('input', updateMatchResult);
     opponentScoreInput.addEventListener('input', updateMatchResult);
@@ -140,7 +140,9 @@ function resizeCanvas() {
 }
 
 function drawBackground() {
-    if (!bgImage.complete) return; // Wait for image to load
+    if (!bgImage.complete) {
+      return;
+    } // Wait for image to load
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -178,7 +180,9 @@ function startDrawing(e) {
 
 function draw(e) {
     e.preventDefault();
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      return;
+    }
     
     const pos = getPointerPosition(e);
     ctx.beginPath();

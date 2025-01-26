@@ -57,7 +57,9 @@ function displayComparisonResults(teamsData) {
     
     // Get all teams' stats for comparison
     const allStats = Object.values(teamsData).map(team => {
-        if (!team || !team.stats) return {};
+        if (!team || !team.stats) {
+          return {};
+        }
         return team.stats;
     });
     
@@ -93,9 +95,13 @@ function displayComparisonResults(teamsData) {
         const locationEl = document.getElementById(`${teamPrefix}-location`);
         const statsContainer = document.getElementById(`${teamPrefix}-stats`);
         
-        if (header) header.textContent = `Team ${teamData.team_number}`;
-        if (numberName) numberName.textContent = 
-            `#${teamData.team_number}${teamData.nickname ? ` - ${teamData.nickname}` : ''}`;
+        if (header) {
+          header.textContent = `Team ${teamData.team_number}`;
+        }
+        if (numberName) {
+          numberName.textContent = 
+                    `#${teamData.team_number}${teamData.nickname ? ` - ${teamData.nickname}` : ''}`;
+        }
         
         // Only show location if we have any location data
         const location = formatLocation(teamData);
@@ -146,13 +152,19 @@ function displayComparisonResults(teamsData) {
 
 function formatLocation(teamData) {
     const parts = [];
-    if (teamData.city) parts.push(teamData.city);
-    if (teamData.state_prov) parts.push(teamData.state_prov);
-    if (teamData.country && teamData.country !== 'USA') parts.push(teamData.country);
+    if (teamData.city) {
+      parts.push(teamData.city);
+    }
+    if (teamData.state_prov) {
+      parts.push(teamData.state_prov);
+    }
+    if (teamData.country && teamData.country !== 'USA') {
+      parts.push(teamData.country);
+    }
     return parts.join(', ');
 }
 
-function formatStatsWithHighlighting(stats, allStats) {
+function formatStatsWithHighlighting(stats = {}, allStats) {
     // Add default values if stats is undefined
     stats = stats || {};
     
@@ -265,8 +277,12 @@ function calculateStatRanking(value, allValues) {
     const min = Math.min(...allValues);
     
     let highlight = '';
-    if (value === max && max !== 0) highlight = 'text-green-600';
-    if (value === min && min !== max) highlight = 'text-red-600';
+    if (value === max && max !== 0) {
+      highlight = 'text-green-600';
+    }
+    if (value === min && min !== max) {
+      highlight = 'text-red-600';
+    }
     
     return { value, highlight };
 }

@@ -252,7 +252,7 @@ class UserManager(DatabaseManager):
                 updates['description'] = description
 
             # Handle profile picture
-            if profile_picture:
+            if profile_picture and allowed_file(profile_picture.filename):
                 from werkzeug.utils import secure_filename
                 if profile_picture and allowed_file(profile_picture.filename):
                     fs = GridFS(self.db)

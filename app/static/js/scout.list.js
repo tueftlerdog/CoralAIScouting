@@ -1,41 +1,37 @@
+const filterRows = () => {
+    const searchTerm = searchInput.value.toLowerCase();
+    const type = filterType.value;
+
+    Array.from(eventSections).forEach(section => {
+        const rows = Array.from(section.querySelectorAll('.team-row'));
+        
+        rows.forEach(row => {
+            let searchValue = '';
+            switch(type) {
+                case 'team':
+                    searchValue = row.dataset.teamNumber;
+                    break;
+                case 'match':
+                    searchValue = row.querySelector('td:nth-child(2)').textContent;
+                    break;
+                case 'scouter':
+                    searchValue = row.dataset.scouter.toLowerCase();
+                    break;
+            }
+
+            row.style.display = searchValue.includes(searchTerm) ? '' : 'none';
+        });
+
+        // Hide section if all rows are hidden
+        const visibleRows = Array.from(section.querySelectorAll('.team-row')).filter(row => row.style.display !== 'none');
+        section.style.display = visibleRows.length > 0 ? '' : 'none';
+    });
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     const filterType = document.getElementById('filterType');
     const searchInput = document.getElementById('searchInput');
     const eventSections = document.querySelectorAll('.event-section');
-
-    function filterRows() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const type = filterType.value;
-
-        Array.from(eventSections).forEach(section => {
-            const rows = Array.from(section.querySelectorAll('.team-row'));
-            
-            rows.forEach(row => {
-                let searchValue = '';
-                switch(type) {
-                    case 'team':
-                        searchValue = row.dataset.teamNumber;
-                        break;
-                    case 'match':
-                        searchValue = row.querySelector('td:nth-child(2)').textContent;
-                        break;
-                    case 'scouter':
-                        searchValue = row.dataset.scouter.toLowerCase();
-                        break;
-                }
-
-                if (searchValue.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            // Hide section if all rows are hidden
-            const visibleRows = Array.from(section.querySelectorAll('.team-row')).filter(row => row.style.display !== 'none');
-            section.style.display = visibleRows.length > 0 ? '' : 'none';
-        });
-    }
 
     searchInput.addEventListener('input', filterRows);
     filterType.addEventListener('change', filterRows);

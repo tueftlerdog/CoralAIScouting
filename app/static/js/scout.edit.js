@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Calculate total points in real-time
-    function updateTotal() {
+    const updateTotal = () => {
         const coralPoints = [1, 2, 3, 4].reduce((sum, level) => {
             return sum + (parseInt(document.querySelector(`input[name="coral_level${level}"]`).value) || 0) * level;
         }, 0);
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const total = coralPoints + algaeNet + algaeProcessor + humanPlayerPoints + climbPoints;
         document.getElementById('totalPoints').textContent = total;
-    }
+    };
 
     // Add event listeners for all scoring inputs
     document.querySelectorAll('input[type="number"], input[type="checkbox"], select[name="climb_type"]')
@@ -97,7 +97,9 @@ function resizeCanvas() {
 }
 
 function drawBackground() {
-    if (!bgImage.complete) return; // Wait for image to load
+    if (!bgImage.complete) {
+      return;
+    } // Wait for image to load
     
     // Get the actual canvas dimensions
     const canvasWidth = canvas.width / window.devicePixelRatio;
@@ -155,7 +157,9 @@ function startDrawing(e) {
 
 function draw(e) {
     e.preventDefault();
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      return;
+    }
     
     const pos = getPointerPosition(e);
     ctx.beginPath();
