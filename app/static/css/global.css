@@ -34,20 +34,20 @@ body {
     scroll-behavior: smooth;
 }
 
-p, h1, h2, h3, h4, h5, h6 {
-    font-family: 'SecondaryFont', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+p, h1, h2, h3, h4, h5, h6, a, button, input, textarea, select, option, label, span, div {
+    font-family: 'SecondaryFont', system-ui, -apple-system, Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
 }
 
 
 /* Fallback for browsers that don't support custom fonts */
 .no-custom-fonts body,
 .no-custom-fonts .main {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'SecondaryFont', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Font loading error handling */
 .font-loading-error {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: 'SecondaryFont', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 input::-webkit-outer-spin-button,
@@ -87,4 +87,9 @@ input[type="number"] {
     100% {
         transform: translateY(0px);
     }
+}
+
+form {
+    min-height: 70px;
+    margin-bottom: 1rem;
 }

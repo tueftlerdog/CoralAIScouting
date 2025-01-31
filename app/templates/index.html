@@ -11,10 +11,11 @@
     <div class="relative pt-24 pb-16 sm:pt-32 sm:pb-24">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="mx-auto max-w-4xl text-center">
-                <h1 class="text-4xl font-bold tracking-tight sm:text-6xl animate-on-load">
-                    Castle
+                <h1 class="text-center text-4xl font-bold tracking-tight sm:text-6xl animate-on-load uppercase flex items-center justify-center">
+                    <img src="{{ url_for('static', filename='/logo.png') }}" alt="Castle Logo" class="h-24 sm:h-32 -mx-8">
+                    C a s t l e
                 </h1>
-                <p class="mt-6 text-lg leading-8 text-gray-600 animate-on-load delay-200">
+                <p class="text-lg leading-8 text-gray-600 animate-on-load delay-200 text-center">
                     Empower your FRC team with advanced scouting capabilities. Track, analyze, and optimize your competition strategy with Castle.
                 </p>
                     <div class="mt-10 flex items-center justify-center gap-x-6 animate-on-load delay-300">
@@ -56,7 +57,7 @@
             <div class="mx-auto max-w-2xl lg:text-center">
                 <h2 class="text-base font-semibold leading-7 text-blue-600">Advanced Scouting</h2>
                 <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                    Everything you need for FRC scouting
+                    Everything you need for FRC Scouting
                 </p>
             </div>
             <div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
@@ -109,7 +110,7 @@
     <div class="relative isolate mt-16 px-6 py-16 sm:py-24 lg:px-8">
         <div class="mx-auto max-w-2xl text-center">
             <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                Ready to elevate your FRC scouting?
+                Ready to elevate your FRC Scouting?
             </h2>
                 <div class="mt-10 flex items-center justify-center gap-x-6">
                     <a href="{{ url_for('auth.register') }}" 

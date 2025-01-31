@@ -6,8 +6,8 @@
     <title>{% block title %}Castle{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
-    <script src="https://unpkg.com/tippy.js@6"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preload" href="{{ url_for('static', filename='fonts/Richardson Brand Accelerator.otf') }}" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='fonts/oxanium-vrb.ttf') }}" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
     {% block head %}{% endblock %}
 
@@ -36,20 +36,22 @@
 
 <body class="bg-gray-100 p-2">
     <div class="flex justify-center items-center">
-    <nav class="z-50 box-border max-w-6xl shadow-lg hidden sm:block rounded-xl bg-[#f6f5f3] mt-2">
+    <nav class="z-50 box-border max-w-6xl shadow-lg hidden sm:block bg-blue-100 rounded-full opacity-85 mt-2">
         <div class="max-w-6xl mx-auto px-4">
             <div class="flex justify-between items-center gap-10">
-                <!--TODO: Logo soon -->
-                <div class="flex space-x-4">
-                    <a href="{{ url_for('index') }}" class="py-4 px-2 hover:text-blue-500">Home</a>
+                <div class="flex space-x-4 text-center">
+                    <a href="{{ url_for('index') }}" class="flex items-center text-center hover:text-blue-500">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="Castle Logo" class="h-12">
+                        <p class="py-4 px-2 text-center -ml-4">Castle</p>
+                    </a>
                     {% if current_user.is_authenticated %}
                         {% if current_user.teamNumber %}
-                            <a href="{{ url_for('scouting.list_scouting_data') }}" class="py-4 px-2 hover:text-blue-500">Scout</a>
-                            <a href="{{ url_for('scouting.search_page') }}" class="py-4 px-2 hover:text-blue-500">Search</a>
-                            <a href="{{ url_for('scouting.compare_page') }}" class="py-4 px-2 hover:text-purple-500">Compare</a>
-                            <a href="{{ url_for('team.manage_team') }}" class="py-4 px-2 hover:text-blue-500">Team</a>
+                            <a href="{{ url_for('scouting.list_scouting_data') }}" class="py-4 px-2 hover:text-blue-500 text-center">Scout</a>
+                            <a href="{{ url_for('scouting.search_page') }}" class="py-4 px-2 hover:text-blue-500 text-center">Search</a>
+                            <a href="{{ url_for('scouting.compare_page') }}" class="py-4 px-2 hover:text-purple-500 text-center">Compare</a>
+                            <a href="{{ url_for('team.manage_team') }}" class="py-4 px-2 hover:text-blue-500 text-center">Team</a>
                         {% else %}
-                            <a href="{{ url_for('team.join_team_page') }}" class="py-4 px-2 hover:text-green-500">Join Team</a>
+                            <a href="{{ url_for('team.join_team_page') }}" class="py-4 px-2 hover:text-green-500 text-center">Join Team</a>
                         {% endif %}
                     {% endif %}
                 </div>
@@ -75,8 +77,8 @@
     <nav class="shadow-lg sm:hidden rounded-xl bg-[#f6f5f3] fixed left-0 top-0 w-full z-50">
         <div class="max-w-6xl mx-auto px-4">
           <div class="flex justify-between items-center py-4">
-            <a href="{{ url_for('index') }}" class="font-bold text-blue-500">
-              Team 334 Scouting App
+            <a href="{{ url_for('index') }}" class="font-bold text-blue-500 flex items-center justify-center flex-row">
+              <img src="{{ url_for('static', filename='logo.png') }}" alt="Castle Logo" class="h-12 sm:h-16"> Castle
             </a>
             <button class="mobile-menu-button focus:outline-none">
               <svg class="w-6 h-6" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
@@ -85,7 +87,7 @@
             </button>
           </div>
         </div>
-        <div class="mobile-menu hidden bg-white border-t rounded-xl">
+        <div class="mobile-menu hidden bg-white border-t rounded-xl h-[calc(100vh-80px)]">
           <a href="{{ url_for('index') }}" class="block py-4 px-4 hover:bg-gray-100">Home</a>
           {% if current_user.is_authenticated %}
             {% if current_user.teamNumber %}
@@ -118,7 +120,7 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% set category, message = messages[-1] %}
-                    <div class="fixed bottom-6 right-6 z-50 animate-fade-in-up w-full max-w-xl">
+                    <div class="fixed bottom-6 right-6 z-50 animate-fade-in-up w-full max-w-xl min-h-[80px]">
                         <div class="flex items-center p-6 rounded-lg shadow-xl {{ 
                             'bg-red-50 text-red-800 border-2 border-red-200' if category == 'error' else 
                             'bg-green-50 text-green-800 border-2 border-green-200' 
@@ -150,7 +152,7 @@
         {% block content %}{% endblock %}
         <!-- Floating decoration elements -->
     <div class="absolute top-20 right-10 w-20 h-20 bg-blue-500 rounded-full opacity-20 animate-float z-0"></div>
-    <div class="absolute bottom-10 left-10 w-16 h-16 bg-blue-600 rounded-full opacity-20 animate-float delay-200 z-0"></div>
+    <div class="absolute bottom-10 left-10 w-16 h-16 bg-blue-600 rounded-full opacity-25 animate-float delay-200 -z-10"></div>
     </div>
     <script>
         const menuButton = document.querySelector('.mobile-menu-button');
@@ -160,9 +162,6 @@
             mobileMenu.classList.toggle('hidden');
         });
     </script>
-    <script src="{{ url_for('static', filename='js/offline-storage.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-
     <style>
         @keyframes fade-in-up {
             0% {
@@ -193,5 +192,11 @@
             });
         });
     </script>
+    <script>
+        window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>

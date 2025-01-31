@@ -1,77 +1,3 @@
-// Initialize offline storage
-const offlineStorage = {
-    saveTeamData(data) {
-        try {
-            localStorage.setItem('teamData', JSON.stringify(data));
-        } catch (error) {
-            console.error('Error saving team data:', error);
-        }
-    },
-
-    getPendingRequests() {
-        try {
-            const requests = localStorage.getItem('pendingRequests');
-            return requests ? JSON.parse(requests) : [];
-        } catch (error) {
-            console.error('Error getting pending requests:', error);
-            return [];
-        }
-    },
-
-    savePendingRequest(request) {
-        try {
-            const requests = this.getPendingRequests();
-            requests.push({ 
-                ...request,
-                id: Date.now(),
-                action: request.action,
-                params: request.params
-            });
-            localStorage.setItem('pendingRequests', JSON.stringify(requests));
-        } catch (error) {
-            console.error('Error saving pending request:', error);
-        }
-    },
-
-    removePendingRequest(requestId) {
-        try {
-            const requests = this.getPendingRequests();
-            const updatedRequests = requests.filter(req => req.id !== requestId);
-            localStorage.setItem('pendingRequests', JSON.stringify(updatedRequests));
-        } catch (error) {
-            console.error('Error removing pending request:', error);
-        }
-    }
-};
-
-// Online/Offline status handling
-let isOnline = navigator.onLine;
-
-const updateOnlineStatus = () => {
-    isOnline = navigator.onLine;
-    if (isOnline) {
-        hideOfflineNotification();
-        syncPendingData();
-    } else {
-        showOfflineNotification('You are currently offline. Changes will be synced when you reconnect.');
-    }
-};
-
-const showOfflineNotification = (message) => {
-    const offlineAlert = document.getElementById('offlineAlert');
-    if (offlineAlert) {
-        offlineAlert.textContent = message;
-        offlineAlert.classList.remove('hidden');
-    }
-};
-
-const hideOfflineNotification = () => {
-    const offlineAlert = document.getElementById('offlineAlert');
-    if (offlineAlert) {
-        offlineAlert.classList.add('hidden');
-    }
-};
-
 // Main initialization
 document.addEventListener('DOMContentLoaded', function() {
     initializeSearch();
@@ -142,16 +68,6 @@ const initializeStatusHandlers = () => {
     });
 };
 
-// Initialize offline support
-document.addEventListener('DOMContentLoaded', function() {
-    const offlineAlert = document.getElementById('offlineAlert');
-    
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-    window.addEventListener('load', updateOnlineStatus);
-    updateOnlineStatus();
-});
-
 // Handle assignment form submission
 async function handleAssignmentSubmit(e) {
     const {teamNumber} = document.getElementById('teamData').dataset;
@@ -167,36 +83,9 @@ async function handleAssignmentSubmit(e) {
         assigned_to: Array.from(document.getElementById('assigned_to').selectedOptions).map(option => option.value),
         assigned_to_names: assignedToNames,
         due_date: document.getElementById('due_date').value,
-        id: Date.now() // Temporary ID for offline assignments
     };
 
     try {
-        if (!navigator.onLine) {
-            // Save to pending requests
-            offlineStorage.savePendingRequest({
-                action: 'create_assignment',
-                method: 'POST',
-                params: { teamNumber },
-                data: formData
-            });
-
-            // Add the new row to the table
-            const assignmentsTable = document.querySelector('table tbody');
-            const newRow = createAssignmentRow(formData);
-            assignmentsTable.insertBefore(newRow, assignmentsTable.firstChild);
-
-            // Remove "No assignments found" row if it exists
-            const noAssignmentsRow = assignmentsTable.querySelector('td[colspan="6"]');
-            if (noAssignmentsRow) {
-                noAssignmentsRow.closest('tr').remove();
-            }
-
-            showOfflineNotification('Assignment will be created when online');
-            document.getElementById('createAssignmentModal').classList.add('hidden');
-            document.getElementById('createAssignmentForm').reset();
-            return;
-        }
-
         const response = await fetch(`/team/${teamNumber}/assignments`, {
             method: 'POST',
             headers: {
@@ -218,100 +107,12 @@ async function handleAssignmentSubmit(e) {
     }
 }
 
-// Sync pending actions
-async function syncPendingTeamActions() {
-    if (!navigator.onLine) {
-      return;
-    }
-
-    const pendingRequests = offlineStorage.getPendingRequests();
-    if (pendingRequests.length === 0) {
-      return;
-    }
-
-    let successfulSyncs = 0;
-    const failedRequests = [];
-
-    for (const request of pendingRequests) {
-        try {
-            let url;
-            switch (request.action) {
-                case 'create_assignment':
-                    url = teamApi.createAssignment(request.params.teamNumber);
-                    break;
-                case 'update_status':
-                    url = teamApi.updateAssignmentStatus(request.params.assignmentId);
-                    break;
-                case 'edit_assignment':
-                    url = teamApi.editAssignment(request.params.assignmentId);
-                    break;
-                case 'delete_assignment':
-                    url = teamApi.deleteAssignment(request.params.assignmentId);
-                    break;
-                case 'leave_team':
-                    url = teamApi.leaveTeam(request.params.teamNumber);
-                    break;
-                default:
-                    throw new Error('Invalid action type');
-            }
-
-            const response = await fetch(url, {
-                method: request.method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: request.data ? JSON.stringify(request.data) : undefined
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                successfulSyncs++;
-            } else {
-                failedRequests.push({
-                    ...request,
-                    error: data.message
-                });
-            }
-        } catch (error) {
-            console.error('Sync error:', error);
-            failedRequests.push({
-                ...request,
-                error: error.message
-            });
-        }
-    }
-
-    // Update localStorage with only failed requests
-    localStorage.setItem('pendingRequests', JSON.stringify(failedRequests));
-
-    if (successfulSyncs > 0) {
-        alert(`Successfully synced ${successfulSyncs} pending actions`);
-        window.location.reload();
-    }
-    if (failedRequests.length > 0) {
-        alert(`Failed to sync ${failedRequests.length} actions. They will be retried later.`);
-    }
-}
-
 // Handle assignment status updates
 async function updateAssignmentStatus(selectElement, assignmentId) {
     const newStatus = selectElement.value;
     const previousValue = selectElement.getAttribute('data-previous-value');
     
     try {
-        if (!navigator.onLine) {
-            offlineStorage.savePendingRequest({
-                action: 'update_status',
-                method: 'PUT',
-                params: { assignmentId },
-                data: { status: newStatus }
-            });
-            updateStatusBadge(selectElement, newStatus);
-            showOfflineNotification('Status will be updated when online');
-            return;
-        }
-
         const response = await fetch(`/team/assignments/${assignmentId}/status`, {
             method: 'PUT',
             headers: {
@@ -375,16 +176,6 @@ async function deleteAssignment(assignmentId) {
     }
 
     try {
-        if (!navigator.onLine) {
-            offlineStorage.savePendingRequest({
-                action: 'delete_assignment',
-                method: 'DELETE',
-                params: { assignmentId }
-            });
-            showOfflineNotification('Assignment will be deleted when online');
-            return;
-        }
-
         const response = await fetch(`/team/assignments/${assignmentId}/delete`, {
             method: 'DELETE',
             headers: {
@@ -468,16 +259,6 @@ async function confirmLeaveTeam() {
     const {teamNumber} = document.getElementById('teamData').dataset;
 
     try {
-        if (!navigator.onLine) {
-            offlineStorage.savePendingRequest({
-                action: 'leave_team',
-                method: 'POST',
-                params: { teamNumber }
-            });
-            showOfflineNotification('Team leave request will be processed when online');
-            return;
-        }
-
         const response = await fetch(`/team/${teamNumber}/leave`, {
             method: 'POST',
             headers: {
@@ -610,37 +391,6 @@ async function handleEditAssignmentSubmit(e) {
     };
 
     try {
-        if (!navigator.onLine) {
-            offlineStorage.savePendingRequest({
-                action: 'edit_assignment',
-                method: 'PUT',
-                params: { assignmentId },
-                data: formData
-            });
-
-            // Update the row in the table immediately
-            const row = document.querySelector(`tr[data-assignment-id="${assignmentId}"]`);
-            if (row) {
-                const cells = row.getElementsByTagName('td');
-                cells[0].textContent = formData.title;
-                cells[1].textContent = formData.description;
-                cells[2].textContent = formData.assigned_to_names.join(', ');
-                cells[3].textContent = formData.due_date ? 
-                    new Date(formData.due_date).toLocaleString() : 
-                    'No due date';
-                
-                // Add an indicator that this is pending sync (if not already present)
-                const statusBadge = row.querySelector('.status-badge');
-                if (statusBadge && !statusBadge.textContent.includes('(Pending Sync)')) {
-                    statusBadge.textContent += ' (Pending Sync)';
-                }
-            }
-
-            showOfflineNotification('Assignment will be updated when online');
-            document.getElementById('editAssignmentModal').classList.add('hidden');
-            return;
-        }
-
         const response = await fetch(`/team/assignments/${assignmentId}/edit`, {
             method: 'PUT',
             headers: {
@@ -721,31 +471,3 @@ function createAssignmentRow(assignment) {
     
     return row;
 }
-
-async function syncPendingData() {
-    try {
-        const clients = await self.clients.matchAll();
-        if (!clients.length) {
-            console.log('No active clients found');
-            return;
-        }
-        
-        await Promise.all(clients.map(client => 
-            client.postMessage({
-                type: 'SYNC_REQUIRED'
-            })
-        ));
-    } catch (error) {
-        console.error('Sync failed:', error.message);
-        alert('Sync failed. Please try again later.');
-    }
-}
-
-// Define API endpoints as functions that build URLs
-const teamApi = {
-    createAssignment: (teamNumber) => `/team/${teamNumber}/assignments`,
-    updateAssignmentStatus: (assignmentId) => `/team/assignments/${assignmentId}/status`,
-    editAssignment: (assignmentId) => `/team/assignments/${assignmentId}/edit`,
-    deleteAssignment: (assignmentId) => `/team/assignments/${assignmentId}/delete`,
-    leaveTeam: (teamNumber) => `/team/${teamNumber}/leave`,
-};
