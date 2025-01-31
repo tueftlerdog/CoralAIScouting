@@ -1,6 +1,9 @@
 # Castle
 > The Official Scouting App Presented By Team 334
 
+https://github.com/user-attachments/assets/09c607ce-628d-41e6-ab82-b5fb1a4ec928
+
+
 ## Prerequisite
 - [MongoDB compass](https://www.mongodb.com/try/download/community) - https://www.mongodb.com/try/download/community
 - [Python](https://python.org) - https://python.org
