@@ -1,20 +1,14 @@
 # Castle
 > The Official Scouting App Presented By Team 334
 
-| Images | Images |
-| ---- | ----- |
-| ![Home unlogined](./assets/home.png) | ![Home logined](./assets/home-2.png) |
-| ![Scout](./assets/scout.png) | ![Add data](./assets/scout-2.png) |
-| ![Search](./assets/search.png) | ![Compare](./assets/compare.png) |
-
 ## Prerequisite
 - [MongoDB compass](https://www.mongodb.com/try/download/community) - https://www.mongodb.com/try/download/community
 - [Python](https://python.org) - https://python.org
 
 
-
 ## How to install
-1. Clone the repo
+> Raspberry PI Local Install https://docs.google.com/document/d/1M9b2T-DrkaLq0EBT1hQqs_XhuhEjtLw3hJQsBVWiQsk/edit?usp=sharing 
+1. Clone the repo: `git clone https://github.com/team334/Castle`
 2. Create a database in [MongoDB compass](https://www.mongodb.com/try/download/community):
 
 ![MongoDB Compass](./assets/mongodb.png)
