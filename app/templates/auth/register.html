@@ -7,102 +7,96 @@
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 class="text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
-    </div>
+<div class="relative flex min-h-screen flex-col overflow-hidden bg-[#f6f5f3] w-full rounded-md z-0">
+    <div class="flex min-h-screen flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div class="sm:mx-auto sm:w-full sm:max-w-md">
+            <h2 class="text-center text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl animate-fade-in-up">
+                Join Castle
+            </h2>
+            <p class="mt-4 text-center text-lg text-gray-600 animate-fade-in-up delay-200">
+                Create your account to start scouting
+            </p>
+        </div>
 
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            
-            <form method="POST" autocomplete="off" class="space-y-6">
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
-                    <div class="mt-1">
-                        <input type="email" 
-                               id="email" 
-                               name="email" 
-                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                               value="{{ form_data.get('email', '') }}"
-                               required>
-                    </div>
-                </div>
-
-                <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-                    <div class="mt-1">
-                        <input type="text" 
-                               id="username" 
-                               name="username" 
-                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                               value="{{ form_data.get('username', '') }}"
-                               required>
-                    </div>
-                </div>
-
-                <!-- <div>
-                    <label for="teamNumber" class="block text-sm font-medium text-gray-700">Team Number</label>
-                    <div class="mt-1">
-                        <input type="text" 
-                               id="teamNumber" 
-                               name="teamNumber" 
-                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                               value="{{ form_data.get('teamNumber', '') }}"
-                               >
-                    </div>
-                </div> -->
-
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                    <div class="mt-1">
-                        <input type="password" 
-                               id="password" 
-                               name="password" 
-                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                               required>
-                    </div>
-                    <div class="password-strength-meter">
-                        <div class="strength-bar"></div>
-                    </div>
-                    <div class="password-requirements mt-3 space-y-2">
-                        <div class="requirement-item" data-requirement="length">
-                            <span class="check-icon unmet">•</span>
-                            At least 8 characters
+        <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-up delay-300">
+            <div class="bg-white py-8 px-4 shadow-lg sm:rounded-xl sm:px-10">
+                <form method="POST" autocomplete="off" class="space-y-6">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+                        <div class="mt-1">
+                            <input type="email" 
+                                   id="email" 
+                                   name="email" 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                                   value="{{ form_data.get('email', '') }}"
+                                   required>
                         </div>
                     </div>
-                </div>
 
-                <div>
-                    <label for="confirm_password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
-                    <div class="mt-1">
-                        <input type="password" 
-                               id="confirm_password" 
-                               name="confirm_password" 
-                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                               required>
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                        <div class="mt-1">
+                            <input type="text" 
+                                   id="username" 
+                                   name="username" 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                                   value="{{ form_data.get('username', '') }}"
+                                   required>
+                        </div>
                     </div>
-                </div>
 
-                <div>
-                    <button type="submit" 
-                            id="register-button"
-                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                            >
-                        Register
-                    </button>
-                </div>
-            </form>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <div class="mt-1">
+                            <input type="password" 
+                                   id="password" 
+                                   name="password" 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                                   required>
+                        </div>
+                        <div class="password-strength-meter mt-2">
+                            <div class="strength-bar transition-all duration-300"></div>
+                        </div>
+                        <div class="password-requirements mt-3 space-y-2 text-sm text-gray-600">
+                            <div class="requirement-item flex items-center gap-2" data-requirement="length">
+                                <span class="check-icon unmet w-4 h-4 flex items-center justify-center rounded-full border border-gray-300">•</span>
+                                At least 8 characters
+                            </div>
+                        </div>
+                    </div>
 
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-600">
-                    Already have an account? 
-                    <a href="{{ url_for('auth.login') }}" class="font-medium text-blue-600 hover:text-blue-500">
-                        Sign in
-                    </a>
-                </p>
+                    <div>
+                        <label for="confirm_password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                        <div class="mt-1">
+                            <input type="password" 
+                                   id="confirm_password" 
+                                   name="confirm_password" 
+                                   class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" 
+                                id="register-button"
+                                class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors hover-lift disabled:opacity-50 disabled:cursor-not-allowed">
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Already have an account? 
+                        <a href="{{ url_for('auth.login') }}" class="font-semibold text-blue-600 hover:text-blue-500 transition-colors">
+                            Sign in
+                        </a>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
+
 </div>
 
 <script>
@@ -117,7 +111,6 @@ document.addEventListener('DOMContentLoaded', function() {
             length: password.length >= 8,
         };
 
-        // Update requirement items
         Object.entries(checks).forEach(([requirement, isPassing]) => {
             const reqElement = document.querySelector(`[data-requirement="${requirement}"]`);
             const checkIcon = reqElement.querySelector('.check-icon');
@@ -125,33 +118,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isPassing) {
                 reqElement.classList.add('met');
                 checkIcon.classList.remove('unmet');
-                checkIcon.classList.add('met');
+                checkIcon.classList.add('met', 'bg-green-50', 'border-green-500', 'text-green-500');
                 checkIcon.textContent = '✓';
             } else {
                 reqElement.classList.remove('met');
-                checkIcon.classList.remove('met');
+                checkIcon.classList.remove('met', 'bg-green-50', 'border-green-500', 'text-green-500');
                 checkIcon.classList.add('unmet');
                 checkIcon.textContent = '•';
             }
         });
 
-        // Calculate strength
-        const passedChecks = Object.values(checks).filter(Boolean).length;
-
-        strengthBar.className = 'strength-bar';
+        strengthBar.className = 'strength-bar transition-all duration-300';
         
         if (password.length === 0) {
-            strengthBar.className = 'strength-bar';
+            strengthBar.classList.add('w-0');
         } else if (password.length >= 2 && password.length < 4) {
-            strengthBar.classList.add('weak');
+            strengthBar.classList.add('w-1/4', 'bg-red-500');
         } else if (password.length >= 4 && password.length < 6) {
-            strengthBar.classList.add('fair');
+            strengthBar.classList.add('w-2/4', 'bg-yellow-500');
         } else if (password.length >= 6 && password.length < 8) {
-            strengthBar.classList.add('good');
+            strengthBar.classList.add('w-3/4', 'bg-blue-500');
         } else if (password.length >= 8) {
-            strengthBar.classList.add('strong');
+            strengthBar.classList.add('w-full', 'bg-green-500');
         }
-
 
         return Object.values(checks).every(Boolean);
     }
@@ -162,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isStrong = checkPasswordStrength(password);
         const isMatching = password === confirmPassword;
         
-        // registerButton.disabled = !(isStrong && isMatching && confirmPassword.length > 0);
+        registerButton.disabled = !(isStrong && isMatching && confirmPassword.length > 0);
     }
 
     passwordInput.addEventListener('input', validatePasswords);

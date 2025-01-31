@@ -1,0 +1,145 @@
+.bg-gradient-conic {
+    background-image: conic-gradient(var(--conic-position), var(--tw-gradient-stops));
+}
+
+.scale-y-125 {
+    transform: scaleY(1.25);
+}
+
+.animate-text {
+    opacity: 0;
+    transform: translateY(100px);
+    animation: fadeInUp 0.8s ease-in-out forwards;
+    animation-delay: 0.3s;
+}
+
+.animate-lamp {
+    opacity: 0.5;
+    width: 15rem;
+    animation: expandLamp 0.8s ease-in-out forwards;
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes expandLamp {
+    to {
+        opacity: 1;
+        width: 30rem;
+    }
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.animate-slide-in {
+    animation: slideIn 0.8s ease-out;
+}
+
+.animate-pulse-slow {
+    animation: pulse 3s ease-in-out infinite;
+}
+
+.delay-100 {
+    animation-delay: 100ms;
+}
+
+.delay-200 {
+    animation-delay: 200ms;
+}
+
+.delay-300 {
+    animation-delay: 300ms;
+}
+
+.delay-400 {
+    animation-delay: 400ms;
+}
+
+@keyframes gradientFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.animate-gradient-text {
+    background: linear-gradient(
+        90deg,
+        #1a365d 0%,
+        #2563eb 25%,
+        #1e40af 50%,
+        #1e3a8a 75%,
+        #1a365d 100%
+    );
+    background-size: 200% auto;
+    animation: gradientFlow 5s ease infinite;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.hover-lift {
+    transition: transform 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+}
+
+.feature-card {
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Add new classes for elements that should start hidden */
+.animate-on-scroll {
+    opacity: 0;
+}
+
+.animate-on-load {
+    animation: fadeInUp 0.8s ease-out;
+}

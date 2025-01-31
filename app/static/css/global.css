@@ -34,6 +34,11 @@ body {
     scroll-behavior: smooth;
 }
 
+p, h1, h2, h3, h4, h5, h6 {
+    font-family: 'SecondaryFont', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+
 /* Fallback for browsers that don't support custom fonts */
 .no-custom-fonts body,
 .no-custom-fonts .main {
@@ -70,4 +75,16 @@ input[type="number"] {
 .tippy-box[data-theme~='error'] {
     background-color: #EF4444;
     color: white;
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
 }

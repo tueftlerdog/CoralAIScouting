@@ -2,100 +2,124 @@
 {% extends "base.html" %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/lamp.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="relative flex min-h-screen flex-col overflow-hidden bg-[#f6f5f3] w-full rounded-md z-0">
-    <div class="relative flex w-full flex-1 scale-y-125 items-center justify-center isolate z-0">
-        <!-- Left Lamp Gradient -->
-        <div class="animate-lamp absolute inset-auto right-1/2 h-56 overflow-visible w-[30rem] bg-gradient-conic from-blue-400 via-transparent to-transparent text-white [--conic-position:from_70deg_at_center_top]">
-            <div class="absolute w-[100%] left-0 bg-[#f6f5f3] h-40 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]"></div>
-            <div class="absolute w-40 h-[100%] left-0 bg-[#f6f5f3] bottom-0 z-20 [mask-image:linear-gradient(to_right,white,transparent)]"></div>
-        </div>
-
-        <!-- Right Lamp Gradient -->
-        <div class="animate-lamp absolute inset-auto left-1/2 h-56 w-[30rem] bg-gradient-conic from-transparent via-transparent to-blue-400 text-white [--conic-position:from_290deg_at_center_top]">
-            <div class="absolute w-40 h-[100%] right-0 bg-[#f6f5f3] bottom-0 z-20 [mask-image:linear-gradient(to_left,white,transparent)]"></div>
-            <div class="absolute w-[100%] right-0 bg-[#f6f5f3] h-40 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]"></div>
-        </div>
-
-        <!-- Background Effects -->
-        <div class="absolute top-1/2 h-48 w-full translate-y-12 scale-x-150 bg-[#f6f5f3] blur-2xl"></div>
-        <div class="absolute top-1/2 z-50 h-48 w-full bg-transparent opacity-10 backdrop-blur-md"></div>
-        <div class="absolute inset-auto z-50 h-36 w-[28rem] -translate-y-1/2 rounded-full bg-blue-400 opacity-50 blur-3xl"></div>
-        
-        <!-- Lamp Light -->
-        <div class="animate-lamp absolute inset-auto z-30 h-36 w-64 -translate-y-[6rem] rounded-full bg-blue-300 blur-2xl"></div>
-        <div class="animate-lamp absolute inset-auto z-50 h-0.5 w-[30rem] -translate-y-[7rem] bg-blue-300"></div>
-        
-        <!-- Top Cover -->
-        <div class="absolute inset-auto z-40 h-44 w-full -translate-y-[12.5rem] bg-[#f6f5f3]"></div>
-    </div>
-
-    <!-- Text Content -->
-    <div class="relative z-50 flex -translate-y-80 flex-col items-center px-5">
-        <div class="text-center">
-            <h1 class="text-6xl font-bold mb-4 bg-gradient-to-br from-gray-700 to-gray-900 bg-clip-text text-transparent">Castle</h1>
-            {% if current_user.is_authenticated %}
-                <div class="text-blue-600 text-2xl mb-4"><span id="timeGreeting"></span>, {{ current_user.username }}</div>
-                {% if current_user.teamNumber %}
-                    <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
-                        <a href="{{ url_for('scouting.list_scouting_data') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    <!-- Hero Section -->
+    <div class="relative pt-24 pb-16 sm:pt-32 sm:pb-24">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+            <div class="mx-auto max-w-4xl text-center">
+                <h1 class="text-4xl font-bold tracking-tight sm:text-6xl animate-on-load">
+                    Castle
+                </h1>
+                <p class="mt-6 text-lg leading-8 text-gray-600 animate-on-load delay-200">
+                    Empower your FRC team with advanced scouting capabilities. Track, analyze, and optimize your competition strategy with Castle.
+                </p>
+                    <div class="mt-10 flex items-center justify-center gap-x-6 animate-on-load delay-300">
+                        {% if not current_user.is_authenticated %}
+                        <a href="{{ url_for('auth.register') }}" 
+                           class="rounded-md bg-blue-600 px-6 py-3 text-lg font-semibold text-white shadow-sm hover:bg-blue-500 hover-lift">
+                            Get Started
+                        </a>
+                        <a href="{{ url_for('auth.login') }}" 
+                           class="text-lg font-semibold leading-6 text-gray-900 hover:text-blue-600 hover-lift">
+                            Log in <span aria-hidden="true">→</span>
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('scouting.list_scouting_data') }}" 
+                           class="text-lg font-semibold leading-6 text-gray-900 hover:text-blue-600 hover-lift">
                             Scout
                         </a>
-                        <a href="{{ url_for('scouting.search_page') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        <a href="{{ url_for('scouting.search_page') }}" 
+                           class="text-lg font-semibold leading-6 text-gray-900 hover:text-blue-600 hover-lift">
                             Search
                         </a>
-                        <a href="{{ url_for('scouting.compare_page') }}" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                        <a href="{{ url_for('scouting.compare_page') }}" 
+                           class="text-lg font-semibold leading-6 text-gray-900 hover:text-blue-600 hover-lift">
                             Compare
                         </a>
-                        <a href="{{ url_for('team.manage_team') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <a href="{{ url_for('team.manage_team') }}" 
+                           class="text-lg font-semibold leading-6 text-gray-900 hover:text-blue-600 hover-lift">
                             Team
                         </a>
+                        {% endif %}
                     </div>
-                {% else %}
-                    <div class="text-gray-600 mb-4">Join a team to start scouting!</div>
-                    <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
-                        <a href="{{ url_for('team.join_team_page') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                            Join Team
-                        </a>
-                    </div>
-                {% endif %}
-            {% else %}
-                <p class="mb-4 text-gray-600">Please login or register to access content</p>
-                <div class="space-x-4">
-                    <a href="{{ url_for('auth.login') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                        Login
-                    </a>
-                    <a href="{{ url_for('auth.register') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                        Register
-                    </a>
-                </div>
-            {% endif %}
+            </div>
         </div>
     </div>
+
+    <!-- Features Section -->
+    <div class="py-20 sm:py-32">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl lg:text-center">
+                <h2 class="text-base font-semibold leading-7 text-blue-600">Advanced Scouting</h2>
+                <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                    Everything you need for FRC scouting
+                </p>
+            </div>
+            <div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
+                <dl class="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
+                    <!-- Feature 1 -->
+                    <div class="flex flex-col feature-card bg-white rounded-xl p-6 shadow-sm animate-fade-in-up delay-200">
+                        <dt class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                            <svg class="h-5 w-5 flex-none text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Real-time Data Collection
+                        </dt>
+                        <dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-600">
+                            <p class="flex-auto">Collect match data efficiently with our intuitive interface.</p>
+                        </dd>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="flex flex-col feature-card bg-white rounded-xl p-6 shadow-sm animate-fade-in-up delay-300">
+                        <dt class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                            <svg class="h-5 w-5 flex-none text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Advanced Analytics
+                        </dt>
+                        <dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-600">
+                            <p class="flex-auto">Powerful analytics tools to analyze team performance and make data-driven decisions.</p>
+                        </dd>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="flex flex-col feature-card bg-white rounded-xl p-6 shadow-sm animate-fade-in-up delay-400">
+                        <dt class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                            <svg class="h-5 w-5 flex-none text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Team Collaboration
+                        </dt>
+                        <dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-600">
+                            <p class="flex-auto">Work together with your team members to gather and analyze scouting data effectively.</p>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    {% if not current_user.is_authenticated %}
+    <div class="relative isolate mt-16 px-6 py-16 sm:py-24 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+            <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                Ready to elevate your FRC scouting?
+            </h2>
+                <div class="mt-10 flex items-center justify-center gap-x-6">
+                    <a href="{{ url_for('auth.register') }}" 
+                       class="rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+                        Get started today
+                    </a>
+                </div>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
-
-<script>
-function updateGreeting() {
-    const hour = new Date().getHours();
-    const greetingEl = document.getElementById('timeGreeting');
-    
-    let greeting;
-    
-    if (hour >= 5 && hour < 12) {
-        greeting = "Good morning";
-    } else if (hour >= 12 && hour < 17) {
-        greeting = "Good afternoon";
-    } else {
-        greeting = "Good evening";
-    }
-    
-    greetingEl.textContent = greeting;
-}
-
-updateGreeting();
-setInterval(updateGreeting, 60000);
-</script>
 {% endblock %}

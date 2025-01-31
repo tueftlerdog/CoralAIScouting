@@ -13,11 +13,17 @@ function closeAutoPathModal() {
     document.getElementById('autoPathModal').classList.add('hidden');
 }
 
-const init = (searchInput, selectedTeamInfo) => {
-    if (!searchInput || !selectedTeamInfo) {
+let debounceTimer;
+let searchInput;
+let selectedTeamInfo;
+
+const init = (inputElement, teamInfoElement) => {
+    if (!inputElement || !teamInfoElement) {
         console.error('Required elements not found');
         return;
     }
+    searchInput = inputElement;
+    selectedTeamInfo = teamInfoElement;
     searchInput.addEventListener('input', handleSearchInput);
 };
 
@@ -157,7 +163,6 @@ const displayTeamInfo = (team) => {
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.querySelector('#team-search');
     const selectedTeamInfo = document.querySelector('#selected-team-info');
-    let debounceTimer;
 
     init(searchInput, selectedTeamInfo);
 });

@@ -1,14 +1,14 @@
 .password-strength-meter {
     height: 4px;
-    background: #eee;
+    background-color: #e5e7eb;
     border-radius: 2px;
-    margin: 8px 0;
+    overflow: hidden;
 }
 
 .strength-bar {
     height: 100%;
-    border-radius: 2px;
-    transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+    width: 0;
+    transition: all 0.3s ease;
 }
 
 .very-weak { width: 20%; background-color: #ff4444; }
@@ -47,4 +47,52 @@
 .check-icon.unmet {
     background-color: #f5f5f5;
     color: #666;
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.animate-on-load {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.hover-lift {
+    transition: transform 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-1px);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.delay-200 {
+    animation-delay: 0.2s;
+}
+
+.delay-300 {
+    animation-delay: 0.3s;
 }
