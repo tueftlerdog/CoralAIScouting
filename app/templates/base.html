@@ -80,7 +80,7 @@
                         <div class="flex items-center space-x-2">
                             <img src="{{ url_for('auth.profile_picture', user_id=current_user.get_id()) }}" 
                                  alt="Profile Picture" 
-                                 class="w-8 h-8 rounded-full">
+                                 class="w-10 h-10 rounded-full">
                             <a href="{{ url_for('auth.profile', username=current_user.username) }}" 
                                class="py-4 px-2 hover:text-blue-500">{{current_user.username}}</a>
                         </div>

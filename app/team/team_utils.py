@@ -373,7 +373,7 @@ class TeamManager(DatabaseManager):
             return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
-    async def update_assignment_status(
+    def update_assignment_status(
         self, assignment_id: str, user_id: str, new_status: str
     ):
         """Update the status of an assignment"""
@@ -483,6 +483,7 @@ class TeamManager(DatabaseManager):
             logging.error(f"Error deleting team: {str(e)}")
             return False, "An error occurred while deleting the team"
 
+    @with_mongodb_retry(retries=3, delay=2)
     async def delete_assignment(
         self, assignment_id: str, user_id: str
     ) -> Tuple[bool, str]:

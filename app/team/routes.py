@@ -28,8 +28,8 @@ def on_blueprint_init(state):
 
 @team_bp.route("/join", methods=["GET", "POST"])
 @login_required
-@async_route
 @limiter.limit("3 per minute")
+@async_route
 async def join():
     try:
         if current_user.teamNumber:
@@ -51,8 +51,11 @@ async def join():
             
             flash("Invalid join code", "error")
             return redirect(url_for("team.join"))
-
+        
         return render_template("team/join.html")
+
+
+
     except Exception as e:
         current_app.logger.error(f"Error in join_team_page: {str(e)}", exc_info=True)
         flash("Unable to process your request. Please try again later.", "error")
@@ -60,11 +63,12 @@ async def join():
 
 @team_bp.route("/create", methods=["GET", "POST"])
 @login_required
-@async_route
 @limiter.limit("3 per minute")
+@async_route
 async def create():
     """Handle team creation"""
     if current_user.teamNumber:
+
         return redirect(url_for("team.manage"))
 
     form = CreateTeamForm()
@@ -125,10 +129,11 @@ async def create():
 
 @team_bp.route("/<int:team_number>/leave", methods=["GET", "POST"])
 @login_required
-@async_route
 @limiter.limit("3 per minute")
+@async_route
 async def leave(team_number):
     """Leave a team"""
+
     success, message = await team_manager.leave_team(current_user.get_id(), team_number)
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -160,10 +165,11 @@ async def get_team_members(team_number):
 
 @team_bp.route("/<int:team_number>/admin/add", methods=["POST"])
 @login_required
-@async_route
 @limiter.limit("5 per minute")
+@async_route
 async def add_admin(team_number):
     """Add a new admin to the team"""
+
     data = request.get_json()
     user_id = data.get("user_id")
 
@@ -179,10 +185,11 @@ async def add_admin(team_number):
 
 @team_bp.route("/<int:team_number>/admin/remove", methods=["POST"])
 @login_required
-@async_route
 @limiter.limit("5 per minute")
+@async_route
 async def remove_admin(team_number):
     """Remove an admin from the team"""
+
     data = request.get_json()
     user_id = data.get("user_id")
 
@@ -198,10 +205,11 @@ async def remove_admin(team_number):
 
 @team_bp.route("/<int:team_number>/assignments", methods=["POST"])
 @login_required
-@async_route
 @limiter.limit("15 per minute")
+@async_route
 async def create_assignment(team_number):
     """Create a new assignment"""
+
     try:
         data = request.get_json()
         success, result = await team_manager.create_assignment(
@@ -226,17 +234,17 @@ async def create_assignment(team_number):
 
 @team_bp.route("/assignments/<assignment_id>/status", methods=["PUT"])
 @login_required
-@async_route
 @limiter.limit("5 per minute")
-async def update_assignment_status(assignment_id):
+def update_assignment_status(assignment_id):
     """Update assignment status"""
+
     data = request.get_json()
     new_status = data.get("status")
 
     if not new_status:
         return jsonify({"success": False, "message": "Status is required"}), 400
 
-    success, message = await team_manager.update_assignment_status(
+    success, message = team_manager.update_assignment_status(
         assignment_id, current_user.get_id(), new_status
     )
 
@@ -245,9 +253,10 @@ async def update_assignment_status(assignment_id):
 
 @team_bp.route("/assignments/<assignment_id>/update", methods=["PUT"])
 @login_required
-@async_route
 @limiter.limit("15 per minute")
+@async_route
 async def update_assignment(assignment_id):
+
     """Update assignment"""
     data = request.get_json()
     success, message = await team_manager.update_assignment(
@@ -258,9 +267,10 @@ async def update_assignment(assignment_id):
 
 @team_bp.route("/assignments/<assignment_id>/delete", methods=["DELETE"])
 @login_required
-@async_route
 @limiter.limit("10 per minute")
+@async_route
 async def delete_assignment(assignment_id):
+
     """Delete assignment"""
     success, message = await team_manager.delete_assignment(
         assignment_id, current_user.get_id()
@@ -316,10 +326,11 @@ async def manage(team_number=None):
 
 @team_bp.route("/<int:team_number>/user/<user_id>/remove", methods=["POST"])
 @login_required
-@async_route
 @limiter.limit("10 per minute")
+@async_route
 async def remove_user(team_number, user_id):
     """Remove a user from the team (admin only)"""
+
     success, message = await team_manager.remove_user(
         team_number, user_id, current_user.get_id()
     )
@@ -342,10 +353,11 @@ async def remove_user(team_number, user_id):
 
 @team_bp.route("/<int:team_number>/assignments/clear", methods=["POST"])
 @login_required
-@async_route
 @limiter.limit("5 per minute")
+@async_route
 async def clear_assignments(team_number):
     """Clear all assignments for a team (admin only)"""
+
     success, message = await team_manager.clear_assignments(
         team_number, current_user.get_id()
     )
@@ -366,9 +378,10 @@ async def clear_assignments(team_number):
 
 @team_bp.route("/<int:team_number>/delete", methods=["POST"])
 @login_required
-@async_route
 @limiter.limit("5 per minute")
+@async_route
 async def delete_team(team_number):
+
     """Delete team (owner only)"""
     success, message = await team_manager.delete_team(team_number, current_user.get_id())
 
@@ -408,10 +421,11 @@ def team_logo(team_number):
 
 @team_bp.route("/assignments/<assignment_id>/edit", methods=["PUT"])
 @login_required
-@async_route
 @limiter.limit("15 per minute")
+@async_route
 async def edit_assignment(assignment_id):
     """Edit an existing assignment"""
+
     try:
         data = request.get_json()
         success, result = await team_manager.update_assignment(
@@ -485,8 +499,8 @@ async def update_team_logo(team_number):
 
 @team_bp.route("/<int:team_number>/settings")
 @login_required
-@async_route
 @limiter.limit("10 per minute")
+@async_route
 async def settings(team_number):
     """Team settings page for admins"""
     team = await team_manager.get_team_by_number(team_number)
@@ -501,8 +515,8 @@ async def settings(team_number):
 
 @team_bp.route("/<int:team_number>/update_team_info", methods=["POST"])
 @login_required
-@async_route
 @limiter.limit("10 per minute")
+@async_route
 async def update_team_info(team_number):
     """Update team information including logo and description"""
     team = await team_manager.get_team_by_number(team_number)

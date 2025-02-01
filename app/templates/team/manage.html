@@ -267,52 +267,15 @@
                             {% for assignment in assignments %}
                             <tr class="assignment-row {% if current_user.get_id() in assignment.assigned_to %}bg-blue-50{% endif %} hover:bg-gray-50"
                                 data-assignment-id="{{ assignment.id }}">
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <h3 class="font-semibold truncate max-w-xs">{{ assignment.title }}</h3>
-                                            <div class="flex items-center space-x-4">
-                                                <span class="text-sm text-gray-500">Due: {{ assignment.due_date.strftime('%Y-%m-%d %I:%M %p') if assignment.due_date else 'No due date' }}</span>
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-badge
-                                                    {% if assignment.status == 'completed' %}
-                                                        bg-green-100 text-green-800
-                                                    {% elif assignment.status == 'in_progress' %}
-                                                        bg-yellow-100 text-yellow-800
-                                                    {% else %}
-                                                        bg-gray-100 text-gray-800
-                                                    {% endif %}">
-                                                    {% if assignment.status == 'in_progress' %}
-                                                        In Progress
-                                                    {% else %}
-                                                        {{ assignment.status|title }}
-                                                    {% endif %}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div class="text-sm text-gray-500 mb-2">
-                                            <span>Assigned to: 
-                                                {% for user_id in assignment.assigned_to %}
-                                                    {% set user = user_dict.get(user_id) %}
-                                                    <span class="{% if user_id == current_user.get_id() %}font-bold text-blue-600{% endif %}">
-                                                        {{ user.username if user else "Unknown" }}{% if not loop.last %}, {% endif %}
-                                                    </span>
-                                                {% endfor %}
-                                            </span>
-                                        </div>
-                                        <div class="text-sm text-gray-700 overflow-hidden">
-                                            <div class="description-preview">
-                                                {{ assignment.description[:100] }}
-                                                {% if assignment.description|length > 100 %}
-                                                    <button onclick="toggleDescription(this)" class="text-blue-600 hover:text-blue-800 ml-1">See more</button>
-                                                {% endif %}
-                                            </div>
-                                            <div class="description-full hidden">
-                                                {{ assignment.description }}
-                                                <button onclick="toggleDescription(this)" class="text-blue-600 hover:text-blue-800 ml-1">See less</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ assignment.title }}</td>
+                                <td class="px-6 py-4 whitespace-normal">{{ assignment.description }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% for user_id in assignment.assigned_to %}
+                                        {% set user = user_dict.get(user_id) %}
+                                        <span class="{% if user_id == current_user.get_id() %}font-bold text-blue-600{% endif %}">
+                                            {{ user.username if user else "Unknown" }}{% if not loop.last %}, {% endif %}
+                                        </span>
+                                    {% endfor %}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     {% if assignment.due_date %}
                                         {{ assignment.due_date.strftime('%Y-%m-%d %I:%M %p') }}
