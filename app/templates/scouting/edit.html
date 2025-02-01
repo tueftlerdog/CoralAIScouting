@@ -6,7 +6,7 @@
         <div class="sm:flex sm:items-center sm:justify-between">
             <div class="sm:flex-auto">
                 <h1 class="text-3xl font-bold text-gray-900">Edit Match Scouting Data</h1>
-                <p class="mt-2 text-base text-gray-600">Edit match scouting information for Team {{ match_data.team_number }}</p>
+                <p class="mt-2 text-base text-gray-600">Edit match scouting information for Team {{ team_data.team_number }}</p>
             </div>
             <div class="mt-4 sm:mt-0 sm:flex-none">
                 <a href="{{ url_for('scouting.home') }}"
@@ -29,19 +29,19 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Team Number</label>
-                        <input type="number" name="team_number" required min="1" value="{{ match_data.team_number }}"
+                        <input type="number" name="team_number" required min="1" value="{{ team_data.team_number }}"
                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg transition-colors duration-200"
                                readonly>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Event Code</label>
-                        <input type="text" name="event_code" required value="{{ match_data.event_code }}"
+                        <input type="text" name="event_code" required value="{{ team_data.event_code }}"
                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 uppercase text-lg transition-colors duration-200"
                                readonly>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Match Number</label>
-                        <input type="number" name="match_number" required min="1" value="{{ match_data.match_number }}"
+                        <input type="number" name="match_number" required min="1" value="{{ team_data.match_number }}"
                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg transition-colors duration-200"
                                readonly>
                     </div>
@@ -50,7 +50,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-3">Alliance</label>
                     <div class="flex space-x-4">
                         <label class="relative flex items-center group">
-                            <input type="radio" name="alliance" value="red" {{ 'checked' if match_data.alliance == 'red' }}
+                            <input type="radio" name="alliance" value="red" {{ 'checked' if team_data.alliance == 'red' }}
                                    class="peer sr-only">
                             <div class="px-5 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-sm font-medium text-red-600
                                         cursor-pointer transition-all duration-200
@@ -60,7 +60,7 @@
                             </div>
                         </label>
                         <label class="relative flex items-center group">
-                            <input type="radio" name="alliance" value="blue" {{ 'checked' if match_data.alliance == 'blue' }}
+                            <input type="radio" name="alliance" value="blue" {{ 'checked' if team_data.alliance == 'blue' }}
                                    class="peer sr-only">
                             <div class="px-5 py-2.5 rounded-lg border-2 border-gray-200 bg-white text-sm font-medium text-blue-600
                                         cursor-pointer transition-all duration-200
@@ -83,7 +83,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
                             <input type="number" 
                                    name="auto_coral_level1" 
-                                   value="{{ match_data.auto_coral_level1 }}"
+                                   value="{{ team_data.auto_coral_level1 }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -92,7 +92,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
                             <input type="number" 
                                    name="auto_coral_level2" 
-                                   value="{{ match_data.auto_coral_level2 }}"
+                                   value="{{ team_data.auto_coral_level2 }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -101,7 +101,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
                             <input type="number" 
                                    name="auto_coral_level3" 
-                                   value="{{ match_data.auto_coral_level3 }}"
+                                   value="{{ team_data.auto_coral_level3 }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -109,7 +109,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
                             <input type="number" 
                                    name="auto_coral_level4" 
-                                   value="{{ match_data.auto_coral_level4 }}"
+                                   value="{{ team_data.auto_coral_level4 }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -124,7 +124,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
                             <input type="number" 
                                    name="teleop_coral_level1" 
-                                   value="{{ match_data.teleop_coral_level1 }}"
+                                   value="{{ team_data.teleop_coral_level1 }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -132,7 +132,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
                             <input type="number" 
                                    name="teleop_coral_level2" 
-                                   value="{{ match_data.teleop_coral_level2 }}"
+                                   value="{{ team_data.teleop_coral_level2 }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -140,7 +140,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
                             <input type="number" 
                                    name="teleop_coral_level3" 
-                                   value="{{ match_data.teleop_coral_level3 }}"
+                                   value="{{ team_data.teleop_coral_level3 }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -148,7 +148,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
                             <input type="number" 
                                    name="teleop_coral_level4" 
-                                   value="{{ match_data.teleop_coral_level4 }}"
+                                   value="{{ team_data.teleop_coral_level4 }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -166,7 +166,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
                             <input type="number" 
                                    name="auto_algae_net" 
-                                   value="{{ match_data.auto_algae_net }}"
+                                   value="{{ team_data.auto_algae_net }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -174,7 +174,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
                             <input type="number" 
                                    name="auto_algae_processor" 
-                                   value="{{ match_data.auto_algae_processor }}"
+                                   value="{{ team_data.auto_algae_processor }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -189,7 +189,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
                             <input type="number" 
                                    name="teleop_algae_net" 
-                                   value="{{ match_data.teleop_algae_net }}"
+                                   value="{{ team_data.teleop_algae_net }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -197,7 +197,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
                             <input type="number" 
                                    name="teleop_algae_processor" 
-                                   value="{{ match_data.teleop_algae_processor }}"
+                                   value="{{ team_data.teleop_algae_processor }}"
                                    min="0" 
                                    class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
@@ -212,7 +212,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Successful Shots</label>
                     <input type="number" 
                            name="human_player" 
-                           value="{{ match_data.human_player }}"
+                           value="{{ team_data.human_player }}"
                            min="0" 
                            class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
@@ -225,16 +225,16 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
                         <select name="climb_type" class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="" {% if not match_data.climb_type %}selected{% endif %}>None</option>
-                            <option value="shallow" {% if match_data.climb_type == 'shallow' %}selected{% endif %}>Shallow</option>
-                            <option value="deep" {% if match_data.climb_type == 'deep' %}selected{% endif %}>Deep</option>
-                            <option value="park" {% if match_data.climb_type == 'park' %}selected{% endif %}>Park</option>
+                            <option value="" {% if not team_data.climb_type %}selected{% endif %}>None</option>
+                            <option value="shallow" {% if team_data.climb_type == 'shallow' %}selected{% endif %}>Shallow</option>
+                            <option value="deep" {% if team_data.climb_type == 'deep' %}selected{% endif %}>Deep</option>
+                            <option value="park" {% if team_data.climb_type == 'park' %}selected{% endif %}>Park</option>
                         </select>
                     </div>
                     <div class="flex items-center">
                         <input type="checkbox" 
                                name="climb_success" 
-                               {% if match_data.climb_success %}checked{% endif %}
+                               {% if team_data.climb_success %}checked{% endif %}
                                class="h-4 w-4 text-blue-600">
                         <label class="ml-2 text-sm text-gray-700">Climb Successful</label>
                     </div>
@@ -251,7 +251,7 @@
                                name="defense_rating" 
                                min="1" 
                                max="5" 
-                               value="{{ match_data.defense_rating }}"
+                               value="{{ team_data.defense_rating }}"
                                class="w-full" 
                         >
                     </div>
@@ -260,8 +260,7 @@
                         <textarea name="defense_notes" 
                                   rows="2" 
                                   class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                  autocomplete="off">
-                                  {{ match_data.defense_notes }}</textarea>
+                                  autocomplete="off">{{ team_data.defense_notes }}</textarea>
                     </div>
                 </div>
             </div>
@@ -274,7 +273,7 @@
                             class="w-full h-full border rounded-lg bg-white touch-none">
                     </canvas>
                 </div>
-                <input type="hidden" name="auto_path" id="autoPathData" value="{{ match_data.auto_path }}">
+                <input type="hidden" name="auto_path" id="autoPathData" value="{{ team_data.auto_path }}">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mt-4">
                     <p class="text-sm text-gray-500 text-center sm:text-left">Draw the robot's autonomous path</p>
                     <div class="flex gap-2">
@@ -296,7 +295,7 @@
                               rows="2" 
                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               placeholder="Enter any observations about autonomous..." 
-                              autocomplete="off">{{ match_data.auto_notes }}</textarea>
+                              autocomplete="off">{{ team_data.auto_notes }}</textarea>
                 </div>
             </div>
 
@@ -307,7 +306,7 @@
                           rows="4" 
                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           autocomplete="off"
-                          >{{ match_data.notes }}</textarea>
+                          >{{ team_data.notes }}</textarea>
             </div>
 
             <!-- Submit Buttons -->

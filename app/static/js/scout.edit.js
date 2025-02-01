@@ -72,7 +72,7 @@ const ctx = canvas.getContext('2d');
 let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
-let bgImage = new Image();
+let bgImage = null;
 let pathHistory = [];
 let currentPath = [];
 
@@ -81,45 +81,36 @@ function resizeCanvas() {
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
     
-    // Set canvas size to match container
     canvas.style.width = containerWidth + 'px';
     canvas.style.height = containerHeight + 'px';
     
-    // Set actual canvas dimensions
     canvas.width = containerWidth * window.devicePixelRatio;
     canvas.height = containerHeight * window.devicePixelRatio;
     
-    // Scale context to match device pixel ratio
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    
-    // Draw background after resize
-    drawBackground();
 }
 
 function drawBackground() {
-    if (!bgImage.complete) {
-      return;
-    } // Wait for image to load
+    if (!bgImage || !bgImage.complete) return;
     
-    // Get the actual canvas dimensions
-    const canvasWidth = canvas.width / window.devicePixelRatio;
-    const canvasHeight = canvas.height / window.devicePixelRatio;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
     
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     
-    // Calculate scaling to fit while maintaining aspect ratio
-    const scale = Math.min(
-        canvasWidth / bgImage.width,
-        canvasHeight / bgImage.height
-    );
+    // Draw background image to fill entire canvas
+    ctx.drawImage(bgImage, 0, 0, canvasWidth, canvasHeight);
     
-    // Calculate position to center the image
-    const x = (canvasWidth - bgImage.width * scale) / 2;
-    const y = (canvasHeight - bgImage.height * scale) / 2;
-    
-    // Draw background
-    ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
+    const existingPathData = document.getElementById('autoPathData').value;
+    if (existingPathData && existingPathData.trim() !== '') {
+        const pathImage = new Image();
+        pathImage.onload = () => {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            // Draw path image to fill entire canvas
+            ctx.drawImage(pathImage, 0, 0, canvasWidth, canvasHeight);
+        };
+        pathImage.src = existingPathData;
+    }
 }
 
 function getPointerPosition(e) {
@@ -128,16 +119,6 @@ function getPointerPosition(e) {
         x: (e.clientX - rect.left) * (canvas.width / rect.width) / window.devicePixelRatio,
         y: (e.clientY - rect.top) * (canvas.height / rect.height) / window.devicePixelRatio
     };
-}
-
-// Load existing path if available
-const existingPath = document.getElementById('autoPathData').value;
-if (existingPath) {
-    const img = new Image();
-    img.onload = function() {
-        ctx.drawImage(img, 0, 0);
-    }
-    img.src = existingPath;
 }
 
 canvas.addEventListener('mousedown', startDrawing);
@@ -157,11 +138,11 @@ function startDrawing(e) {
 
 function draw(e) {
     e.preventDefault();
-    if (!isDrawing) {
-      return;
-    }
+    if (!isDrawing) return;
     
     const pos = getPointerPosition(e);
+    
+    // Draw the current line segment
     ctx.beginPath();
     ctx.strokeStyle = '#FF0000';
     ctx.lineWidth = 2;
@@ -170,10 +151,12 @@ function draw(e) {
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     
+    // Save the point
     currentPath.push({ x: pos.x, y: pos.y });
     lastX = pos.x;
     lastY = pos.y;
     
+    // Update the hidden input with the current canvas state
     document.getElementById('autoPathData').value = canvas.toDataURL();
 }
 
@@ -190,16 +173,16 @@ function stopDrawing() {
 function undoLastPath() {
     if (pathHistory.length > 0) {
         pathHistory.pop();
-        redrawPaths();
+        drawBackground();
     }
 }
 
 function redrawPaths() {
-    drawBackground();
     ctx.strokeStyle = '#FF0000';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     
+    // Draw all completed paths
     pathHistory.forEach(path => {
         if (path.length > 1) {
             ctx.beginPath();
@@ -211,29 +194,38 @@ function redrawPaths() {
         }
     });
     
+    // Draw current path if it exists
+    if (currentPath.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(currentPath[0].x, currentPath[0].y);
+        for (let i = 1; i < currentPath.length; i++) {
+            ctx.lineTo(currentPath[i].x, currentPath[i].y);
+        }
+        ctx.stroke();
+    }
+    
+    // Update the hidden input
     document.getElementById('autoPathData').value = canvas.toDataURL();
 }
 
 function clearCanvas() {
-    drawBackground();
     pathHistory = [];
+    drawBackground();
     document.getElementById('autoPathData').value = '';
 }
 
 // Initialize
 window.addEventListener('load', () => {
+    bgImage = new Image();
     bgImage.onload = () => {
         resizeCanvas();
-        // Load existing path after background is drawn
-        const existingPath = document.getElementById('autoPathData').value;
-        if (existingPath) {
-            const pathImage = new Image();
-            pathImage.onload = function() {
-                ctx.drawImage(pathImage, 0, 0, canvas.width, canvas.height);
-            }
-            pathImage.src = existingPath;
-        }
+        drawBackground();
     };
     bgImage.src = "/static/images/field-2025.png";
 });
-window.addEventListener('resize', resizeCanvas);
+
+// Update the resize event handler
+window.addEventListener('resize', () => {
+    resizeCanvas();
+    drawBackground();
+});
