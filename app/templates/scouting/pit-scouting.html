@@ -64,6 +64,7 @@
                         <th scope="col" class="px-4 py-4 text-left text-sm font-semibold text-gray-900">Climber</th>
                         <th scope="col" class="px-4 py-4 text-left text-sm font-semibold text-gray-900">Programming</th>
                         <th scope="col" class="px-4 py-4 text-left text-sm font-semibold text-gray-900">Driver</th>
+                        <th scope="col" class="px-4 py-4 text-left text-sm font-semibold text-gray-900">Scouter</th>
                         <th scope="col" class="px-4 py-4 text-left text-sm font-semibold text-gray-900">Actions</th>
                     </tr>
                 </thead>
@@ -128,6 +129,36 @@
                         </td>
                         <td class="px-4 py-4 text-sm text-gray-500">
                             {{ data.driver_experience.years }} years - {{ data.driver_experience.notes }}
+                        </td>
+                        <td class="px-4 py-4 text-sm">
+                            {% if data.scouter_team and current_user.teamNumber and data.scouter_team|string == current_user.teamNumber|string %}
+                                <div class="flex items-center space-x-2">
+                                    <img src="{{ url_for('auth.profile_picture', user_id=data.scouter_id) }}" 
+                                         alt="Profile Picture" 
+                                         class="w-6 h-6 rounded-full">
+                                    <div>
+                                        <a href="{{ url_for('auth.profile', username=data.scouter_name) }}" 
+                                           class="text-blue-600 hover:text-blue-900">
+                                            {{ data.scouter_name }}
+                                        </a>
+                                        {% if data.scouter_team %}
+                                            <div class="text-xs text-gray-500">Team {{ data.scouter_team }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Anonymous Scout</span>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </td>
                         <td class="px-4 py-4 text-right text-sm font-medium">
                             <div class="flex justify-end gap-3">

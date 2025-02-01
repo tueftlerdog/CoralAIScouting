@@ -43,7 +43,7 @@
                    class="text-blue-600 hover:text-blue-800 flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2M7 7h10"/>
                     </svg>
                     Match View
                 </a>
@@ -203,18 +203,35 @@
                             <td class="lg:table-cell px-3 sm:px-6 py-4 whitespace-normal max-w-xs truncate">{{ data.notes }}</td>
                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center space-x-2">
-                                    <img src="{{ url_for('auth.profile_picture', user_id=data.scouter_id) }}" 
-                                         alt="Profile Picture" 
-                                         class="w-6 h-6 sm:w-8 sm:h-8 rounded-full">
-                                    <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-1">
-                                        <a class="text-blue-600 hover:text-blue-900 text-sm" 
-                                           href="{{ url_for('auth.profile', username=data.scouter_name) }}">
-                                            {{ data.scouter_name }}
-                                        </a>
-                                        {% if data.scouter_team %}
-                                            <span class="sm:inline"><a href="{{ url_for('team.view', team_number=data.scouter_team) }}" class="hover:text-blue-500">({{ data.scouter_team }})</a></span>
-                                        {% endif %}
-                                    </div>
+                                    {% if data.scouter_team and current_user.teamNumber and data.scouter_team|string == current_user.teamNumber|string %}
+                                        <img src="{{ url_for('auth.profile_picture', user_id=data.scouter_id) }}" 
+                                             alt="Profile Picture" 
+                                             class="w-6 h-6 sm:w-8 sm:h-8 rounded-full">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-1">
+                                            <a class="text-blue-600 hover:text-blue-900 text-sm" 
+                                               href="{{ url_for('auth.profile', username=data.scouter_name) }}">
+                                                {{ data.scouter_name }}
+                                            </a>
+                                            {% if data.scouter_team %}
+                                                <span class="sm:inline">
+                                                    <a href="{{ url_for('team.view', team_number=data.scouter_team) }}" 
+                                                       class="hover:text-blue-500">({{ data.scouter_team }})</a>
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <div class="flex items-center space-x-2">
+                                            <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                </svg>
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <span class="text-gray-600 text-sm">Anonymous Scouter</span>
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </td>
                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap">

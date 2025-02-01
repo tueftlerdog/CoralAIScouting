@@ -754,9 +754,8 @@ def check_team():
 @limiter.limit("30 per minute")
 def pit_scouting():
     try:
-        pit_data_list = scouting_manager.get_all_pit_scouting()
-        pit_data = [PitScouting.create_from_db(data) for data in pit_data_list]
-        return render_template("scouting/pit-scouting.html", pit_data=pit_data)
+        pit_data_list = list(scouting_manager.get_all_pit_scouting())
+        return render_template("scouting/pit-scouting.html", pit_data=pit_data_list)
     except Exception as e:
         current_app.logger.error(f"Error fetching pit scouting data: {str(e)}", exc_info=True)
         flash("An internal error has occurred.", "error")

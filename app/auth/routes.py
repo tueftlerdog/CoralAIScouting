@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from functools import wraps
 import os
+from functools import wraps
 from urllib.parse import urljoin, urlparse
 
 from bson import ObjectId
@@ -12,9 +12,10 @@ from flask_login import current_user, login_required, login_user, logout_user
 from flask_pymongo import PyMongo
 from gridfs import GridFS
 from werkzeug.utils import secure_filename
+
 from app.auth.auth_utils import UserManager
-from app.utils import (async_route, handle_route_errors, is_safe_url, 
-                       send_gridfs_file, limiter)
+from app.utils import (async_route, handle_route_errors, is_safe_url, limiter,
+                       send_gridfs_file)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 

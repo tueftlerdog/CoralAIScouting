@@ -12,8 +12,8 @@ from werkzeug.utils import secure_filename
 
 from app.team.team_utils import TeamManager
 from app.utils import (allowed_file, async_route, error_response,
-                       handle_route_errors, save_file_to_gridfs,
-                       success_response, limiter)
+                       handle_route_errors, limiter, save_file_to_gridfs,
+                       success_response)
 
 from .forms import CreateTeamForm
 
@@ -282,6 +282,7 @@ async def delete_assignment(assignment_id):
 @team_bp.route("/manage/<int:team_number>", methods=["GET", "POST"])
 @team_bp.route("/", methods=["GET", "POST"])
 @login_required
+@limiter.limit("30 per minute")
 @async_route
 async def manage(team_number=None):
     """Manage team"""
@@ -381,7 +382,6 @@ async def clear_assignments(team_number):
 @limiter.limit("5 per minute")
 @async_route
 async def delete_team(team_number):
-
     """Delete team (owner only)"""
     success, message = await team_manager.delete_team(team_number, current_user.get_id())
 
@@ -394,8 +394,6 @@ async def delete_team(team_number):
     else:
         flash(message, "error")
         return redirect(url_for("team.manage"))
-
-
 
 
 @team_bp.route("/team/<int:team_number>/logo")

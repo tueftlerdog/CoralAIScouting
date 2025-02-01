@@ -527,26 +527,102 @@ class ScoutingManager(DatabaseManager):
             return False
 
     @with_mongodb_retry(retries=3, delay=2)
-    def get_all_pit_scouting(self):
-        """Get all pit scouting data"""
+    def get_pit_scouting(self, team_number):
+        """Get pit scouting data with scouter information"""
         self.ensure_connected()
         try:
-            # Return raw data from MongoDB
-            return list(self.db.pit_scouting.find())
+            pipeline = [
+                {
+                    "$match": {
+                        "team_number": int(team_number)
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": "users",
+                        "localField": "scouter_id",
+                        "foreignField": "_id",
+                        "as": "scouter"
+                    }
+                },
+                {
+                    "$unwind": {
+                        "path": "$scouter",
+                        "preserveNullAndEmptyArrays": True
+                    }
+                },
+                {
+                    "$project": {
+                        "_id": 1,
+                        "team_number": 1,
+                        "drive_type": 1,
+                        "swerve_modules": 1,
+                        "motor_details": 1,
+                        "motor_count": 1,
+                        "dimensions": 1,
+                        "mechanisms": 1,
+                        "programming_language": 1,
+                        "autonomous_capabilities": 1,
+                        "driver_experience": 1,
+                        "notes": 1,
+                        "scouter_id": "$scouter._id",
+                        "scouter_name": "$scouter.username",
+                        "scouter_team": "$scouter.teamNumber"
+                    }
+                }
+            ]
+            
+            result = list(self.db.pit_scouting.aggregate(pipeline))
+            return result[0] if result else None
         except Exception as e:
-            logger.error(f"Error getting all pit scouting data: {str(e)}")
-            return []
+            logger.error(f"Error fetching pit scouting data: {str(e)}")
+            return None
 
     @with_mongodb_retry(retries=3, delay=2)
-    def get_pit_scouting(self, team_number):
-        """Get pit scouting data for a specific team"""
+    def get_all_pit_scouting(self):
+        """Get all pit scouting data with scouter information"""
         self.ensure_connected()
         try:
-            # Return raw data from MongoDB
-            return self.db.pit_scouting.find_one({"team_number": int(team_number)})
+            pipeline = [
+                {
+                    "$lookup": {
+                        "from": "users",
+                        "localField": "scouter_id",
+                        "foreignField": "_id",
+                        "as": "scouter"
+                    }
+                },
+                {
+                    "$unwind": {
+                        "path": "$scouter",
+                        "preserveNullAndEmptyArrays": True
+                    }
+                },
+                {
+                    "$project": {
+                        "_id": 1,
+                        "team_number": 1,
+                        "drive_type": 1,
+                        "swerve_modules": 1,
+                        "motor_details": 1,
+                        "motor_count": 1,
+                        "dimensions": 1,
+                        "mechanisms": 1,
+                        "programming_language": 1,
+                        "autonomous_capabilities": 1,
+                        "driver_experience": 1,
+                        "notes": 1,
+                        "scouter_id": "$scouter._id",
+                        "scouter_name": "$scouter.username",
+                        "scouter_team": "$scouter.teamNumber"
+                    }
+                }
+            ]
+            
+            return list(self.db.pit_scouting.aggregate(pipeline))
         except Exception as e:
-            logger.error(f"Error getting pit scouting data: {str(e)}")
-            return None
+            logger.error(f"Error fetching all pit scouting data: {str(e)}")
+            return []
 
     @with_mongodb_retry(retries=3, delay=2)
     def update_pit_scouting(self, team_number, data, scouter_id):
