@@ -7,7 +7,7 @@ from io import BytesIO
 from urllib.parse import urljoin, urlparse
 
 from bson import ObjectId
-from flask import flash, jsonify, request, send_file
+from flask import flash, jsonify, render_template, request, send_file
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from gridfs import GridFS
@@ -103,7 +103,7 @@ def handle_route_errors(f):
         except Exception as e:
             logger.error(f"Route error: {str(e)}", exc_info=True)
             flash("An internal error has occurred.", "error")
-            return error_response("An internal error has occurred.", 500)
+            return render_template("500.html"), 500
     return wrapper
 
 limiter = Limiter(

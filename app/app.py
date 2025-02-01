@@ -76,30 +76,24 @@ def create_app():
     @app.route("/")
     def index():
         return render_template("index.html")
-
-    @app.route("/static/js/service-worker.js")
-    def serve_service_worker():
-        response = make_response(send_from_directory("static/js", "service-worker.js"))
-        response.headers["Content-Type"] = "application/javascript"
-        response.headers["Service-Worker-Allowed"] = "/"
-        return response
     
     @app.errorhandler(404)
     def not_found(e):
         return render_template("404.html")
 
+    @app.errorhandler(500)
+    def server_error(e):
+        app.logger.error(f"Server error: {str(e)}", exc_info=True)
+        return render_template("500.html"), 500
+
     @app.errorhandler(Exception)
     def handle_exception(e):
         app.logger.error(f"Unhandled exception: {str(e)}", exc_info=True)
-        return jsonify({
-            "error": "An unexpected error occurred"
-        }), 500
+        return render_template("500.html"), 500
     
     @app.errorhandler(429)
     def rate_limit_error(e):
-        return jsonify({
-            "error": "Rate limit exceeded"
-        }), 429
+        return render_template("429.html"), 429
 
     return app
 
