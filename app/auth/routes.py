@@ -12,10 +12,9 @@ from flask_login import current_user, login_required, login_user, logout_user
 from flask_pymongo import PyMongo
 from gridfs import GridFS
 from werkzeug.utils import secure_filename
-
 from app.auth.auth_utils import UserManager
-from app.utils import (async_route, handle_route_errors, is_safe_url,
-                       send_gridfs_file)
+from app.utils import (async_route, handle_route_errors, is_safe_url, 
+                       send_gridfs_file, limiter)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -105,6 +104,7 @@ def is_safe_url(target):
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("8 per minute")
 @async_route
 @handle_route_errors
 async def login():

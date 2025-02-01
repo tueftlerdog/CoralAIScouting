@@ -8,11 +8,11 @@ from flask_pymongo import PyMongo
 from flask_wtf.csrf import CSRFProtect
 
 from app.auth.auth_utils import UserManager
+from app.utils import limiter
 
 csrf = CSRFProtect()
 mongo = PyMongo()
 login_manager = LoginManager()
-
 
 def create_app():
     app = Flask(__name__, static_folder="static", template_folder="templates")
@@ -29,6 +29,9 @@ def create_app():
 
     mongo.init_app(app)
     # csrf.init_app(app)
+
+    limiter.init_app(app)
+    limiter.storage_uri = app.config.get('MONGO_URI')
 
     with app.app_context():
         if "team_data" not in mongo.db.list_collection_names():
@@ -86,10 +89,17 @@ def create_app():
         return jsonify({
             "error": "An unexpected error occurred"
         }), 500
+    
+    @app.errorhandler(429)
+    def rate_limit_error(e):
+        return jsonify({
+            "error": "Rate limit exceeded"
+        }), 429
 
     return app
 
 
 # if __name__ == "__main__":
 #     app = create_app()
+
 #     app.run()

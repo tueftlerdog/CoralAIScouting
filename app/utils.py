@@ -7,10 +7,14 @@ from urllib.parse import urljoin, urlparse
 
 from bson import ObjectId
 from flask import flash, jsonify, request, send_file
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from gridfs import GridFS
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from werkzeug.utils import secure_filename
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -97,6 +101,12 @@ def handle_route_errors(f):
             flash("An internal error has occurred.", "error")
             return error_response("An internal error has occurred.", 500)
     return wrapper
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["80 per minute"]
+)
+
 
 # ============ File Handling Utilities ============
 

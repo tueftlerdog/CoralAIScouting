@@ -20,7 +20,9 @@
                     {{ form.team_number(
                         autocomplete="off",
                         class="w-full px-4 py-3 rounded-lg border " + (" border-red-500 ring-1 ring-red-500" if form.team_number.errors else "border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"),
-                        placeholder="Enter your team number"
+                        placeholder="Enter your team number",
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '')",
+                        pattern="[0-9]*"
                     ) }}
                     {% if form.team_number.errors %}
                         {% for error in form.team_number.errors %}
@@ -50,8 +52,12 @@
                     {{ form.description(
                         autocomplete="off",
                         class="w-full px-4 py-3 rounded-lg border h-32 resize-none " + (" border-red-500 ring-1 ring-red-500" if form.description.errors else "border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"),
-                        placeholder="Tell us about your team..."
+                        placeholder="Tell us about your team...",
+                        maxlength="100"
                     ) }}
+                    <div class="mt-1 text-sm text-gray-500">
+                        <span id="char-count">0</span>/100 characters
+                    </div>
                     {% if form.description.errors %}
                         {% for error in form.description.errors %}
                             <p class="mt-1 text-sm text-red-600">{{ error }}</p>
@@ -85,4 +91,15 @@
         </div>
     </div>
 </div>
+
+<script>
+document.querySelector('textarea[name="description"]').addEventListener('input', function() {
+    const charCount = this.value.length;
+    document.getElementById('char-count').textContent = charCount;
+    
+    if (charCount > 100) {
+        this.value = this.value.substring(0, 100);
+    }
+});
+</script>
 {% endblock %}
