@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import time
 from functools import wraps
 from io import BytesIO
@@ -15,6 +16,7 @@ from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from werkzeug.utils import secure_filename
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 # File handling constants
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+load_dotenv()
 
 # ============ Database Utilities ============
 
@@ -104,7 +108,8 @@ def handle_route_errors(f):
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["80 per minute"]
+    storage_uri=os.getenv("MONGO_URI"),
+    default_limits=["200 per day", "50 per hour"]
 )
 
 

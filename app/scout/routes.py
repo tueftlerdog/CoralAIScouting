@@ -11,7 +11,7 @@ from flask_login import current_user, login_required
 
 from app.models import PitScouting
 from app.scout.scouting_utils import ScoutingManager
-from app.utils import async_route, handle_route_errors
+from app.utils import async_route, handle_route_errors, limiter
 
 from .TBA import TBAInterface
 
@@ -21,15 +21,16 @@ scouting_manager = None
 
 @scouting_bp.record
 def on_blueprint_init(state):
-    global scouting_manager
+    global scouting_manager, limiter
     app = state.app
     scouting_manager = ScoutingManager(app.config["MONGO_URI"])
 
 
 @scouting_bp.route("/scouting/add", methods=["GET", "POST"])
 @login_required
+@limiter.limit("10 per minute")
 @handle_route_errors
-def add_scouting_data():
+def add():
     if request.method == "POST":
         data = request.get_json() if request.is_json else request.form.to_dict()
         success, message = scouting_manager.add_scouting_data(data, current_user.get_id())
@@ -39,15 +40,16 @@ def add_scouting_data():
         else:
             flash(f"Error adding data: {message}", "error")
             
-        return redirect(url_for("scouting.list_scouting_data"))
+        return redirect(url_for("scouting.home"))
         
     return render_template("scouting/add.html")
 
 
 @scouting_bp.route("/scouting/list")
 @scouting_bp.route("/scouting")
+@limiter.limit("30 per minute")
 @login_required
-def list_scouting_data():
+def home():
     try:
         team_data = scouting_manager.get_all_scouting_data()
         return render_template("scouting/list.html", team_data=team_data)
@@ -58,35 +60,37 @@ def list_scouting_data():
 
 
 @scouting_bp.route("/scouting/edit/<string:id>", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 @login_required
-def edit_scouting_data(id):
+def edit(id):
     try:
         team_data = scouting_manager.get_team_data(id, current_user.get_id())
 
         if not team_data:
             flash("Team data not found", "error")
-            return redirect(url_for("scouting.list_scouting_data"))
+            return redirect(url_for("scouting.home"))
 
         if not team_data.is_owner:
             flash("Access denied", "error")
-            return redirect(url_for("scouting.list_scouting_data"))
+            return redirect(url_for("scouting.home"))
 
         if request.method == "POST":
             if scouting_manager.update_team_data(id, request.form, current_user.get_id()):
                 flash("Data updated successfully", "success")
-                return redirect(url_for("scouting.list_scouting_data"))
+                return redirect(url_for("scouting.home"))
             flash("Unable to update data", "error")
 
         return render_template("scouting/edit.html", team_data=team_data)
     except Exception as e:
         current_app.logger.error(f"Error in edit_scouting_data: {str(e)}", exc_info=True)
         flash("An error occurred while processing your request", "error")
-        return redirect(url_for("scouting.list_scouting_data"))
+        return redirect(url_for("scouting.home"))
 
 
 @scouting_bp.route("/scouting/delete/<string:id>")
+@limiter.limit("5 per minute")
 @login_required
-def delete_scouting_data(id):
+def delete(id):
     try:
         if scouting_manager.delete_team_data(id, current_user.get_id()):
             flash("Record deleted successfully", "success")
@@ -94,12 +98,13 @@ def delete_scouting_data(id):
             flash("Error deleting record or permission denied", "error")
     except Exception as e:
         flash("An internal error has occurred.", "error")
-    return redirect(url_for("scouting.list_scouting_data"))
+    return redirect(url_for("scouting.home"))
 
 
 @scouting_bp.route("/compare")
+@limiter.limit("30 per minute")
 @login_required
-def compare_page():
+def compare():
     return render_template("compare.html")
 
 def format_team_stats(stats):
@@ -132,6 +137,7 @@ def format_team_stats(stats):
 
 
 @scouting_bp.route("/api/compare")
+@limiter.limit("30 per minute")
 @login_required
 def compare_teams():
     try:
@@ -305,12 +311,14 @@ def compare_teams():
 
 @scouting_bp.route("/search")
 @login_required
-def search_page():
+@limiter.limit("30 per minute")
+def search():
     return render_template("search.html")
 
 
 @scouting_bp.route("/api/search")
 @login_required
+@limiter.limit("30 per minute")
 @async_route
 async def search_teams():
     query = request.args.get("q", "").strip()
@@ -410,44 +418,8 @@ async def search_teams():
         current_app.logger.error(f"Error in search_teams: {str(e)}", exc_info=True)
         return jsonify({"error": "Failed to fetch team data due to an internal error."}), 500
 
-
-@scouting_bp.route("/scouting/sync", methods=["POST"])
-@login_required
-def sync_scouting_data():
-    try:
-        data = request.json
-        success, message = scouting_manager.add_scouting_data(
-            data, current_user.get_id()
-        )
-
-        if success:
-            flash("Data synced successfully", "success")
-        else:
-            flash(f"Sync error: {message}", "error")
-
-        return jsonify(
-            {
-                "success": success,
-                "message": message,
-                "redirect": url_for("scouting.list_scouting_data"),
-            }
-        )
-    except Exception as e:
-        current_app.logger.error(f"Error during sync: {str(e)}", exc_info=True)
-        flash("Error during sync", "error")
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "message": "An internal error occurred during sync.",
-                    "redirect": url_for("scouting.list_scouting_data"),
-                }
-            ),
-            500,
-        )
-
-
 @scouting_bp.route("/leaderboard")
+@limiter.limit("30 per minute")
 def leaderboard():
     try:
         MIN_MATCHES = 1
@@ -613,6 +585,7 @@ def leaderboard():
 
 
 @scouting_bp.route("/scouting/matches")
+@limiter.limit("30 per minute")
 @login_required
 def matches():
     try:
@@ -778,7 +751,8 @@ def check_team():
 
 @scouting_bp.route("/scouting/pit")
 @login_required
-def pit_scouting_list():
+@limiter.limit("30 per minute")
+def pit_scouting():
     try:
         pit_data_list = scouting_manager.get_all_pit_scouting()
         pit_data = [PitScouting.create_from_db(data) for data in pit_data_list]
@@ -790,6 +764,7 @@ def pit_scouting_list():
 
 @scouting_bp.route("/scouting/pit/add", methods=["GET", "POST"])
 @login_required
+@limiter.limit("10 per minute")
 def pit_scouting_add():
     if request.method == "POST":
         # Process form data
@@ -865,7 +840,7 @@ def pit_scouting_add():
         # Add to database
         if scouting_manager.add_pit_scouting(pit_data):
             flash("Pit scouting data added successfully!", "success")
-            return redirect(url_for("scouting.pit_scouting_list"))
+            return redirect(url_for("scouting.pit_scouting"))
         else:
             flash("Error adding pit scouting data. Please try again.", "error")
 
@@ -873,16 +848,17 @@ def pit_scouting_add():
 
 @scouting_bp.route("/scouting/pit/edit/<int:team_number>", methods=["GET", "POST"])
 @login_required
+@limiter.limit("5 per minute")
 def pit_scouting_edit(team_number):
     pit_data = scouting_manager.get_pit_scouting(team_number)
     if not pit_data:
         flash("Pit scouting data not found", "error")
-        return redirect(url_for("scouting.pit_scouting_list"))
+        return redirect(url_for("scouting.pit_scouting"))
 
     if str(pit_data["scouter_id"]) != current_user.get_id():
         flash("You don't have permission to edit this data", "error")
-        return redirect(url_for("scouting.pit_scouting_list"))
-
+        return redirect(url_for("scouting.pit_scouting"))
+    
     if request.method == "POST":
         try:
             data = {
@@ -939,7 +915,7 @@ def pit_scouting_edit(team_number):
             
             if scouting_manager.update_pit_scouting(team_number, data, current_user.get_id()):
                 flash("Pit scouting data updated successfully", "success")
-                return redirect(url_for("scouting.pit_scouting_list"))
+                return redirect(url_for("scouting.pit_scouting"))
             else:
                 flash("Error updating pit scouting data", "error")
         except Exception as e:
@@ -948,10 +924,11 @@ def pit_scouting_edit(team_number):
     return render_template("scouting/pit-scouting-edit.html", pit_data=pit_data)
 
 @scouting_bp.route("/scouting/pit/delete/<int:team_number>")
+@limiter.limit("5 per minute")
 @login_required
 def pit_scouting_delete(team_number):
     if scouting_manager.delete_pit_scouting(team_number, current_user.get_id()):
         flash("Pit scouting data deleted successfully", "success")
     else:
         flash("Error deleting pit scouting data", "error")
-    return redirect(url_for("scouting.pit_scouting_list"))
+    return redirect(url_for("scouting.pit_scouting"))

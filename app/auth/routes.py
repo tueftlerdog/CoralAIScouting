@@ -136,6 +136,7 @@ async def login():
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
+@limiter.limit("8 per minute")
 @async_route
 async def register():
     if current_user.is_authenticated:
@@ -183,6 +184,7 @@ def logout():
 
 
 @auth_bp.route("/settings", methods=["GET", "POST"])
+@limiter.limit("8 per minute")
 @login_required
 @async_route
 async def settings():
@@ -211,6 +213,7 @@ async def settings():
 
 
 @auth_bp.route("/profile/<username>")
+@limiter.limit("15 per minute")
 def profile(username):
     user = user_manager.get_user_profile(username)
     if not user:

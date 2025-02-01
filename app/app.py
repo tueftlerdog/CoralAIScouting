@@ -29,15 +29,20 @@ def create_app():
 
     mongo.init_app(app)
     # csrf.init_app(app)
-
     limiter.init_app(app)
-    limiter.storage_uri = app.config.get('MONGO_URI')
 
     with app.app_context():
-        if "team_data" not in mongo.db.list_collection_names():
-            mongo.db.create_collection("team_data")
         if "users" not in mongo.db.list_collection_names():
             mongo.db.create_collection("users")
+        if "teams" not in mongo.db.list_collection_names():
+            mongo.db.create_collection("teams")
+        if "team_data" not in mongo.db.list_collection_names():
+            mongo.db.create_collection("team_data")
+        if "pit_scouting" not in mongo.db.list_collection_names():
+            mongo.db.create_collection("pit_scouting")
+        if "assignments" not in mongo.db.list_collection_names():
+            mongo.db.create_collection("assignments")
+    
 
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"

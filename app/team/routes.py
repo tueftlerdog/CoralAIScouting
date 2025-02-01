@@ -13,7 +13,7 @@ from werkzeug.utils import secure_filename
 from app.team.team_utils import TeamManager
 from app.utils import (allowed_file, async_route, error_response,
                        handle_route_errors, save_file_to_gridfs,
-                       success_response)
+                       success_response, limiter)
 
 from .forms import CreateTeamForm
 
@@ -29,16 +29,17 @@ def on_blueprint_init(state):
 @team_bp.route("/join", methods=["GET", "POST"])
 @login_required
 @async_route
-async def join_team_page():
+@limiter.limit("3 per minute")
+async def join():
     try:
         if current_user.teamNumber:
-            return redirect(url_for("team.manage_team"))
+            return redirect(url_for("team.manage"))
 
         if request.method == "POST":
             join_code = request.form.get("join_code")
             if not join_code:
                 flash("Join code is required", "error")
-                return redirect(url_for("team.join_team_page"))
+                return redirect(url_for("team.join"))
 
             success, result = await team_manager.join_team(current_user.get_id(), join_code)
 
@@ -46,27 +47,28 @@ async def join_team_page():
                 team, updated_user = result
                 current_user.teamNumber = updated_user.teamNumber
                 flash(f"Successfully joined team {team.team_number}", "success")
-                return redirect(url_for("team.manage_team", team_number=team.team_number))
+                return redirect(url_for("team.manage", team_number=team.team_number))
             
             flash("Invalid join code", "error")
-            return redirect(url_for("team.join_team_page"))
+            return redirect(url_for("team.join"))
 
         return render_template("team/join.html")
     except Exception as e:
         current_app.logger.error(f"Error in join_team_page: {str(e)}", exc_info=True)
         flash("Unable to process your request. Please try again later.", "error")
-        return redirect(url_for("team.join_team_page"))
-
+        return redirect(url_for("team.join"))
 
 @team_bp.route("/create", methods=["GET", "POST"])
 @login_required
 @async_route
-async def create_team():
+@limiter.limit("3 per minute")
+async def create():
     """Handle team creation"""
     if current_user.teamNumber:
-        return redirect(url_for("team.manage_team"))
+        return redirect(url_for("team.manage"))
 
     form = CreateTeamForm()
+
 
     if form.validate_on_submit():
         current_app.logger.debug("Form validated successfully")
@@ -106,9 +108,10 @@ async def create_team():
 
             if success:
                 flash("Team created successfully!", "success")
-                return redirect(url_for("team.manage_team"))
+                return redirect(url_for("team.manage"))
             else:
                 if logo_id:  # Clean up uploaded file if team creation failed
+
                     fs = GridFS(team_manager.db)
                     fs.delete(logo_id)
                 flash(f"Error creating team: {result}", "error")
@@ -123,7 +126,8 @@ async def create_team():
 @team_bp.route("/<int:team_number>/leave", methods=["GET", "POST"])
 @login_required
 @async_route
-async def leave_team(team_number):
+@limiter.limit("3 per minute")
+async def leave(team_number):
     """Leave a team"""
     success, message = await team_manager.leave_team(current_user.get_id(), team_number)
 
@@ -133,10 +137,12 @@ async def leave_team(team_number):
     if success:
         current_user.teamNumber = None
         flash("Successfully left the team", "success")
-        return redirect(url_for("team.join_team_page"))
+        return redirect(url_for("team.join"))
     else:
         flash(f"Failed to leave team: {message}", "error")
-        return redirect(url_for("team.manage_team", team_number=team_number))
+        return redirect(url_for("team.manage", team_number=team_number))
+
+
 
 
 @team_bp.route("/<int:team_number>/members", methods=["GET"])
@@ -155,6 +161,7 @@ async def get_team_members(team_number):
 @team_bp.route("/<int:team_number>/admin/add", methods=["POST"])
 @login_required
 @async_route
+@limiter.limit("5 per minute")
 async def add_admin(team_number):
     """Add a new admin to the team"""
     data = request.get_json()
@@ -173,6 +180,7 @@ async def add_admin(team_number):
 @team_bp.route("/<int:team_number>/admin/remove", methods=["POST"])
 @login_required
 @async_route
+@limiter.limit("5 per minute")
 async def remove_admin(team_number):
     """Remove an admin from the team"""
     data = request.get_json()
@@ -191,6 +199,7 @@ async def remove_admin(team_number):
 @team_bp.route("/<int:team_number>/assignments", methods=["POST"])
 @login_required
 @async_route
+@limiter.limit("15 per minute")
 async def create_assignment(team_number):
     """Create a new assignment"""
     try:
@@ -218,6 +227,7 @@ async def create_assignment(team_number):
 @team_bp.route("/assignments/<assignment_id>/status", methods=["PUT"])
 @login_required
 @async_route
+@limiter.limit("5 per minute")
 async def update_assignment_status(assignment_id):
     """Update assignment status"""
     data = request.get_json()
@@ -236,6 +246,7 @@ async def update_assignment_status(assignment_id):
 @team_bp.route("/assignments/<assignment_id>/update", methods=["PUT"])
 @login_required
 @async_route
+@limiter.limit("15 per minute")
 async def update_assignment(assignment_id):
     """Update assignment"""
     data = request.get_json()
@@ -248,6 +259,7 @@ async def update_assignment(assignment_id):
 @team_bp.route("/assignments/<assignment_id>/delete", methods=["DELETE"])
 @login_required
 @async_route
+@limiter.limit("10 per minute")
 async def delete_assignment(assignment_id):
     """Delete assignment"""
     success, message = await team_manager.delete_assignment(
@@ -261,11 +273,11 @@ async def delete_assignment(assignment_id):
 @team_bp.route("/", methods=["GET", "POST"])
 @login_required
 @async_route
-async def manage_team(team_number=None):
+async def manage(team_number=None):
     """Manage team"""
 
     if not current_user.teamNumber:
-        return redirect(url_for("team.join_team_page"))
+        return redirect(url_for("team.join"))
 
     success, result = await team_manager.validate_user_team(
         current_user.get_id(), current_user.teamNumber
@@ -274,7 +286,7 @@ async def manage_team(team_number=None):
     if not success:
         current_user.teamNumber = None
         flash(result, "warning")
-        return redirect(url_for("team.join_team_page"))
+        return redirect(url_for("team.join"))
 
     team = result  # result is the team object if validation succeeded
     # Get team members and assignments
@@ -305,6 +317,7 @@ async def manage_team(team_number=None):
 @team_bp.route("/<int:team_number>/user/<user_id>/remove", methods=["POST"])
 @login_required
 @async_route
+@limiter.limit("10 per minute")
 async def remove_user(team_number, user_id):
     """Remove a user from the team (admin only)"""
     success, message = await team_manager.remove_user(
@@ -323,12 +336,14 @@ async def remove_user(team_number, user_id):
         flash("User removed successfully", "success")
     else:
         flash(message, "error")
-    return redirect(url_for("team.manage_team"))
+    return redirect(url_for("team.manage"))
+
 
 
 @team_bp.route("/<int:team_number>/assignments/clear", methods=["POST"])
 @login_required
 @async_route
+@limiter.limit("5 per minute")
 async def clear_assignments(team_number):
     """Clear all assignments for a team (admin only)"""
     success, message = await team_manager.clear_assignments(
@@ -345,12 +360,14 @@ async def clear_assignments(team_number):
         flash("All assignments cleared successfully", "success")
     else:
         flash(message, "error")
-    return redirect(url_for("team.manage_team"))
+    return redirect(url_for("team.manage"))
+
 
 
 @team_bp.route("/<int:team_number>/delete", methods=["POST"])
 @login_required
 @async_route
+@limiter.limit("5 per minute")
 async def delete_team(team_number):
     """Delete team (owner only)"""
     success, message = await team_manager.delete_team(team_number, current_user.get_id())
@@ -360,10 +377,12 @@ async def delete_team(team_number):
 
     if success:
         flash("Team deleted successfully", "success")
-        return redirect(url_for("team.join_team_page"))
+        return redirect(url_for("team.join"))
     else:
         flash(message, "error")
-        return redirect(url_for("team.manage_team"))
+        return redirect(url_for("team.manage"))
+
+
 
 
 @team_bp.route("/team/<int:team_number>/logo")
@@ -390,6 +409,7 @@ def team_logo(team_number):
 @team_bp.route("/assignments/<assignment_id>/edit", methods=["PUT"])
 @login_required
 @async_route
+@limiter.limit("15 per minute")
 async def edit_assignment(assignment_id):
     """Edit an existing assignment"""
     try:
@@ -409,7 +429,7 @@ async def edit_assignment(assignment_id):
 
 @team_bp.route("/view/<int:team_number>")
 @async_route
-async def view_team(team_number):
+async def view(team_number):
     """Public view of team with limited information"""
     team = await team_manager.get_team_by_number(team_number)
     
@@ -466,28 +486,32 @@ async def update_team_logo(team_number):
 @team_bp.route("/<int:team_number>/settings")
 @login_required
 @async_route
-async def team_settings(team_number):
+@limiter.limit("10 per minute")
+async def settings(team_number):
     """Team settings page for admins"""
     team = await team_manager.get_team_by_number(team_number)
     
     if not team or not team.is_admin(current_user.get_id()):
         flash("Unauthorized to access team settings", "error")
-        return redirect(url_for("team.manage_team", team_number=team_number))
+        return redirect(url_for("team.manage", team_number=team_number))
         
+
     return render_template("team/settings.html", team=team)
 
 
 @team_bp.route("/<int:team_number>/update_team_info", methods=["POST"])
 @login_required
 @async_route
+@limiter.limit("10 per minute")
 async def update_team_info(team_number):
     """Update team information including logo and description"""
     team = await team_manager.get_team_by_number(team_number)
     
     if not team or not team.is_admin(current_user.get_id()):
         flash("Unauthorized to update team information", "error")
-        return redirect(url_for("team.manage_team", team_number=team_number))
+        return redirect(url_for("team.manage", team_number=team_number))
     
+
     try:
         updates = {}
         
@@ -518,8 +542,9 @@ async def update_team_info(team_number):
                     updates['logo_id'] = file_id
                 else:
                     flash("Invalid file type. Please use PNG, JPG, or JPEG", "error")
-                    return redirect(url_for("team.manage_team", team_number=team_number))
+                    return redirect(url_for("team.manage", team_number=team_number))
         
+
         # Handle description update
         description = request.form.get('description', '').strip()
         updates['description'] = description
@@ -527,8 +552,9 @@ async def update_team_info(team_number):
         # Update team information
         success, message = await team_manager.update_team_info(team_number, updates)
         flash(message, "success" if success else "error")
-        return redirect(url_for("team.manage_team", team_number=team_number))
+        return redirect(url_for("team.manage", team_number=team_number))
         
+
     except Exception as e:
         flash(f"Error updating team information: {str(e)}", "error")
-        return redirect(url_for("team.manage_team", team_number=team_number))
+        return redirect(url_for("team.manage", team_number=team_number))

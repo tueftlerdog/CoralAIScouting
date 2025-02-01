@@ -8,3 +8,4 @@ waitress
 Flask-WTF
 requests
 Pillow
+Flask-Limiter[mongodb]

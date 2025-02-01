@@ -47,7 +47,7 @@
                     </svg>
                     Match View
                 </a>
-                <a href="{{ url_for('scouting.pit_scouting_list') }}" 
+                <a href="{{ url_for('scouting.pit_scouting') }}" 
                    class="text-blue-600 hover:text-blue-800 flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -75,7 +75,7 @@
                 </select>
             </div>
 
-            <a href="{{ url_for('scouting.add_scouting_data') }}" 
+            <a href="{{ url_for('scouting.add') }}" 
                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-center">
                 Add New Data
             </a>
@@ -212,7 +212,7 @@
                                             {{ data.scouter_name }}
                                         </a>
                                         {% if data.scouter_team %}
-                                            <span class="sm:inline"><a href="{{ url_for('team.view_team', team_number=data.scouter_team) }}" class="hover:text-blue-500">({{ data.scouter_team }})</a></span>
+                                            <span class="sm:inline"><a href="{{ url_for('team.view', team_number=data.scouter_team) }}" class="hover:text-blue-500">({{ data.scouter_team }})</a></span>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -220,12 +220,12 @@
                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                 <div class="flex space-x-2">
                                     {% if data.scouter_id|string == current_user.id|string %}
-                                        <a href="{{ url_for('scouting.edit_scouting_data', id=data._id) }}" 
+                                        <a href="{{ url_for('scouting.edit', id=data._id) }}" 
                                            class="text-indigo-600 hover:text-indigo-900">
                                             <span class="hidden sm:inline">Edit</span>
                                             <span class="sm:hidden">📝</span>
                                         </a>
-                                        <a href="{{ url_for('scouting.delete_scouting_data', id=data._id) }}" 
+                                        <a href="{{ url_for('scouting.delete', id=data._id) }}" 
                                            class="text-red-600 hover:text-red-900"
                                            onclick="return confirm('Are you sure you want to delete this?')">
                                             <span class="hidden sm:inline">Delete</span>

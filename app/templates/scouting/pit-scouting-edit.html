@@ -9,7 +9,7 @@
                 <p class="mt-2 text-base text-gray-600">Edit pit scouting information for Team {{ pit_data.team_number }}</p>
             </div>
             <div class="mt-4 sm:mt-0 sm:flex-none">
-                <a href="{{ url_for('scouting.pit_scouting_list') }}"
+                <a href="{{ url_for('scouting.pit_scouting') }}"
                    class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -273,7 +273,7 @@
             <!-- Submit Buttons -->
             <div class="p-8 bg-white">
                 <div class="flex justify-end gap-4">
-                    <a href="{{ url_for('scouting.pit_scouting_list') }}"
+                    <a href="{{ url_for('scouting.pit_scouting') }}"
                        class="px-6 py-3 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200">
                         Cancel
                     </a>

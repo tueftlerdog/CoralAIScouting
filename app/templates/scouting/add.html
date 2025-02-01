@@ -1,295 +1,320 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
-    <div class="border-b pb-4 mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Add Team Data</h1>
-        <p class="text-gray-600 mt-2">Enter new team match information</p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="sm:flex sm:items-center sm:justify-between">
+            <div class="sm:flex-auto">
+                <h1 class="text-3xl font-bold text-gray-900">Add Match Scouting Data</h1>
+                <p class="mt-2 text-base text-gray-600">Enter match scouting information for a team</p>
+            </div>
+            <div class="mt-4 sm:mt-0 sm:flex-none">
+                <a href="{{ url_for('scouting.home') }}"
+                   class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Back to Home
+                </a>
+            </div>
+        </div>
     </div>
 
-    <form method="POST" class="space-y-6" autocomplete="off" id="scoutingForm">
-        <!-- Team & Event Info Section - Full Width -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-            <h2 class="text-lg font-semibold text-gray-700 mb-4">Team Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Form Section -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <form method="POST" class="divide-y divide-gray-200" id="scoutingForm" autocomplete="off">
+            <!-- Team & Event Info Section -->
+            <div class="p-8 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Basic Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Team Number</label>
+                        <input type="number" 
+                               name="team_number" 
+                               required 
+                               min="1"
+                               placeholder="e.g., 334"
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Event Code</label>
+                        <input type="text" 
+                               name="event_code" 
+                               required 
+                               placeholder="e.g., NYLI"
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition duration-150">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Match Number</label>
+                        <input type="number" 
+                               name="match_number" 
+                               required 
+                               min="1"
+                               placeholder="e.g., 1"
+                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Alliance</h3>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="alliance" value="red" checked class="form-radio text-red-600 h-4 w-4">
+                            <span class="ml-2 text-red-600">Red Alliance</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="alliance" value="blue" class="form-radio text-blue-600 h-4 w-4">
+                            <span class="ml-2 text-blue-600">Blue Alliance</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coral Scoring Section -->
+            <div class="p-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Coral Scoring</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Auto Coral -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-4">Auto Coral</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
+                                <input type="number" 
+                                       name="auto_coral_level1" 
+                                       value="0" 
+                                       min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
+                                <input type="number" 
+                                       name="auto_coral_level2" 
+                                       value="0" 
+                                       min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
+                                <input type="number" 
+                                       name="auto_coral_level3" 
+                                       value="0" 
+                                       min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
+                                <input type="number" 
+                                       name="auto_coral_level4" 
+                                       value="0" 
+                                       min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Teleop Coral -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-4">Teleop Coral</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
+                                <input type="number" 
+                                       name="teleop_coral_level1" 
+                                       value="0" 
+                                       min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
+                                <input type="number" 
+                                       name="teleop_coral_level2" 
+                                       value="0" 
+                                       min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
+                                <input type="number" 
+                                       name="teleop_coral_level3" 
+                                       value="0" 
+                                       min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
+                                <input type="number" 
+                                       name="teleop_coral_level4" 
+                                       value="0" 
+                                       min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Algae Scoring Section -->
+            <div class="p-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Algae Scoring</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Auto Algae -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-4">Auto Algae</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
+                                <input type="number" name="auto_algae_net" value="0" min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
+                                <input type="number" name="auto_algae_processor" value="0" min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Teleop Algae -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-4">Teleop Algae</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
+                                <input type="number" name="teleop_algae_net" value="0" min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
+                                <input type="number" name="teleop_algae_processor" value="0" min="0" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Human Player Section -->
+            <div class="p-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Human Player</h3>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Team Number</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Successful Shots</label>
                     <input type="number" 
-                           name="team_number" 
-                           required 
-                           min="1"
-                           placeholder="e.g., 334"
-                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Event Code</label>
-                    <input type="text" 
-                           name="event_code" 
-                           required 
-                           placeholder="e.g., NYLI"
-                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase transition duration-150">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Match Number</label>
-                    <input type="number" 
-                           name="match_number" 
-                           required 
-                           min="1"
-                           placeholder="e.g., 1"
-                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                           name="human_player" 
+                           value="0" 
+                           min="0" 
+                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
             </div>
-            <div class="mt-4">
-                <h3 class="text-sm font-medium text-gray-700 mb-2">Alliance</h3>
-                <div class="flex space-x-4">
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="alliance" value="red" checked class="form-radio text-red-600 h-4 w-4">
-                        <span class="ml-2 text-red-600">Red Alliance</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="alliance" value="blue" class="form-radio text-blue-600 h-4 w-4">
-                        <span class="ml-2 text-blue-600">Blue Alliance</span>
-                    </label>
-                </div>
-            </div>
-        </div>
 
-        <!-- Coral Scoring Section - Split -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Auto Coral -->
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">Auto Coral</h2>
+            <!-- Climb Section -->
+            <div class="p-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Climb</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <select name="climb_type" 
+                                class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">None</option>
+                            <option value="shallow">Shallow</option>
+                            <option value="deep">Deep</option>
+                            <option value="park">Park</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" 
+                                   name="climb_success" 
+                                   class="form-checkbox h-4 w-4 text-blue-600">
+                            <span class="ml-2 text-sm text-gray-700">Climb Successful</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Defense Section -->
+            <div class="p-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Defense</h3>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
-                        <input type="number" 
-                               name="auto_coral_level1" 
-                               value="0" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="range" 
+                                   name="defense_rating" 
+                                   min="1" 
+                                   max="5" 
+                                   value="1" 
+                                   class="w-full"
+                            >
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
-                        <input type="number" 
-                               name="auto_coral_level2" 
-                               value="0" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
-                        <input type="number" 
-                               name="auto_coral_level3" 
-                               value="0" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
-                        <input type="number" 
-                               name="auto_coral_level4" 
-                               value="0" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Defense Notes</label>
+                        <textarea name="defense_notes" 
+                                  rows="2" 
+                                  class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Enter any observations about defense..." 
+                                  autocomplete="off"></textarea>
                     </div>
                 </div>
             </div>
 
-            <!-- Teleop Coral -->
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">Teleop Coral</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 1</label>
-                        <input type="number" 
-                               name="teleop_coral_level1" 
-                               value="0" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 2</label>
-                        <input type="number" 
-                               name="teleop_coral_level2" 
-                               value="0" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 3</label>
-                        <input type="number" 
-                               name="teleop_coral_level3" 
-                               value="0" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Level 4</label>
-                        <input type="number" 
-                               name="teleop_coral_level4" 
-                               value="0" 
-                               min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
+            <!-- Auto Path Section -->
+            <div class="p-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Auto Path</h3>
+                <div class="relative w-full overflow-hidden" style="height: 60vh;">
+                    <canvas id="autoPath" 
+                            class="w-full h-full border rounded-lg bg-white touch-none">
+                    </canvas>
                 </div>
-            </div>
-        </div>
-
-        <!-- Algae Scoring Section - Split -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Auto Algae -->
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">Auto Algae</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
-                        <input type="number" name="auto_algae_net" value="0" min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
-                        <input type="number" name="auto_algae_processor" value="0" min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Teleop Algae -->
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">Teleop Algae</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Net</label>
-                        <input type="number" name="teleop_algae_net" value="0" min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Processor</label>
-                        <input type="number" name="teleop_algae_processor" value="0" min="0" 
-                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Human Player Section -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-            <h2 class="text-lg font-semibold text-gray-700 mb-4">Human Player</h2>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Successful Shots</label>
-                <input type="number" 
-                       name="human_player" 
-                       value="0" 
-                       min="0" 
-                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-        </div>
-
-        <!-- Climb Section -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-            <h2 class="text-lg font-semibold text-gray-700 mb-4">Climb</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                    <select name="climb_type" 
-                            class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">None</option>
-                        <option value="shallow">Shallow</option>
-                        <option value="deep">Deep</option>
-                        <option value="park">Park</option>
-                    </select>
-                </div>
-                <div class="flex items-center">
-                    <label class="inline-flex items-center">
-                        <input type="checkbox" 
-                               name="climb_success" 
-                               class="form-checkbox h-4 w-4 text-blue-600">
-                        <span class="ml-2 text-sm text-gray-700">Climb Successful</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Defense Section -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-            <h2 class="text-lg font-semibold text-gray-700 mb-4">Defense</h2>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Rating (1-5)</label>
-                    <div class="flex items-center space-x-2">
-                        <input type="range" 
-                               name="defense_rating" 
-                               min="1" 
-                               max="5" 
-                               value="1" 
-                               class="w-full"
-                        >
+                <input type="hidden" name="auto_path" id="autoPathData">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mt-4">
+                    <p class="text-sm text-gray-500 text-center sm:text-left">Draw the robot's autonomous path</p>
+                    <div class="flex gap-2">
+                        <button type="button" 
+                                onclick="undoLastPath()" 
+                                class="w-full sm:w-auto px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
+                            Undo
+                        </button>
+                        <button type="button" 
+                                onclick="clearCanvas()" 
+                                class="w-full sm:w-auto px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
+                            Clear Path
+                        </button>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Defense Notes</label>
-                    <textarea name="defense_notes" 
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Auto Notes</label>
+                    <textarea name="auto_notes" 
                               rows="2" 
                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="Enter any observations about defense..." 
-                              autocomplete="off"></textarea>
+                              placeholder="Enter any observations about autonomous..." autocomplete="off"></textarea>
                 </div>
             </div>
-        </div>
 
-        <!-- Auto Path Section -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-            <h2 class="text-lg font-semibold text-gray-700 mb-4">Auto Path</h2>
-            <div class="relative w-full overflow-hidden" style="height: 60vh;">
-                <canvas id="autoPath" 
-                        class="w-full h-full border rounded-lg bg-white touch-none">
-                </canvas>
-            </div>
-            <input type="hidden" name="auto_path" id="autoPathData">
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mt-4">
-                <p class="text-sm text-gray-500 text-center sm:text-left">Draw the robot's autonomous path</p>
-                <div class="flex gap-2">
-                    <button type="button" 
-                            onclick="undoLastPath()" 
-                            class="w-full sm:w-auto px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
-                        Undo
-                    </button>
-                    <button type="button" 
-                            onclick="clearCanvas()" 
-                            class="w-full sm:w-auto px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
-                        Clear Path
-                    </button>
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Auto Notes</label>
-                <textarea name="auto_notes" 
-                          rows="2" 
+            <!-- Notes Section -->
+            <div class="p-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Additional Notes</h3>
+                <textarea name="notes" 
+                          rows="4" 
                           class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Enter any observations about autonomous..." autocomplete="off"></textarea>
+                          placeholder="Enter any general observations about the team's performance..." autocomplete="off"></textarea>
             </div>
-        </div>
 
-        <!-- Notes Section -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-            <h2 class="text-lg font-semibold text-gray-700 mb-4">Additional Notes</h2>
-            <textarea name="notes" 
-                      rows="4" 
-                      class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter any general observations about the team's performance..." autocomplete="off"></textarea>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex justify-end space-x-4 pt-6 border-t">
-            <a href="{{ url_for('scouting.list_scouting_data') }}" 
-               class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition duration-150">
-                Cancel
-            </a>
-            <button type="submit" 
-                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
-                Add Team Data
-            </button>
-        </div>
-    </form>
+            <!-- Submit Buttons -->
+            <div class="p-8 bg-white">
+                <div class="flex justify-end gap-4">
+                    <a href="{{ url_for('scouting.home') }}"
+                       class="px-6 py-3 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="px-6 py-3 rounded-lg border border-transparent bg-indigo-600 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script src="{{ url_for('static', filename='js/scout.add.js') }}"></script>

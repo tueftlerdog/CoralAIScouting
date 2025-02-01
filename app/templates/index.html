@@ -29,19 +29,19 @@
                             Log in <span aria-hidden="true">→</span>
                         </a>
                         {% else %}
-                        <a href="{{ url_for('scouting.list_scouting_data') }}" 
+                        <a href="{{ url_for('scouting.home') }}" 
                            class="text-lg font-semibold leading-6 text-gray-900 hover:text-blue-600 hover-lift">
                             Scout
                         </a>
-                        <a href="{{ url_for('scouting.search_page') }}" 
+                        <a href="{{ url_for('scouting.search') }}" 
                            class="text-lg font-semibold leading-6 text-gray-900 hover:text-blue-600 hover-lift">
                             Search
                         </a>
-                        <a href="{{ url_for('scouting.compare_page') }}" 
+                        <a href="{{ url_for('scouting.compare') }}" 
                            class="text-lg font-semibold leading-6 text-gray-900 hover:text-blue-600 hover-lift">
                             Compare
                         </a>
-                        <a href="{{ url_for('team.manage_team') }}" 
+                        <a href="{{ url_for('team.manage') }}" 
                            class="text-lg font-semibold leading-6 text-gray-900 hover:text-blue-600 hover-lift">
                             Team
                         </a>
