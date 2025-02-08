@@ -118,6 +118,8 @@ let lastY = 0;
 let bgImage = new Image();
 let pathHistory = [];
 let currentPath = [];
+let imageScale = 1;
+let imageOffset = { x: 0, y: 0 };
 
 function resizeCanvas() {
     const container = canvas.parentElement;
@@ -135,37 +137,68 @@ function resizeCanvas() {
     // Scale context to match device pixel ratio
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
     
-    // Draw background after resize
+    // Draw background and redraw paths
     drawBackground();
+    redrawPaths();
 }
 
 function drawBackground() {
-    if (!bgImage.complete) {
-      return;
-    } // Wait for image to load
+    if (!bgImage.complete) return;
     
-    // Clear canvas
+    // Get the actual canvas dimensions (accounting for device pixel ratio)
+    const canvasWidth = canvas.width / window.devicePixelRatio;
+    const canvasHeight = canvas.height / window.devicePixelRatio;
+    
+    // Clear the entire canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // Check if we're on mobile (using a reasonable breakpoint)
+    const isMobile = window.innerWidth < 768;
+    
     // Calculate scaling to fit while maintaining aspect ratio
-    const scale = Math.min(
-        canvas.width / bgImage.width,
-        canvas.height / bgImage.height
+    imageScale = Math.min(
+        (isMobile ? canvasWidth * 2 : canvasWidth) / bgImage.width,
+        canvasHeight / bgImage.height
     );
     
-    // Calculate position to center the image
-    const x = (canvas.width - bgImage.width * scale) / 2;
-    const y = (canvas.height - bgImage.height * scale) / 2;
+    // Calculate dimensions for the scaled image
+    const scaledWidth = bgImage.width * imageScale;
+    const scaledHeight = bgImage.height * imageScale;
     
-    // Draw background
-    ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
+    if (isMobile) {
+        // Mobile view - show half the field based on alliance
+        const isRedAlliance = document.querySelector('input[name="alliance"][value="red"]').checked;
+        const sourceX = isRedAlliance ? bgImage.width / 2 : 0;
+        const sourceWidth = bgImage.width / 2;
+        
+        imageOffset.x = (canvasWidth - (scaledWidth / 2)) / 2;
+        imageOffset.y = (canvasHeight - scaledHeight) / 2;
+        
+        ctx.drawImage(
+            bgImage,
+            sourceX, 0, sourceWidth, bgImage.height,  // Source rectangle (half)
+            imageOffset.x, imageOffset.y, scaledWidth / 2, scaledHeight  // Destination rectangle
+        );
+    } else {
+        // Desktop view - show full field
+        imageOffset.x = (canvasWidth - scaledWidth) / 2;
+        imageOffset.y = (canvasHeight - scaledHeight) / 2;
+        
+        ctx.drawImage(
+            bgImage,
+            0, 0, bgImage.width, bgImage.height,  // Source rectangle (full)
+            imageOffset.x, imageOffset.y, scaledWidth, scaledHeight  // Destination rectangle
+        );
+    }
 }
 
 function getPointerPosition(e) {
     const rect = canvas.getBoundingClientRect();
-    const x = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) * (canvas.width / rect.width);
-    const y = ((e.touches ? e.touches[0].clientY : e.clientY) - rect.top) * (canvas.height / rect.height);
-    return { x, y };
+    // Get raw coordinates relative to canvas, accounting for device pixel ratio
+    return {
+        x: ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left),
+        y: ((e.touches ? e.touches[0].clientY : e.clientY) - rect.top)
+    };
 }
 
 function startDrawing(e) {
@@ -180,19 +213,21 @@ function startDrawing(e) {
 
 function draw(e) {
     e.preventDefault();
-    if (!isDrawing) {
-      return;
-    }
+    if (!isDrawing) return;
     
     const pos = getPointerPosition(e);
+    
     ctx.beginPath();
     ctx.strokeStyle = '#FF0000';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
+    
+    // Draw directly using screen coordinates
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     
+    // Store the raw coordinates
     currentPath.push({ x: pos.x, y: pos.y });
     lastX = pos.x;
     lastY = pos.y;
@@ -220,13 +255,14 @@ function undoLastPath() {
 function redrawPaths() {
     drawBackground();
     ctx.strokeStyle = '#FF0000';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     
     pathHistory.forEach(path => {
         if (path.length > 1) {
             ctx.beginPath();
             ctx.moveTo(path[0].x, path[0].y);
+            
             for (let i = 1; i < path.length; i++) {
                 ctx.lineTo(path[i].x, path[i].y);
             }
@@ -238,8 +274,9 @@ function redrawPaths() {
 }
 
 function clearCanvas() {
-    drawBackground();
     pathHistory = [];
+    currentPath = [];
+    drawBackground();
     document.getElementById('autoPathData').value = '';
 }
 
@@ -265,4 +302,13 @@ window.addEventListener('load', () => {
     };
     bgImage.src = "/static/images/field-2025.png";
 });
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener('resize', () => {
+    resizeCanvas();
+});
+
+// Add listener for alliance selection change
+document.querySelectorAll('input[name="alliance"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        clearCanvas();  // Clear existing paths when alliance changes
+    });
+});
