@@ -116,6 +116,8 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 let bgImage = new Image();
+let mobileRedImage = new Image();
+let mobileBlueImage = new Image();
 let pathHistory = [];
 let currentPath = [];
 let imageScale = 1;
@@ -142,52 +144,59 @@ function resizeCanvas() {
     redrawPaths();
 }
 
+function loadImages() {
+    bgImage.src = "/static/images/field-2025.png";
+    mobileRedImage.src = "/static/images/red-field-2025.png";
+    mobileBlueImage.src = "/static/images/blue-field-2025.png";
+}
+
 function drawBackground() {
     if (!bgImage.complete) return;
     
-    // Get the actual canvas dimensions (accounting for device pixel ratio)
     const canvasWidth = canvas.width / window.devicePixelRatio;
     const canvasHeight = canvas.height / window.devicePixelRatio;
     
-    // Clear the entire canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Check if we're on mobile (using a reasonable breakpoint)
     const isMobile = window.innerWidth < 768;
-    
-    // Calculate scaling to fit while maintaining aspect ratio
-    imageScale = Math.min(
-        (isMobile ? canvasWidth * 2 : canvasWidth) / bgImage.width,
-        canvasHeight / bgImage.height
-    );
-    
-    // Calculate dimensions for the scaled image
-    const scaledWidth = bgImage.width * imageScale;
-    const scaledHeight = bgImage.height * imageScale;
+    const isRedAlliance = document.querySelector('input[name="alliance"][value="red"]').checked;
     
     if (isMobile) {
-        // Mobile view - show half the field based on alliance
-        const isRedAlliance = document.querySelector('input[name="alliance"][value="red"]').checked;
-        const sourceX = isRedAlliance ? bgImage.width / 2 : 0;
-        const sourceWidth = bgImage.width / 2;
+        // Use the pre-split field images for mobile
+        const mobileImage = isRedAlliance ? mobileRedImage : mobileBlueImage;
+        if (!mobileImage.complete) return;
         
-        imageOffset.x = (canvasWidth - (scaledWidth / 2)) / 2;
+        imageScale = Math.min(
+            canvasWidth / mobileImage.width,
+            canvasHeight / mobileImage.height
+        );
+        
+        const scaledWidth = mobileImage.width * imageScale;
+        const scaledHeight = mobileImage.height * imageScale;
+        
+        imageOffset.x = (canvasWidth - scaledWidth) / 2;
         imageOffset.y = (canvasHeight - scaledHeight) / 2;
         
         ctx.drawImage(
-            bgImage,
-            sourceX, 0, sourceWidth, bgImage.height,  // Source rectangle (half)
-            imageOffset.x, imageOffset.y, scaledWidth / 2, scaledHeight  // Destination rectangle
+            mobileImage,
+            imageOffset.x, imageOffset.y, scaledWidth, scaledHeight
         );
     } else {
         // Desktop view - show full field
+        imageScale = Math.min(
+            canvasWidth / bgImage.width,
+            canvasHeight / bgImage.height
+        );
+        
+        const scaledWidth = bgImage.width * imageScale;
+        const scaledHeight = bgImage.height * imageScale;
+        
         imageOffset.x = (canvasWidth - scaledWidth) / 2;
         imageOffset.y = (canvasHeight - scaledHeight) / 2;
         
         ctx.drawImage(
             bgImage,
-            0, 0, bgImage.width, bgImage.height,  // Source rectangle (full)
-            imageOffset.x, imageOffset.y, scaledWidth, scaledHeight  // Destination rectangle
+            imageOffset.x, imageOffset.y, scaledWidth, scaledHeight
         );
     }
 }
@@ -207,8 +216,10 @@ function startDrawing(e) {
     const pos = getPointerPosition(e);
     lastX = pos.x;
     lastY = pos.y;
-    currentPath = [];
-    currentPath.push({ x: lastX, y: lastY });
+    currentPath = [{
+        x: normalizeCoordinate(pos.x, true),
+        y: normalizeCoordinate(pos.y, false)
+    }];
 }
 
 function draw(e) {
@@ -217,22 +228,79 @@ function draw(e) {
     
     const pos = getPointerPosition(e);
     
+    // Draw on screen
     ctx.beginPath();
     ctx.strokeStyle = '#FF0000';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    
-    // Draw directly using screen coordinates
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     
-    // Store the raw coordinates
-    currentPath.push({ x: pos.x, y: pos.y });
+    // Store normalized coordinates
+    currentPath.push({
+        x: normalizeCoordinate(pos.x, true),
+        y: normalizeCoordinate(pos.y, false)
+    });
+    
     lastX = pos.x;
     lastY = pos.y;
     
-    document.getElementById('autoPathData').value = canvas.toDataURL();
+    updatePathData();
+}
+
+function normalizeCoordinate(coord, isX = true) {
+    // Convert screen coordinate to normalized coordinate (0-1 range)
+    if (isX) {
+        return (coord - imageOffset.x) / (bgImage.width * imageScale);
+    }
+    return (coord - imageOffset.y) / (bgImage.height * imageScale);
+}
+
+function denormalizeCoordinate(coord, isX = true) {
+    // Convert normalized coordinate back to screen coordinate
+    if (isX) {
+        return (coord * bgImage.width * imageScale) + imageOffset.x;
+    }
+    return (coord * bgImage.height * imageScale) + imageOffset.y;
+}
+
+function redrawPaths() {
+    drawBackground();
+    ctx.strokeStyle = '#FF0000';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    
+    pathHistory.forEach(path => {
+        if (path.length > 1) {
+            ctx.beginPath();
+            
+            // Convert first point
+            const startX = denormalizeCoordinate(path[0].x, true);
+            const startY = denormalizeCoordinate(path[0].y, false);
+            ctx.moveTo(startX, startY);
+            
+            // Convert and draw remaining points
+            for (let i = 1; i < path.length; i++) {
+                const x = denormalizeCoordinate(path[i].x, true);
+                const y = denormalizeCoordinate(path[i].y, false);
+                ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+    });
+    
+    updatePathData();
+}
+
+function updatePathData() {
+    // Store the normalized path data as JSON
+    const pathData = {
+        points: pathHistory.concat(currentPath.length > 0 ? [currentPath] : []),
+        alliance: document.querySelector('input[name="alliance"]:checked').value,
+        device_type: window.innerWidth < 768 ? 'mobile' : 'desktop'
+    };
+    document.getElementById('autoPathData').value = JSON.stringify(pathData);
 }
 
 function stopDrawing() {
@@ -250,27 +318,6 @@ function undoLastPath() {
         pathHistory.pop();
         redrawPaths();
     }
-}
-
-function redrawPaths() {
-    drawBackground();
-    ctx.strokeStyle = '#FF0000';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    
-    pathHistory.forEach(path => {
-        if (path.length > 1) {
-            ctx.beginPath();
-            ctx.moveTo(path[0].x, path[0].y);
-            
-            for (let i = 1; i < path.length; i++) {
-                ctx.lineTo(path[i].x, path[i].y);
-            }
-            ctx.stroke();
-        }
-    });
-    
-    document.getElementById('autoPathData').value = canvas.toDataURL();
 }
 
 function clearCanvas() {
@@ -297,10 +344,10 @@ canvas.addEventListener('touchmove', e => e.preventDefault());
 
 // Initialize
 window.addEventListener('load', () => {
-    bgImage.onload = () => {
-        resizeCanvas();
-    };
-    bgImage.src = "/static/images/field-2025.png";
+    loadImages();
+    bgImage.onload = resizeCanvas;
+    mobileRedImage.onload = resizeCanvas;
+    mobileBlueImage.onload = resizeCanvas;
 });
 window.addEventListener('resize', () => {
     resizeCanvas();

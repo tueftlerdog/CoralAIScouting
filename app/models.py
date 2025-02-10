@@ -88,7 +88,7 @@ class TeamData:
         self.defense_notes = data.get('defense_notes', '')
         
         # Auto
-        self.auto_path = data.get('auto_path', '')  # Store canvas data as base64
+        self.auto_path = data.get('auto_path', '')  # Store coordinates of drawn path
         self.auto_notes = data.get('auto_notes', '')
         
         # Notes

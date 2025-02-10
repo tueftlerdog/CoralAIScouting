@@ -33,6 +33,15 @@ def on_blueprint_init(state):
 def add():
     if request.method == "POST":
         data = request.get_json() if request.is_json else request.form.to_dict()
+        
+        # Convert the drawing coordinates from string to JSON if present
+        if "auto_path_coords" in data and isinstance(data["auto_path_coords"], str):
+            try:
+                json.loads(data["auto_path_coords"])  # Validate JSON
+            except json.JSONDecodeError:
+                flash("Invalid path coordinates format", "error")
+                return redirect(url_for("scouting.home"))
+        
         success, message = scouting_manager.add_scouting_data(data, current_user.get_id())
         
         if success:
@@ -75,7 +84,17 @@ def edit(id):
             return redirect(url_for("scouting.home"))
 
         if request.method == "POST":
-            if scouting_manager.update_team_data(id, request.form, current_user.get_id()):
+            data = request.form.to_dict()
+            
+            # Convert the drawing coordinates from string to JSON if present
+            if "auto_path_coords" in data and isinstance(data["auto_path_coords"], str):
+                try:
+                    json.loads(data["auto_path_coords"])  # Validate JSON
+                except json.JSONDecodeError:
+                    flash("Invalid path coordinates format", "error")
+                    return render_template("scouting/edit.html", team_data=team_data)
+            
+            if scouting_manager.update_team_data(id, data, current_user.get_id()):
                 flash("Data updated successfully", "success")
                 return redirect(url_for("scouting.home"))
             flash("Unable to update data", "error")

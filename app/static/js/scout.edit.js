@@ -73,10 +73,18 @@ let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 let bgImage = new Image();
+let mobileRedImage = new Image();
+let mobileBlueImage = new Image();
 let pathHistory = [];
 let currentPath = [];
 let imageScale = 1;
 let imageOffset = { x: 0, y: 0 };
+
+function loadImages() {
+    bgImage.src = "/static/images/field-2025.png";
+    mobileRedImage.src = "/static/images/red-field-2025.png";
+    mobileBlueImage.src = "/static/images/blue-field-2025.png";
+}
 
 function resizeCanvas() {
     const container = canvas.parentElement;
@@ -102,49 +110,50 @@ function resizeCanvas() {
 function drawBackground() {
     if (!bgImage.complete) return;
     
-    // Get the actual canvas dimensions (accounting for device pixel ratio)
     const canvasWidth = canvas.width / window.devicePixelRatio;
     const canvasHeight = canvas.height / window.devicePixelRatio;
     
-    // Clear the entire canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Check if we're on mobile (using a reasonable breakpoint)
     const isMobile = window.innerWidth < 768;
-    
-    // Calculate scaling to fit while maintaining aspect ratio
-    imageScale = Math.min(
-        (isMobile ? canvasWidth * 2 : canvasWidth) / bgImage.width,
-        canvasHeight / bgImage.height
-    );
-    
-    // Calculate dimensions for the scaled image
-    const scaledWidth = bgImage.width * imageScale;
-    const scaledHeight = bgImage.height * imageScale;
+    const isRedAlliance = document.querySelector('input[name="alliance"][value="red"]').checked;
     
     if (isMobile) {
-        // Mobile view - show half the field based on alliance
-        const isRedAlliance = document.querySelector('input[name="alliance"][value="red"]').checked;
-        const sourceX = isRedAlliance ? bgImage.width / 2 : 0;
-        const sourceWidth = bgImage.width / 2;
+        // Use the pre-split field images for mobile
+        const mobileImage = isRedAlliance ? mobileRedImage : mobileBlueImage;
+        if (!mobileImage.complete) return;
         
-        imageOffset.x = (canvasWidth - (scaledWidth / 2)) / 2;
+        imageScale = Math.min(
+            canvasWidth / mobileImage.width,
+            canvasHeight / mobileImage.height
+        );
+        
+        const scaledWidth = mobileImage.width * imageScale;
+        const scaledHeight = mobileImage.height * imageScale;
+        
+        imageOffset.x = (canvasWidth - scaledWidth) / 2;
         imageOffset.y = (canvasHeight - scaledHeight) / 2;
         
         ctx.drawImage(
-            bgImage,
-            sourceX, 0, sourceWidth, bgImage.height,  // Source rectangle (half)
-            imageOffset.x, imageOffset.y, scaledWidth / 2, scaledHeight  // Destination rectangle
+            mobileImage,
+            imageOffset.x, imageOffset.y, scaledWidth, scaledHeight
         );
     } else {
         // Desktop view - show full field
+        imageScale = Math.min(
+            canvasWidth / bgImage.width,
+            canvasHeight / bgImage.height
+        );
+        
+        const scaledWidth = bgImage.width * imageScale;
+        const scaledHeight = bgImage.height * imageScale;
+        
         imageOffset.x = (canvasWidth - scaledWidth) / 2;
         imageOffset.y = (canvasHeight - scaledHeight) / 2;
         
         ctx.drawImage(
             bgImage,
-            0, 0, bgImage.width, bgImage.height,  // Source rectangle (full)
-            imageOffset.x, imageOffset.y, scaledWidth, scaledHeight  // Destination rectangle
+            imageOffset.x, imageOffset.y, scaledWidth, scaledHeight
         );
     }
 }
@@ -158,14 +167,33 @@ function getPointerPosition(e) {
     };
 }
 
+function normalizeCoordinate(coord, isX = true) {
+    // Convert screen coordinate to normalized coordinate (0-1 range)
+    const rect = canvas.getBoundingClientRect();
+    if (isX) {
+        return (coord - imageOffset.x) / (bgImage.width * imageScale);
+    }
+    return (coord - imageOffset.y) / (bgImage.height * imageScale);
+}
+
+function denormalizeCoordinate(coord, isX = true) {
+    // Convert normalized coordinate back to screen coordinate
+    if (isX) {
+        return (coord * bgImage.width * imageScale) + imageOffset.x;
+    }
+    return (coord * bgImage.height * imageScale) + imageOffset.y;
+}
+
 function startDrawing(e) {
     e.preventDefault();
     isDrawing = true;
     const pos = getPointerPosition(e);
     lastX = pos.x;
     lastY = pos.y;
-    currentPath = [];
-    currentPath.push({ x: lastX, y: lastY });
+    currentPath = [{
+        x: normalizeCoordinate(pos.x, true),
+        y: normalizeCoordinate(pos.y, false)
+    }];
 }
 
 function draw(e) {
@@ -174,22 +202,26 @@ function draw(e) {
     
     const pos = getPointerPosition(e);
     
+    // Draw on screen
     ctx.beginPath();
     ctx.strokeStyle = '#FF0000';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    
-    // Draw directly using screen coordinates
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     
-    // Store the raw coordinates
-    currentPath.push({ x: pos.x, y: pos.y });
+    // Store normalized coordinates
+    currentPath.push({
+        x: normalizeCoordinate(pos.x, true),
+        y: normalizeCoordinate(pos.y, false)
+    });
+    
     lastX = pos.x;
     lastY = pos.y;
     
-    document.getElementById('autoPathData').value = canvas.toDataURL();
+    // Store the path data
+    updatePathData();
 }
 
 function stopDrawing() {
@@ -215,19 +247,27 @@ function redrawPaths() {
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     
+    // Draw all paths using denormalized coordinates
     pathHistory.forEach(path => {
         if (path.length > 1) {
             ctx.beginPath();
-            ctx.moveTo(path[0].x, path[0].y);
             
+            // Convert first point
+            const startX = denormalizeCoordinate(path[0].x, true);
+            const startY = denormalizeCoordinate(path[0].y, false);
+            ctx.moveTo(startX, startY);
+            
+            // Convert and draw remaining points
             for (let i = 1; i < path.length; i++) {
-                ctx.lineTo(path[i].x, path[i].y);
+                const x = denormalizeCoordinate(path[i].x, true);
+                const y = denormalizeCoordinate(path[i].y, false);
+                ctx.lineTo(x, y);
             }
             ctx.stroke();
         }
     });
     
-    document.getElementById('autoPathData').value = canvas.toDataURL();
+    updatePathData();
 }
 
 function clearCanvas() {
@@ -238,31 +278,35 @@ function clearCanvas() {
     document.getElementById('autoPathData').value = '';
 }
 
-function loadExistingPath(base64Data) {
-    if (!base64Data || base64Data === "None") {
+function loadExistingPath(pathData) {
+    if (!pathData || pathData === "None") {
         console.log('No valid path data to load');
         return;
     }
     
-    console.log('Loading path with dimensions:', canvas.width, canvas.height);
-    const img = new Image();
-    
-    img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    try {
+        const data = JSON.parse(pathData);
+        pathHistory = data.points || [];
         
-        drawBackground();
+        // Set alliance if it exists in the data
+        if (data.alliance) {
+            const allianceInput = document.querySelector(`input[name="alliance"][value="${data.alliance}"]`);
+            if (allianceInput) allianceInput.checked = true;
+        }
         
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        console.log('Path drawn at full size');
-        
-        document.getElementById('autoPathData').value = base64Data;
+        redrawPaths();
+    } catch (error) {
+        console.error('Failed to load path data:', error);
+    }
+}
+
+function updatePathData() {
+    // Store the normalized path data as JSON
+    const pathData = {
+        points: pathHistory.concat(currentPath.length > 0 ? [currentPath] : []),
+        alliance: document.querySelector('input[name="alliance"]:checked').value
     };
-    
-    img.onerror = (error) => {
-        console.error('Failed to load path:', error);
-    };
-    
-    img.src = base64Data;
+    document.getElementById('autoPathData').value = JSON.stringify(pathData);
 }
 
 // Event listeners
@@ -282,15 +326,19 @@ canvas.addEventListener('touchmove', e => e.preventDefault());
 
 // Initialize
 window.addEventListener('load', () => {
-    console.log('Page loaded, setting up canvas');
-    bgImage.onload = () => {
-        resizeCanvas();
-    };
+    loadImages();
     
-    const existingPath = document.getElementById('autoPathData').value;
-    bgImage.src = existingPath && existingPath !== "None" 
-        ? existingPath 
-        : "/static/images/field-2025.png";
+    // Load existing path if available
+    const existingPathData = document.getElementById('autoPathData').value;
+    if (existingPathData && existingPathData !== "None") {
+        bgImage.onload = () => {
+            resizeCanvas();
+            loadExistingPath(existingPathData);
+        };
+    }
+    
+    mobileRedImage.onload = resizeCanvas;
+    mobileBlueImage.onload = resizeCanvas;
 });
 window.addEventListener('resize', () => {
     resizeCanvas();
