@@ -31,27 +31,26 @@ def on_blueprint_init(state):
 @limiter.limit("10 per minute")
 @handle_route_errors
 def add():
-    if request.method == "POST":
-        data = request.get_json() if request.is_json else request.form.to_dict()
-        
-        # Convert the drawing coordinates from string to JSON if present
-        if "auto_path_coords" in data and isinstance(data["auto_path_coords"], str):
-            try:
-                json.loads(data["auto_path_coords"])  # Validate JSON
-            except json.JSONDecodeError:
-                flash("Invalid path coordinates format", "error")
-                return redirect(url_for("scouting.home"))
-        
-        success, message = scouting_manager.add_scouting_data(data, current_user.get_id())
-        
-        if success:
-            flash("Team data added successfully", "success")
-        else:
-            flash(f"Error adding data: {message}", "error")
-            
-        return redirect(url_for("scouting.home"))
-        
-    return render_template("scouting/add.html")
+    if request.method != "POST":
+        return render_template("scouting/add.html")
+    data = request.get_json() if request.is_json else request.form.to_dict()
+
+    # Convert the drawing coordinates from string to JSON if present
+    if "auto_path_coords" in data and isinstance(data["auto_path_coords"], str):
+        try:
+            json.loads(data["auto_path_coords"])  # Validate JSON
+        except json.JSONDecodeError:
+            flash("Invalid path coordinates format", "error")
+            return redirect(url_for("scouting.home"))
+
+    success, message = scouting_manager.add_scouting_data(data, current_user.get_id())
+
+    if success:
+        flash("Team data added successfully", "success")
+    else:
+        flash(f"Error adding data: {message}", "error")
+
+    return redirect(url_for("scouting.home"))
 
 
 @scouting_bp.route("/scouting/list")

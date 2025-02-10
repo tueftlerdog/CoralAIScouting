@@ -62,14 +62,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeCanvas() {
     canvas = document.getElementById('modalAutoPath');
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
     
     ctx = canvas.getContext('2d');
     resizeCanvas();
 }
 
 function resizeCanvas() {
-    if (!canvas || !ctx) return;
+    if (!canvas || !ctx) {
+      return;
+    }
     
     const container = canvas.parentElement;
     const containerWidth = container.clientWidth;
@@ -85,7 +89,9 @@ function resizeCanvas() {
 }
 
 function drawPath(pathData, deviceType) {
-    if (!canvas || !ctx) return;
+    if (!canvas || !ctx) {
+      return;
+    }
     
     const currentIsMobile = window.innerWidth < 768;
     const alliance = pathData.alliance || 'red';
@@ -149,9 +155,10 @@ function drawPath(pathData, deviceType) {
 
 function showAutoPath(pathData, autoNotes, deviceType) {
     // Ensure pathData is an object
+    let pathObj = pathData;
     if (typeof pathData === 'string') {
         try {
-            pathData = JSON.parse(pathData);
+            pathObj = JSON.parse(pathData);
         } catch (error) {
             console.error('Failed to parse path data:', error);
             return;
@@ -175,13 +182,13 @@ function showAutoPath(pathData, autoNotes, deviceType) {
     resizeCanvas();
     
     // Ensure pathData has the expected structure
-    if (!pathData || !pathData.points) {
+    if (!pathObj || !pathObj.points) {
         console.error('Invalid path data structure');
         return;
     }
     
     // Draw the path
-    drawPath(pathData, deviceType);
+    drawPath(pathObj, deviceType);
 }
 
 function closeAutoPathModal() {

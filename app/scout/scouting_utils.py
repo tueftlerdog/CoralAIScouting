@@ -20,11 +20,7 @@ class ScoutingManager(DatabaseManager):
     def _ensure_collections(self):
         """Ensure required collections exist"""
         if "team_data" not in self.db.list_collection_names():
-            self.db.create_collection("team_data")
-            # Create indexes
-            self.db.team_data.create_index([("team_number", 1)])
-            self.db.team_data.create_index([("scouter_id", 1)])
-            logger.info("Created team_data collection and indexes")
+            self._create_team_data_collection()
 
     def connect(self):
         """Establish connection to MongoDB with basic error handling"""
@@ -38,14 +34,16 @@ class ScoutingManager(DatabaseManager):
 
                 # Ensure team_data collection exists
                 if "team_data" not in self.db.list_collection_names():
-                    self.db.create_collection("team_data")
-                    # Create indexes
-                    self.db.team_data.create_index([("team_number", 1)])
-                    self.db.team_data.create_index([("scouter_id", 1)])
-                    logger.info("Created team_data collection and indexes")
+                    self._create_team_data_collection()
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {str(e)}")
             raise
+
+    def _create_team_data_collection(self):
+        self.db.create_collection("team_data")
+        self.db.team_data.create_index([("team_number", 1)])
+        self.db.team_data.create_index([("scouter_id", 1)])
+        logger.info("Created team_data collection and indexes")
 
     def ensure_connected(self):
         """Ensure we have a valid connection, reconnect if necessary"""

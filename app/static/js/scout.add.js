@@ -151,7 +151,9 @@ function loadImages() {
 }
 
 function drawBackground() {
-    if (!bgImage.complete) return;
+    if (!bgImage.complete) {
+      return;
+    }
     
     const canvasWidth = canvas.width / window.devicePixelRatio;
     const canvasHeight = canvas.height / window.devicePixelRatio;
@@ -164,7 +166,9 @@ function drawBackground() {
     if (isMobile) {
         // Use the pre-split field images for mobile
         const mobileImage = isRedAlliance ? mobileRedImage : mobileBlueImage;
-        if (!mobileImage.complete) return;
+        if (!mobileImage.complete) {
+          return;
+        }
         
         imageScale = Math.min(
             canvasWidth / mobileImage.width,
@@ -224,7 +228,9 @@ function startDrawing(e) {
 
 function draw(e) {
     e.preventDefault();
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      return;
+    }
     
     const pos = getPointerPosition(e);
     
