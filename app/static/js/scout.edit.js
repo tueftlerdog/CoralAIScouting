@@ -1,42 +1,3 @@
-const updateTotal = () => {
-    // Auto Coral Points
-    const autoCoralPoints = [1, 2, 3, 4].reduce((sum, level) => {
-        return sum + (parseInt(document.querySelector(`input[name="auto_coral_level${level}"]`).value) || 0) * level;
-    }, 0);
-    
-    // Teleop Coral Points
-    const teleopCoralPoints = [1, 2, 3, 4].reduce((sum, level) => {
-        return sum + (parseInt(document.querySelector(`input[name="teleop_coral_level${level}"]`).value) || 0) * level;
-    }, 0);
-    
-    // Auto Algae Points
-    const autoAlgaeNet = (parseInt(document.querySelector('input[name="auto_algae_net"]').value) || 0) * 2;
-    const autoAlgaeProcessor = (parseInt(document.querySelector('input[name="auto_algae_processor"]').value) || 0) * 3;
-    
-    // Teleop Algae Points
-    const teleopAlgaeNet = (parseInt(document.querySelector('input[name="teleop_algae_net"]').value) || 0) * 2;
-    const teleopAlgaeProcessor = (parseInt(document.querySelector('input[name="teleop_algae_processor"]').value) || 0) * 3;
-    
-    const humanPlayerPoints = (parseInt(document.querySelector('input[name="human_player"]').value) || 0) * 2;
-    
-    const climbType = document.querySelector('select[name="climb_type"]').value;
-    const climbSuccess = document.querySelector('input[name="climb_success"]').checked;
-    let climbPoints = 0;
-    if (climbSuccess) {
-        switch(climbType) {
-            case 'shallow': climbPoints = 6; break;
-            case 'deep': climbPoints = 12; break;
-            case 'park': climbPoints = 2; break;
-        }
-    }
-    
-    const total = autoCoralPoints + teleopCoralPoints + 
-                 autoAlgaeNet + autoAlgaeProcessor + 
-                 teleopAlgaeNet + teleopAlgaeProcessor + 
-                 humanPlayerPoints + climbPoints;
-    document.getElementById('totalPoints').textContent = total;
-};
-
 let canvas, coordSystem;
 let isDrawing = false;
 let currentPath = [];
@@ -195,13 +156,13 @@ function zoomIn(event) {
     const rect = canvas.getBoundingClientRect();
     let mouseX, mouseY;
     
-    if (event.touches) { // Touch event
+    if (event.touches) {
         mouseX = event.touches[0].clientX - rect.left;
         mouseY = event.touches[0].clientY - rect.top;
-    } else if (event.clientX !== undefined) { // Mouse event
+    } else if (event.clientX !== undefined) {
         mouseX = event.clientX - rect.left;
         mouseY = event.clientY - rect.top;
-    } else { // Button click without position
+    } else {
         mouseX = rect.width / 2;
         mouseY = rect.height / 2;
     }
@@ -215,13 +176,13 @@ function zoomOut(event) {
     const rect = canvas.getBoundingClientRect();
     let mouseX, mouseY;
     
-    if (event.touches) { // Touch event
+    if (event.touches) {
         mouseX = event.touches[0].clientX - rect.left;
         mouseY = event.touches[0].clientY - rect.top;
-    } else if (event.clientX !== undefined) { // Mouse event
+    } else if (event.clientX !== undefined) {
         mouseX = event.clientX - rect.left;
         mouseY = event.clientY - rect.top;
-    } else { // Button click without position
+    } else {
         mouseX = rect.width / 2;
         mouseY = rect.height / 2;
     }
@@ -242,13 +203,6 @@ document.addEventListener('DOMContentLoaded', function() {
             this.value = this.value.toUpperCase();
         });
     }
-
-    // Add event listeners for all scoring inputs
-    document.querySelectorAll('input[type="number"], input[type="checkbox"], select[name="climb_type"]')
-        .forEach(input => input.addEventListener('input', updateTotal));
-
-    // Initialize total
-    updateTotal();
 
     // Form submission handler
     const form = document.getElementById('scoutingForm');

@@ -4,23 +4,19 @@ let currentPathData = null;
 function showAutoPath(pathData, autoNotes, deviceType) {
     currentPathData = pathData;
     
-    // Show the modal
     const modal = document.getElementById('autoPathModal');
     modal.classList.remove('hidden');
     
-    // Initialize canvas and coordinate system if not already done
     if (!modalCanvas) {
         modalCanvas = document.getElementById('modalAutoPath');
         modalCoordSystem = new CanvasCoordinateSystem(modalCanvas);
         
-        // Set canvas size to match container
         resizeModalCanvas();
         window.addEventListener('resize', resizeModalCanvas);
     }
     
     redrawPaths();
     
-    // Set auto notes
     const notesElement = document.getElementById('modalAutoNotes');
     if (notesElement) {
         notesElement.textContent = autoNotes || 'No notes available';
@@ -129,19 +125,16 @@ const filterRows = () => {
             row.style.display = searchValue.includes(searchTerm) ? '' : 'none';
         });
 
-        // Hide section if all rows are hidden
         const visibleRows = Array.from(section.querySelectorAll('.team-row')).filter(row => row.style.display !== 'none');
         section.style.display = visibleRows.length > 0 ? '' : 'none';
     });
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize DOM elements
     filterType = document.getElementById('filterType');
     searchInput = document.getElementById('searchInput');
     eventSections = document.querySelectorAll('.event-section');
 
-    // Add event listeners after elements are found
     if (searchInput && filterType) {
         searchInput.addEventListener('input', filterRows);
         filterType.addEventListener('change', filterRows);
@@ -156,38 +149,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-function updateTotal() {
-    // Auto scoring
-    const autoCoralPoints = [1, 2, 3, 4].reduce((sum, level) => {
-        return sum + (parseInt(document.querySelector(`input[name="auto_coral_level${level}"]`).value) || 0) * level;
-    }, 0);
-    
-    const autoAlgaeNet = (parseInt(document.querySelector('input[name="auto_algae_net"]').value) || 0) * 2;
-    const autoAlgaeProcessor = (parseInt(document.querySelector('input[name="auto_algae_processor"]').value) || 0) * 3;
-    
-    // Teleop scoring
-    const teleopCoralPoints = [1, 2, 3, 4].reduce((sum, level) => {
-        return sum + (parseInt(document.querySelector(`input[name="teleop_coral_level${level}"]`).value) || 0) * level;
-    }, 0);
-    
-    const teleopAlgaeNet = (parseInt(document.querySelector('input[name="teleop_algae_net"]').value) || 0) * 2;
-    const teleopAlgaeProcessor = (parseInt(document.querySelector('input[name="teleop_algae_processor"]').value) || 0) * 3;
-    const humanPlayerPoints = (parseInt(document.querySelector('input[name="human_player"]').value) || 0) * 2;
-    const climbType = document.querySelector('select[name="climb_type"]').value;
-    const climbSuccess = document.querySelector('input[name="climb_success"]').checked;
-    let climbPoints = 0;
-    if (climbSuccess) {
-        switch(climbType) {
-            case 'shallow': climbPoints = 6; break;
-            case 'deep': climbPoints = 12; break;
-            case 'park': climbPoints = 2; break;
-        }
-    }
-    
-    
-    const total = autoCoralPoints + autoAlgaeNet + autoAlgaeProcessor + 
-                 teleopCoralPoints + teleopAlgaeNet + teleopAlgaeProcessor + 
-                 humanPlayerPoints + climbPoints;
-    document.getElementById('totalPoints').textContent = total;
-}
