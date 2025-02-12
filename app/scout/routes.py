@@ -35,10 +35,9 @@ def add():
         return render_template("scouting/add.html")
     data = request.get_json() if request.is_json else request.form.to_dict()
 
-    # Convert the drawing coordinates from string to JSON if present
-    if "auto_path_coords" in data and isinstance(data["auto_path_coords"], str):
+    if "auto_path" in data and isinstance(data["auto_path"], str):
         try:
-            json.loads(data["auto_path_coords"])  # Validate JSON
+            data["auto_path"] = json.loads(data["auto_path"])
         except json.JSONDecodeError:
             flash("Invalid path coordinates format", "error")
             return redirect(url_for("scouting.home"))
