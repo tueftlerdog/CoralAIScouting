@@ -44,7 +44,6 @@ function createRadarChart(canvasId, data, isCombo = false) {
             'Teleop Scoring',
             'Climb Success',
             'Defense Rating',
-            'Human Player'
         ],
         datasets: isCombo ? [
             {
@@ -128,8 +127,6 @@ function updateRadarCharts(teamsData) {
                 stats.climb_rating || 0,
                 // Defense rating
                 stats.defense_rating || 0,
-                // Human player rating
-                stats.human_player || 0
             ]
         };
 

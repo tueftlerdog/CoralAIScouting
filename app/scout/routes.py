@@ -148,7 +148,6 @@ def format_team_stats(stats):
             stats.get("avg_teleop_algae_net", 0),
             stats.get("avg_teleop_algae_processor", 0)
         ]),
-        "human_player": stats.get("avg_human_player", 0),
         "climb_success_rate": stats.get("climb_success_rate", 0) * 100
     }
 
@@ -206,7 +205,6 @@ def compare_teams():
                                 "$teleop_algae_net", "$teleop_algae_processor"
                             ]
                         }},
-                        "human_player": {"$avg": "$human_player"},
                         "defense_rating": {"$avg": "$defense_rating"},
                         "successful_climbs": {
                             "$sum": {"$cond": ["$climb_success", 1, 0]}
@@ -252,7 +250,6 @@ def compare_teams():
                             "teleop_coral_level4": 1,
                             "teleop_algae_net": 1,
                             "teleop_algae_processor": 1,
-                            "human_player": 1,
                             "climb_type": 1,
                             "climb_success": 1,
                             "defense_rating": 1,
@@ -285,7 +282,6 @@ def compare_teams():
                         "teleop_scoring": (stats[0]["total_algae"] / matches_played) / 20,
                         "climb_rating": (stats[0]["successful_climbs"] / matches_played) / 20,
                         "defense_rating": stats[0]["defense_rating"],
-                        "human_player": stats[0]["human_player"]
                     }
                 else:
                     normalized_stats = {
@@ -293,7 +289,6 @@ def compare_teams():
                         "teleop_scoring": 0,
                         "climb_rating": 0,
                         "defense_rating": 0,
-                        "human_player": 0
                     }
 
                 # Convert ObjectId in stats
@@ -401,7 +396,6 @@ async def search_teams():
                     "auto_algae_processor": {"$ifNull": ["$auto_algae_processor", 0]},
                     "teleop_algae_net": {"$ifNull": ["$teleop_algae_net", 0]},
                     "teleop_algae_processor": {"$ifNull": ["$teleop_algae_processor", 0]},
-                    "human_player": {"$ifNull": ["$human_player", 0]},
                     "climb_type": 1,
                     "climb_success": 1,
                     "auto_path": 1,
@@ -462,9 +456,6 @@ def leaderboard():
                 # Teleop Algae
                 "teleop_algae_net": {"$avg": {"$ifNull": ["$teleop_algae_net", 0]}},
                 "teleop_algae_processor": {"$avg": {"$ifNull": ["$teleop_algae_processor", 0]}},
-
-                # Human Player
-                "human_player": {"$avg": {"$ifNull": ["$human_player", 0]}},
                 
                 # Defense Rating
                 "defense_rating": {"$avg": {"$ifNull": ["$defense_rating", 0]}},
@@ -567,7 +558,6 @@ def leaderboard():
                         100
                     ]
                 },
-                "human_player": {"$round": ["$human_player", 1]},
                 "defense_rating": {"$round": ["$defense_rating", 1]}
             }}
         ]
@@ -581,7 +571,6 @@ def leaderboard():
             'auto_algae': 'total_auto_algae',
             'teleop_algae': 'total_teleop_algae',
             'deep_climb': 'deep_climb_success_rate',
-            'human_player': 'human_player',
             'defense': 'defense_rating'
         }.get(sort_type, 'total_coral')
 
@@ -631,29 +620,10 @@ def matches():
                             "teleop_coral_level4": {"$ifNull": ["$teleop_coral_level4", 0]},
                             "teleop_algae_net": {"$ifNull": ["$teleop_algae_net", 0]},
                             "teleop_algae_processor": {"$ifNull": ["$teleop_algae_processor", 0]},
-                            "human_player": {"$ifNull": ["$human_player", 0]},
                             "climb_type": "$climb_type",
                             "climb_success": "$climb_success"
                         }
                     },
-                    "red_human_player": {
-                        "$avg": {
-                            "$cond": [
-                                {"$eq": ["$alliance", "red"]},
-                                "$human_player",
-                                None
-                            ]
-                        }
-                    },
-                    "blue_human_player": {
-                        "$avg": {
-                            "$cond": [
-                                {"$eq": ["$alliance", "blue"]},
-                                "$human_player",
-                                None
-                            ]
-                        }
-                    }
                 }
             },
             {"$sort": {"_id.event": 1, "_id.match": 1}}
@@ -700,7 +670,6 @@ def matches():
                 "coral_level4": t["auto_coral_level4"] + t["teleop_coral_level4"],
                 "algae_net": t["auto_algae_net"] + t["teleop_algae_net"],
                 "algae_processor": t["auto_algae_processor"] + t["teleop_algae_processor"],
-                "human_player": t["human_player"],
                 "climb_type": t["climb_type"],
                 "climb_success": t["climb_success"]
             } for t in red_teams]
@@ -713,14 +682,9 @@ def matches():
                 "coral_level4": t["auto_coral_level4"] + t["teleop_coral_level4"],
                 "algae_net": t["auto_algae_net"] + t["teleop_algae_net"],
                 "algae_processor": t["auto_algae_processor"] + t["teleop_algae_processor"],
-                "human_player": t["human_player"],
                 "climb_type": t["climb_type"],
                 "climb_success": t["climb_success"]
             } for t in blue_teams]
-            
-            # Update alliance data structure
-            red_algae["human_player"] = match["red_human_player"] or 0
-            blue_algae["human_player"] = match["blue_human_player"] or 0
 
             matches.append({
                 "event_code": match["_id"]["event"],

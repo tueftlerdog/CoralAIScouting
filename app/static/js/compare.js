@@ -197,9 +197,8 @@ function formatStatsWithHighlighting(stats = {}, allStats) {
         'Climb Success Rate': calculateStatRanking(stats.climb_success_rate || 0, allStats.map(s => s?.climb_success_rate || 0)),
         'Preferred Climb Type': stats.preferred_climb_type || 'none',
 
-        // Add Human Player & Defense comparisons
-        'Human Player & Defense': {
-            'Human Player': calculateStatRanking(stats.human_player || 0, allStats.map(s => s?.human_player || 0)),
+        // Defense comparisons
+        'Defense': {
             'Defense Rating': calculateStatRanking(stats.defense_rating || 0, allStats.map(s => s?.defense_rating || 0))
         }
     };
@@ -255,11 +254,10 @@ function formatStatsWithHighlighting(stats = {}, allStats) {
                 </div>
             </div>
 
-            <!-- Human Player & Defense -->
             <div>
-                <div class="font-medium text-gray-700 border-b mb-2">Human Player & Defense</div>
+                <div class="font-medium text-gray-700 border-b mb-2"Defense</div>
                 <div class="grid grid-cols-2 gap-2">
-                    ${Object.entries(statComparisons['Human Player & Defense']).map(([stat, {value, highlight}]) => `
+                    ${Object.entries(statComparisons['Defense']).map(([stat, {value, highlight}]) => `
                         <div class="text-sm">${stat}:</div>
                         <div class="text-sm font-medium ${highlight}">
                             ${value.toFixed(2)} / 5
@@ -396,7 +394,6 @@ function updateRadarChart(teamsData) {
                 (stats.teleop_scoring || 0)*2,    
                 (stats.climb_rating || 0)*200,      
                 (stats.defense_rating || 0)*2,           
-                (stats.human_player || 0)*2              
             ],
             backgroundColor: colors[index],
             borderColor: borderColors[index],
@@ -416,7 +413,6 @@ function updateRadarChart(teamsData) {
                 'Teleop Scoring',
                 'Climb Success',
                 'Defense Rating',
-                'Human Player Rating'
             ],
             datasets: datasets
         },
@@ -502,7 +498,7 @@ function displayRawData(teamsData) {
                 match.teleop_coral_level3 || 0,
                 match.teleop_coral_level4 || 0
             ].join('/');
-            const teleopAlgaeScores = `${match.teleop_algae_net || 0}/${match.teleop_algae_processor || 0}/${match.human_player || 0}`;
+            const teleopAlgaeScores = `${match.teleop_algae_net || 0}/${match.teleop_algae_processor || 0}`;
             
             row.innerHTML = `
                 <td class="px-3 sm:px-6 py-4">
@@ -597,7 +593,6 @@ function createRadarChart(data) {
         'teleop_scoring',
         'climb_rating',
         'defense_rating',
-        'human_player'
     ];
 
     // Prepare the data for the radar chart

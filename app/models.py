@@ -76,9 +76,7 @@ class TeamData:
         
         # Algae scoring
         self.algae_net = data.get('algae_net', 0)
-        self.algae_processor = data.get('algae_processor', 0)
-        self.human_player = data.get('human_player', 0)  # Total successful shots
-        
+        self.algae_processor = data.get('algae_processor', 0)        
         # Climb
         self.climb_type = data.get('climb_type', '')  # 'shallow', 'deep', 'park', or ''
         self.climb_success = data.get('climb_success', False)
@@ -120,8 +118,6 @@ class TeamData:
         self.teleop_algae_net = data.get('teleop_algae_net', 0)
         self.teleop_algae_processor = data.get('teleop_algae_processor', 0)
         
-        # Human Player (single field)
-        self.human_player = data.get('human_player', 0)
 
     @classmethod
     def create_from_db(cls, data):
@@ -146,7 +142,6 @@ class TeamData:
             'auto_algae_processor': self.auto_algae_processor,
             'teleop_algae_net': self.teleop_algae_net,
             'teleop_algae_processor': self.teleop_algae_processor,
-            'human_player': self.human_player,
             'climb_type': self.climb_type,
             'climb_success': self.climb_success,
             'defense_rating': self.defense_rating,

@@ -116,10 +116,7 @@ class ScoutingManager(DatabaseManager):
                 # Teleop Algae scoring
                 "teleop_algae_net": int(data.get("teleop_algae_net", 0)),
                 "teleop_algae_processor": int(data.get("teleop_algae_processor", 0)),
-                
-                # Human Player
-                "human_player": int(data.get("human_player", 0)),
-                
+                                
                 # Climb
                 "climb_type": data.get("climb_type", ""),
                 "climb_success": bool(data.get("climb_success", False)),
@@ -179,7 +176,6 @@ class ScoutingManager(DatabaseManager):
                         "auto_algae_processor": 1,
                         "teleop_algae_net": 1,
                         "teleop_algae_processor": 1,
-                        "human_player": 1,
                         "climb_type": 1,
                         "climb_success": 1,
                         "defense_rating": 1,
@@ -260,8 +256,7 @@ class ScoutingManager(DatabaseManager):
                 # Algae scoring
                 "algae_net": int(data.get("algae_net", 0)),
                 "algae_processor": int(data.get("algae_processor", 0)),
-                "human_player": int(data.get("human_player", 0)),
-                
+
                 # Climb
                 "climb_type": data.get("climb_type", ""),
                 "climb_success": bool(data.get("climb_success", False)),

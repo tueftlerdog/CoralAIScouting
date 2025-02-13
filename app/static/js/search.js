@@ -105,7 +105,7 @@ const displayTeamInfo = (team) => {
             const autoCoral = `${entry.auto_coral_level1}/${entry.auto_coral_level2}/${entry.auto_coral_level3}/${entry.auto_coral_level4}`;
             const teleopCoral = `${entry.teleop_coral_level1}/${entry.teleop_coral_level2}/${entry.teleop_coral_level3}/${entry.teleop_coral_level4}`;
             const autoAlgae = `${entry.auto_algae_net}/${entry.auto_algae_processor}`;
-            const teleopAlgae = `${entry.teleop_algae_net}/${entry.teleop_algae_processor}/${entry.human_player || 0}`;
+            const teleopAlgae = `${entry.teleop_algae_net}/${entry.teleop_algae_processor}`;
 
             // Create climb status cell
             const climbSpan = document.createElement('span');
