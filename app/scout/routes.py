@@ -38,7 +38,7 @@ def add():
     if "auto_path" in data:
         try:
             if isinstance(data["auto_path"], str):
-                if data["auto_path"].strip():
+                if data["auto_path"].strip():  # If not empty string
                     data["auto_path"] = json.loads(data["auto_path"])
                 else:
                     data["auto_path"] = [] 
@@ -165,9 +165,9 @@ def format_team_stats(stats):
 def compare_teams():
     try:
         teams = []
-        for i in range(1, 4):  # Support up to 3 teams
+        for i in range(1, 4):
             if team_num := request.args.get(f'team{i}'):
-                teams.append(team_num)
+                teams.append(int(team_num))
 
         if len(teams) < 2:
             return jsonify({"error": "At least 2 teams are required"}), 400
@@ -175,9 +175,8 @@ def compare_teams():
         teams_data = {}
         for team_num in teams:
             try:
-                # Add team access filter to pipeline
                 pipeline = [
-                    {"$match": {"team_number": int(team_num)}},
+                    {"$match": {"team_number": team_num}},
                     {"$lookup": {
                         "from": "users",
                         "localField": "scouter_id",
@@ -185,122 +184,146 @@ def compare_teams():
                         "as": "scouter"
                     }},
                     {"$unwind": "$scouter"},
-                    # Fix team access filter
-                    {"$match": {
+                     {"$match": {
                         "$or": [
-                            {"scouter.teamNumber": current_user.teamNumber},
-                            {"scouter._id": ObjectId(current_user.get_id())}
-                        ] if current_user.teamNumber else {
-                            "scouter._id": ObjectId(current_user.get_id())
+                                {"scouter.teamNumber": current_user.teamNumber} if current_user.teamNumber else {"scouter._id": ObjectId(current_user.get_id())},
+                                {"scouter._id": ObjectId(current_user.get_id())}
+                            ]
                         }
+                    },
+                    {"$group": {
+                        "_id": "$team_number",
+                        "matches_played": {"$sum": 1},
+                        "avg_auto_coral_level1": {"$avg": "$auto_coral_level1"},
+                        "avg_auto_coral_level2": {"$avg": "$auto_coral_level2"},
+                        "avg_auto_coral_level3": {"$avg": "$auto_coral_level3"},
+                        "avg_auto_coral_level4": {"$avg": "$auto_coral_level4"},
+                        "avg_auto_algae_net": {"$avg": "$auto_algae_net"},
+                        "avg_auto_algae_processor": {"$avg": "$auto_algae_processor"},
+                        "avg_teleop_coral_level1": {"$avg": "$teleop_coral_level1"},
+                        "avg_teleop_coral_level2": {"$avg": "$teleop_coral_level2"},
+                        "avg_teleop_coral_level3": {"$avg": "$teleop_coral_level3"},
+                        "avg_teleop_coral_level4": {"$avg": "$teleop_coral_level4"},
+                        "avg_teleop_algae_net": {"$avg": "$teleop_algae_net"},
+                        "avg_teleop_algae_processor": {"$avg": "$teleop_algae_processor"},
+                        "climb_success_rate": {"$avg": {"$cond": ["$climb_success", 1, 0]}},
+                        "defense_notes": {"$push": "$defense_notes"},
+                        "auto_paths": {"$push": {
+                            "path": "$auto_path",
+                            "notes": "$auto_notes",
+                            "match_number": "$match_number"
+                        }},
+                        "defense_rating": {"$avg": "$defense_rating"},
+                        "preferred_climb_type": {"$last": "$climb_type"},
+                        "matches": {"$push": "$$ROOT"}
                     }}
                 ]
 
                 stats = list(scouting_manager.db.team_data.aggregate(pipeline))
 
-                # Get the 5 most recent matches and convert ObjectId to string
-                matches = list(scouting_manager.db.team_data.aggregate([
-                    {"$match": {"team_number": int(team_num)}},
-                    {
-                        "$lookup": {
-                            "from": "users",
-                            "localField": "scouter_id",
-                            "foreignField": "_id",
-                            "as": "scouter"
-                        }
-                    },
-                    {"$unwind": {
-                        "path": "$scouter",
-                        "preserveNullAndEmptyArrays": True
-                    }},
-                    {"$sort": {"match_number": -1}},
-                    {"$limit": 5},
-                    {
-                        "$project": {
-                            "_id": 1,
-                            "team_number": 1,
-                            "match_number": 1,
-                            "event_code": 1,
-                            "alliance": 1,
-                            "auto_coral_level1": 1,
-                            "auto_coral_level2": 1,
-                            "auto_coral_level3": 1,
-                            "auto_coral_level4": 1,
-                            "auto_algae_net": 1,
-                            "auto_algae_processor": 1,
-                            "teleop_coral_level1": 1,
-                            "teleop_coral_level2": 1,
-                            "teleop_coral_level3": 1,
-                            "teleop_coral_level4": 1,
-                            "teleop_algae_net": 1,
-                            "teleop_algae_processor": 1,
-                            "climb_type": 1,
-                            "climb_success": 1,
-                            "defense_rating": 1,
-                            "auto_path": 1,
-                            "auto_notes": 1,
-                            "notes": 1,
-                            "scouter_name": "$scouter.username",
-                            "scouter_team": "$scouter.teamNumber",
-                            "profile_picture": "$scouter.profile_picture"
-                        }
-                    }
-                ]))
-
-                # Convert ObjectId to string in matches
-                for match in matches:
-                    match['_id'] = str(match['_id'])
-
-                # Get team info from TBA
-                team_key = f"frc{team_num}"
-                team_info = TBAInterface().get_team(team_key)
-
-                # Get auto paths
-                auto_paths = scouting_manager.get_auto_paths(team_num)
-
-                # Calculate normalized stats for radar chart
-                if stats and stats[0]["matches_played"] > 0:
+                if stats and stats[0].get("matches_played", 0) > 0:
                     matches_played = stats[0]["matches_played"]
                     normalized_stats = {
-                        "auto_scoring": (stats[0]["total_coral"] / matches_played) / 20,
-                        "teleop_scoring": (stats[0]["total_algae"] / matches_played) / 20,
-                        "climb_rating": (stats[0]["successful_climbs"] / matches_played) / 20,
-                        "defense_rating": stats[0]["defense_rating"],
+                        "auto_scoring": (
+                            stats[0]["avg_auto_coral_level1"] + 
+                            stats[0]["avg_auto_coral_level2"] * 2 +
+                            stats[0]["avg_auto_coral_level3"] * 3 +
+                            stats[0]["avg_auto_coral_level4"] * 4 +
+                            stats[0]["avg_auto_algae_net"] * 2 +
+                            stats[0]["avg_auto_algae_processor"] * 3
+                        ) / 20,
+                        "teleop_scoring": (
+                            stats[0]["avg_teleop_coral_level1"] + 
+                            stats[0]["avg_teleop_coral_level2"] * 2 +
+                            stats[0]["avg_teleop_coral_level3"] * 3 +
+                            stats[0]["avg_teleop_coral_level4"] * 4 +
+                            stats[0]["avg_teleop_algae_net"] * 2 +
+                            stats[0]["avg_teleop_algae_processor"] * 3
+                        ) / 20,
+                        "climb_rating": stats[0]["climb_success_rate"],
+                        "defense_rating": stats[0]["defense_rating"] / 5 if stats[0].get("defense_rating") else 0
                     }
                 else:
                     normalized_stats = {
                         "auto_scoring": 0,
                         "teleop_scoring": 0,
                         "climb_rating": 0,
-                        "defense_rating": 0,
+                        "defense_rating": 0
                     }
 
-                # Convert ObjectId in stats
-                if stats and '_id' in stats[0]:
-                    stats[0]['_id'] = str(stats[0]['_id'])
+                # Get team info from TBA
+                team_key = f"frc{team_num}"
+                team_info = TBAInterface().get_team(team_key)
 
-                teams_data[team_num] = {
-                    "team_number": int(team_num),
+                # Get the 5 most recent matches
+                matches_pipeline = [
+                    {"$match": {"team_number": team_num}},
+                    {"$lookup": {
+                        "from": "users",
+                        "localField": "scouter_id",
+                        "foreignField": "_id",
+                        "as": "scouter"
+                    }},
+
+                     {"$match": {
+                        "$or": [
+                            {"scouter.teamNumber": current_user.teamNumber} if current_user.teamNumber else {"scouter._id": ObjectId(current_user.get_id())},
+                            {"scouter._id": ObjectId(current_user.get_id())}
+                        ]
+                    }},
+                    {"$unwind": "$scouter"},
+                    {"$sort": {"match_number": -1}},
+                    {"$limit": 5},
+                    {"$project": {
+                        "match_number": 1,
+                        "alliance": 1,
+                        "auto_coral_level1": 1,
+                        "auto_coral_level2": 1,
+                        "auto_coral_level3": 1,
+                        "auto_coral_level4": 1,
+                        "auto_algae_net": 1,
+                        "auto_algae_processor": 1,
+                        "teleop_coral_level1": 1,
+                        "teleop_coral_level2": 1,
+                        "teleop_coral_level3": 1,
+                        "teleop_coral_level4": 1,
+                        "teleop_algae_net": 1,
+                        "teleop_algae_processor": 1,
+                        "climb_success": 1,
+                        "climb_type": 1,
+                        "auto_path": 1,
+                        "auto_notes": 1,
+                        "defense_rating": 1,
+                        "notes": 1,
+                        "scouter_name": "$scouter.username",
+                        "profile_picture": "$scouter.profile_picture"
+                    }}
+                ]
+
+                matches = list(scouting_manager.db.team_data.aggregate(matches_pipeline))
+
+                teams_data[str(team_num)] = {
+                    "team_number": team_num,
                     "nickname": team_info.get("nickname", "Unknown"),
-                    "school_name": team_info.get("school_name"),
                     "city": team_info.get("city"),
                     "state_prov": team_info.get("state_prov"),
                     "country": team_info.get("country"),
                     "stats": stats[0] if stats else {},
                     "normalized_stats": normalized_stats,
-                    "matches": matches,
-                    "auto_paths": auto_paths,
+                    "matches": matches
                 }
 
             except Exception as team_error:
-                teams_data[team_num] = {
-                    "team_number": int(team_num),
+                current_app.logger.error(f"Error processing team {team_num}: {str(team_error)}", exc_info=True)
+                teams_data[str(team_num)] = {
+                    "team_number": team_num,
                     "error": str(team_error)
                 }
 
         return json.loads(json_util.dumps(teams_data))
 
     except Exception as e:
+        current_app.logger.error(f"Error in compare_teams: {str(e)}", exc_info=True)
         return jsonify({"error": "An error occurred while comparing teams"}), 500
 
 @scouting_bp.route("/search")

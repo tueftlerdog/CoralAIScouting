@@ -133,7 +133,7 @@ function updateHiddenInput() {
 function undoLastPath() {
     paths.pop();
     redrawPaths();
-    updateHiddenInput();
+    updateHiddenInput();w
 }
 
 function clearCanvas() {

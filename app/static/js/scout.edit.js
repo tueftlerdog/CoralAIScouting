@@ -32,14 +32,38 @@ function initCanvas() {
     if (pathDataInput && pathDataInput.value) {
         try {
             const rawValue = pathDataInput.value;
-            const cleanValue = rawValue.replace(/^"(.*)"$/, '$1');
-            const unescapedValue = cleanValue.replace(/\\"/g, '"');
-            paths = JSON.parse(unescapedValue);
-            
-            if (!Array.isArray(paths)) {
-                console.error('Invalid path data format');
-                paths = [];
+            // First, try parsing directly
+            try {
+                paths = JSON.parse(rawValue);
+            } catch {
+                // If direct parsing fails, try cleaning the string
+                const cleanValue = rawValue.replace(/^"(.*)"$/, '$1');
+                const unescapedValue = cleanValue.replace(/\\"/g, '"');
+                paths = JSON.parse(unescapedValue);
             }
+            
+            // Ensure paths is an array of arrays
+            if (!Array.isArray(paths)) {
+                paths = [[paths]];
+            } else if (!Array.isArray(paths[0])) {
+                paths = [paths];
+            }
+            
+            // Validate path structure
+            paths = paths.map(path => {
+                if (Array.isArray(path)) {
+                    return path.map(point => {
+                        if (typeof point === 'object' && 'x' in point && 'y' in point) {
+                            return {
+                                x: parseFloat(point.x),
+                                y: parseFloat(point.y)
+                            };
+                        }
+                        return null;
+                    }).filter(point => point !== null);
+                }
+                return [];
+            }).filter(path => path.length > 0);
             
             redrawPaths();
         } catch (error) {
