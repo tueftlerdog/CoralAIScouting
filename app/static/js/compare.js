@@ -568,20 +568,94 @@ function displayRawData(teamsData) {
     });
 }
 
-// Make sure showAutoPath function is defined globally
-window.showAutoPath = function(pathData, autoNotes = '') {
-    const modal = document.getElementById('autoPathModal');
-    const image = document.getElementById('modalAutoPathImage');
-    const notes = document.getElementById('modalAutoNotes');
+let modalCanvas, modalCoordSystem;
+let currentPathData = null;
+
+// Update the showAutoPath function
+function showAutoPath(pathData, autoNotes = '') {
+    currentPathData = pathData;
     
-    if (modal && image && notes) {
-        image.src = pathData;
-        notes.textContent = autoNotes || 'No auto notes provided';
-        modal.classList.remove('hidden');
-    } else {
-        console.error('Modal elements not found');
+    const modal = document.getElementById('autoPathModal');
+    modal.classList.remove('hidden');
+    
+    if (!modalCanvas) {
+        modalCanvas = document.getElementById('modalAutoPathCanvas');
+        modalCoordSystem = new CanvasCoordinateSystem(modalCanvas);
+        
+        resizeModalCanvas();
+        window.addEventListener('resize', resizeModalCanvas);
     }
-};
+    
+    redrawPaths();
+    
+    const notesElement = document.getElementById('modalAutoNotes');
+    if (notesElement) {
+        notesElement.textContent = autoNotes || 'No notes available';
+    }
+}
+
+function resizeModalCanvas() {
+    const container = modalCanvas.parentElement;
+    modalCanvas.width = container.clientWidth;
+    modalCanvas.height = container.clientHeight;
+    modalCoordSystem.updateTransform();
+    redrawPaths();
+}
+
+function redrawPaths() {
+    if (!modalCoordSystem || !currentPathData) return;
+    
+    modalCoordSystem.clear();
+    
+    let paths = currentPathData;
+    if (typeof paths === 'string') {
+        try {
+            paths = JSON.parse(paths);
+        } catch (e) {
+            console.error('Failed to parse path data:', e);
+            return;
+        }
+    }
+
+    if (Array.isArray(paths)) {
+        paths.forEach(path => {
+            if (Array.isArray(path) && path.length > 0) {
+                const formattedPath = path.map(point => {
+                    if (typeof point === 'object' && 'x' in point && 'y' in point) {
+                        return {
+                            x: (point.x / 1000) * modalCanvas.width,
+                            y: (point.y / 300) * modalCanvas.height
+                        };
+                    }
+                    return null;
+                }).filter(point => point !== null);
+
+                if (formattedPath.length > 0) {
+                    modalCoordSystem.drawPath(formattedPath, '#3b82f6', 3);
+                }
+            }
+        });
+    }
+}
+
+function closeAutoPathModal() {
+    const modal = document.getElementById('autoPathModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Initialize modal click handler
+window.addEventListener('load', function() {
+    const modal = document.getElementById('autoPathModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeAutoPathModal();
+            }
+        });
+    }
+});
 
 function createRadarChart(data) {
     // Extract teams for comparison
@@ -659,41 +733,3 @@ function getTeamColor(index) {
     ];
     return colors[index % colors.length];
 }
-
-function showAutoPath(pathData, autoNotes = '') {
-    const modal = document.getElementById('autoPathModal');
-    const image = document.getElementById('modalAutoPathImage');
-    const notes = document.getElementById('modalAutoNotes');
-    
-    image.src = pathData;
-    notes.textContent = autoNotes || 'No auto notes provided';
-    modal.classList.remove('hidden');
-}
-
-function closeAutoPathModal() {
-    document.getElementById('autoPathModal').classList.add('hidden');
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    // ... existing initialization code ...
-
-    // Add modal event listeners
-    const modal = document.getElementById('autoPathModal');
-    if (modal) {
-        // Close on clicking outside the modal
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeAutoPathModal();
-            }
-        });
-
-        // Close on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeAutoPathModal();
-            }
-        });
-    }
-
-    // ... rest of your initialization code ...
-});

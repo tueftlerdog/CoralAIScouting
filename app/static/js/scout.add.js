@@ -59,7 +59,9 @@ function startDrawing(e) {
 }
 
 function draw(e) {
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      return;
+    }
     e.preventDefault();
     const point = getPointFromEvent(e);
     currentPath.push(point);
@@ -67,7 +69,9 @@ function draw(e) {
 }
 
 function stopDrawing(e) {
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      return;
+    }
     e.preventDefault();
     isDrawing = false;
     if (currentPath.length > 1) {
@@ -123,7 +127,7 @@ function redrawPaths() {
 
 function updateHiddenInput() {
     const input = document.getElementById('auto_path');
-    input.value = JSON.stringify(paths);
+    input.value = paths.length > 0 ? JSON.stringify(paths) : JSON.stringify([]);
 }
 
 function undoLastPath() {
@@ -145,7 +149,9 @@ function resetZoom() {
 }
 
 function zoomIn(event) {
-    if (!coordSystem) return;
+    if (!coordSystem) {
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     let mouseX, mouseY;
     
@@ -165,7 +171,9 @@ function zoomIn(event) {
 }
 
 function zoomOut(event) {
-    if (!coordSystem) return;
+    if (!coordSystem) {
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     let mouseX, mouseY;
     
@@ -209,6 +217,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const teamNumber = form.querySelector('input[name="team_number"]').value;
             const eventCode = form.querySelector('input[name="event_code"]').value;
             const matchNumber = form.querySelector('input[name="match_number"]').value;
+
+            // Initialize auto_path with empty array if not set
+            const autoPathInput = form.querySelector('input[name="auto_path"]');
+            if (!autoPathInput.value) {
+                autoPathInput.value = JSON.stringify([]);
+            }
 
             try {
                 const response = await fetch(`/scouting/check_team?team=${teamNumber}&event=${eventCode}&match=${matchNumber}`);

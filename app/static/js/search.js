@@ -1,21 +1,91 @@
-// Define showAutoPath globally
+let modalCanvas, modalCoordSystem;
+let currentPathData = null;
+let searchInput;
+let selectedTeamInfo;
+
+function initializeCanvas() {
+    modalCanvas = document.getElementById('modalAutoPathCanvas');
+    if (modalCanvas) {
+        modalCanvas.width = 500;
+        modalCanvas.height = 500;
+        modalCoordSystem = new CanvasCoordinateSystem(modalCanvas);
+        window.addEventListener('resize', resizeModalCanvas);
+    }
+}
+
 function showAutoPath(pathData, autoNotes = '') {
-    const modal = document.getElementById('autoPathModal');
-    const image = document.getElementById('modalAutoPathImage');
-    const notes = document.getElementById('modalAutoNotes');
+    currentPathData = pathData;
     
-    image.src = pathData;
-    notes.textContent = autoNotes || 'No auto notes provided';
+    const modal = document.getElementById('autoPathModal');
     modal.classList.remove('hidden');
+    
+    if (!modalCanvas) {
+        modalCanvas = document.getElementById('modalAutoPathCanvas');
+        modalCoordSystem = new CanvasCoordinateSystem(modalCanvas);
+        
+        resizeModalCanvas();
+        window.addEventListener('resize', resizeModalCanvas);
+    }
+    
+    redrawPaths();
+    
+    const notesElement = document.getElementById('modalAutoNotes');
+    if (notesElement) {
+        notesElement.textContent = autoNotes || 'No notes available';
+    }
+}
+
+function resizeModalCanvas() {
+    const container = modalCanvas.parentElement;
+    modalCanvas.width = container.clientWidth;
+    modalCanvas.height = container.clientHeight;
+    modalCoordSystem.updateTransform();
+    redrawPaths();
+}
+
+function redrawPaths() {
+    if (!modalCoordSystem || !currentPathData) return;
+    
+    modalCoordSystem.clear();
+    
+    let paths = currentPathData;
+    if (typeof currentPathData === 'string') {
+        try {
+            paths = JSON.parse(currentPathData);
+        } catch (e) {
+            console.error('Error parsing path data:', e);
+            return;
+        }
+    }
+    
+    if (Array.isArray(paths)) {
+        paths.forEach(path => {
+            if (Array.isArray(path) && path.length > 0) {
+                const formattedPath = path.map(point => {
+                    if (typeof point === 'object' && 'x' in point && 'y' in point) {
+                        return {
+                            x: (point.x / 1000) * modalCanvas.width,
+                            y: (point.y / 300) * modalCanvas.height
+                        };
+                    }
+                    return null;
+                }).filter(point => point !== null);
+
+                if (formattedPath.length > 0) {
+                    modalCoordSystem.drawPath(formattedPath, '#3b82f6', 3);
+                }
+            }
+        });
+    }
 }
 
 function closeAutoPathModal() {
-    document.getElementById('autoPathModal').classList.add('hidden');
+    const modal = document.getElementById('autoPathModal');
+    modal.classList.add('hidden');
+    if (modalCoordSystem) {
+        modalCoordSystem.resetView();
+    }
 }
-
-let debounceTimer;
-let searchInput;
-let selectedTeamInfo;
 
 const init = (inputElement, teamInfoElement) => {
     if (!inputElement || !teamInfoElement) {
@@ -58,6 +128,28 @@ const performSearch = async (query) => {
         console.error('Error:', error);
         selectedTeamInfo.classList.add('hidden');
     }
+};
+
+const createPathCell = (entry) => {
+    const pathCell = document.createElement('td');
+    pathCell.className = 'px-6 py-4 whitespace-nowrap';
+    
+    if (entry.auto_path && entry.auto_path.length > 0) {
+        const pathButton = document.createElement('button');
+        pathButton.className = 'text-blue-600 hover:text-blue-900';
+        pathButton.textContent = 'View Path';
+        pathButton.addEventListener('click', () => {
+            showAutoPath(entry.auto_path, entry.auto_notes);
+        });
+        pathCell.appendChild(pathButton);
+    } else {
+        const noPath = document.createElement('span');
+        noPath.className = 'text-gray-400';
+        noPath.textContent = 'No path';
+        pathCell.appendChild(noPath);
+    }
+    
+    return pathCell;
 };
 
 const displayTeamInfo = (team) => {
@@ -113,24 +205,8 @@ const displayTeamInfo = (team) => {
             climbSpan.textContent = `${entry.climb_success ? '✓' : '✗'} ${entry.climb_type || 'Failed'}`;
 
             // Create auto path cell
-            const pathCell = document.createElement('td');
-            pathCell.className = 'px-6 py-4 whitespace-nowrap';
-            if (entry.auto_path) {
-                const pathButton = document.createElement('button');
-                pathButton.className = 'text-blue-600 hover:text-blue-900';
-                pathButton.textContent = 'View Path';
-                pathButton.addEventListener('click', () => {
-                    showAutoPath(entry.auto_path, entry.auto_notes);
-                });
-                pathCell.appendChild(pathButton);
-            } else {
-                const noPath = document.createElement('span');
-                noPath.className = 'text-gray-400';
-                noPath.textContent = 'No path';
-                pathCell.appendChild(noPath);
-            }
+            const pathCell = createPathCell(entry);
 
-            // Add all cells to the row
             row.append(
                 createCell(entry.event_code),
                 createCell(entry.match_number),
@@ -160,9 +236,23 @@ const displayTeamInfo = (team) => {
     selectedTeamInfo.classList.remove('hidden');
 };
 
+// Initialize search on page load
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.querySelector('#team-search');
-    const selectedTeamInfo = document.querySelector('#selected-team-info');
-
+    const searchInput = document.getElementById('team-search');
+    const selectedTeamInfo = document.getElementById('selected-team-info');
     init(searchInput, selectedTeamInfo);
 });
+
+// Initialize modal click handler
+window.addEventListener('load', function() {
+    const modal = document.getElementById('autoPathModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeAutoPathModal();
+            }
+        });
+    }
+});
+
+let debounceTimer;

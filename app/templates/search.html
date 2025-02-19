@@ -78,15 +78,17 @@
     </div>
 </div>
 
-<!-- Add the Auto Path Modal -->
 <div id="autoPathModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-    <div class="relative top-4 mx-auto p-3 border w-[95%] sm:w-[500px] shadow-lg rounded-md bg-white">
+    <div class="relative top-4 mx-auto p-3 border w-[95%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[50%] max-w-4xl shadow-lg rounded-md bg-white">
         <div class="flex flex-col items-center">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Auto Path</h3>
-            <div class="relative w-full overflow-hidden" style="max-height: 70vh;">
-                <img id="modalAutoPathImage" 
-                     class="w-full rounded-lg object-contain" 
-                     alt="Auto Path">
+            <div class="relative w-full overflow-hidden">
+                <div id="canvasContainer" class="w-full h-full">
+                    <canvas id="modalAutoPathCanvas" 
+                            class="w-full h-full border rounded-lg touch-none"
+                            style="background: url('/static/images/field-2025.png') center center / contain no-repeat;">
+                    </canvas>
+                </div>
             </div>
             <div class="w-full mt-4">
                 <h4 class="text-md font-medium text-gray-700 mb-2">Auto Notes</h4>
@@ -102,6 +104,7 @@
     </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/CanvasCoordinateSystem.js') }}"></script>
 <script src="{{ url_for('static', filename='js/search.js') }}"></script>
 
 {% endblock %}
