@@ -80,7 +80,9 @@ function updateTeamCards(data) {
         const cardNum = index + 1;
         const cardId = `team${cardNum}-info`;
         const card = document.getElementById(cardId);
-        if (!card) return;
+        if (!card) {
+          return;
+        }
 
         // Show the card
         card.classList.remove('hidden');
@@ -124,13 +126,17 @@ function updateTeamCards(data) {
     // Hide team3 card if no third team
     if (Object.keys(data).length < 3) {
         const team3Card = document.getElementById('team3-info');
-        if (team3Card) team3Card.classList.add('hidden');
+        if (team3Card) {
+          team3Card.classList.add('hidden');
+        }
     }
 }
 
 function updateRadarChart(data) {
     const canvas = document.getElementById('radarChart');
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
 
     if (radarChart) {
         radarChart.destroy();
@@ -197,7 +203,9 @@ window.addEventListener('resize', () => {
 
 function updateRawDataTable(data) {
     const tbody = document.getElementById('raw-data-tbody');
-    if (!tbody) return;
+    if (!tbody) {
+      return;
+    }
 
     tbody.innerHTML = '';
     
@@ -310,7 +318,9 @@ function resizeModalCanvas() {
 }
 
 function redrawPaths() {
-    if (!modalCoordSystem || !currentPathData) return;
+    if (!modalCoordSystem || !currentPathData) {
+      return;
+    }
     
     modalCoordSystem.clear();
     
@@ -346,7 +356,9 @@ function redrawPaths() {
 }
 
 function zoomIn(event) {
-    if (!modalCoordSystem) return;
+    if (!modalCoordSystem) {
+      return;
+    }
     const rect = modalCanvas.getBoundingClientRect();
     let mouseX = rect.width / 2;
     let mouseY = rect.height / 2;
@@ -356,7 +368,9 @@ function zoomIn(event) {
 }
 
 function zoomOut(event) {
-    if (!modalCoordSystem) return;
+    if (!modalCoordSystem) {
+      return;
+    }
     const rect = modalCanvas.getBoundingClientRect();
     let mouseX = rect.width / 2;
     let mouseY = rect.height / 2;
@@ -366,7 +380,9 @@ function zoomOut(event) {
 }
 
 function resetZoom() {
-    if (!modalCoordSystem) return;
+    if (!modalCoordSystem) {
+      return;
+    }
     modalCoordSystem.resetView();
     redrawPaths();
 }

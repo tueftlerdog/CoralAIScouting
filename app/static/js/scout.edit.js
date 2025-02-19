@@ -119,7 +119,9 @@ function startDrawing(e) {
 }
 
 function draw(e) {
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      return;
+    }
     e.preventDefault();
     const point = getPointFromEvent(e);
     currentPath.push(point);
@@ -127,7 +129,9 @@ function draw(e) {
 }
 
 function stopDrawing(e) {
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      return;
+    }
     e.preventDefault();
     isDrawing = false;
     if (currentPath.length > 1) {
@@ -176,7 +180,9 @@ function resetZoom() {
 }
 
 function zoomIn(event) {
-    if (!coordSystem) return;
+    if (!coordSystem) {
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     let mouseX, mouseY;
     
@@ -196,7 +202,9 @@ function zoomIn(event) {
 }
 
 function zoomOut(event) {
-    if (!coordSystem) return;
+    if (!coordSystem) {
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     let mouseX, mouseY;
     

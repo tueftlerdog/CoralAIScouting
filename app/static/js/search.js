@@ -44,7 +44,9 @@ function resizeModalCanvas() {
 }
 
 function redrawPaths() {
-    if (!modalCoordSystem || !currentPathData) return;
+    if (!modalCoordSystem || !currentPathData) {
+      return;
+    }
     
     modalCoordSystem.clear();
     
