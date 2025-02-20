@@ -32,14 +32,38 @@ function initCanvas() {
     if (pathDataInput && pathDataInput.value) {
         try {
             const rawValue = pathDataInput.value;
-            const cleanValue = rawValue.replace(/^"(.*)"$/, '$1');
-            const unescapedValue = cleanValue.replace(/\\"/g, '"');
-            paths = JSON.parse(unescapedValue);
-            
-            if (!Array.isArray(paths)) {
-                console.error('Invalid path data format');
-                paths = [];
+            // First, try parsing directly
+            try {
+                paths = JSON.parse(rawValue);
+            } catch {
+                // If direct parsing fails, try cleaning the string
+                const cleanValue = rawValue.replace(/^"(.*)"$/, '$1');
+                const unescapedValue = cleanValue.replace(/\\"/g, '"');
+                paths = JSON.parse(unescapedValue);
             }
+            
+            // Ensure paths is an array of arrays
+            if (!Array.isArray(paths)) {
+                paths = [[paths]];
+            } else if (!Array.isArray(paths[0])) {
+                paths = [paths];
+            }
+            
+            // Validate path structure
+            paths = paths.map(path => {
+                if (Array.isArray(path)) {
+                    return path.map(point => {
+                        if (typeof point === 'object' && 'x' in point && 'y' in point) {
+                            return {
+                                x: parseFloat(point.x),
+                                y: parseFloat(point.y)
+                            };
+                        }
+                        return null;
+                    }).filter(point => point !== null);
+                }
+                return [];
+            }).filter(path => path.length > 0);
             
             redrawPaths();
         } catch (error) {
@@ -95,7 +119,9 @@ function startDrawing(e) {
 }
 
 function draw(e) {
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      return;
+    }
     e.preventDefault();
     const point = getPointFromEvent(e);
     currentPath.push(point);
@@ -103,7 +129,9 @@ function draw(e) {
 }
 
 function stopDrawing(e) {
-    if (!isDrawing) return;
+    if (!isDrawing) {
+      return;
+    }
     e.preventDefault();
     isDrawing = false;
     if (currentPath.length > 1) {
@@ -152,7 +180,9 @@ function resetZoom() {
 }
 
 function zoomIn(event) {
-    if (!coordSystem) return;
+    if (!coordSystem) {
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     let mouseX, mouseY;
     
@@ -172,7 +202,9 @@ function zoomIn(event) {
 }
 
 function zoomOut(event) {
-    if (!coordSystem) return;
+    if (!coordSystem) {
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     let mouseX, mouseY;
     

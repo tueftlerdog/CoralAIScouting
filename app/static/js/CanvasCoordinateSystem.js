@@ -94,7 +94,9 @@ class CanvasCoordinateSystem {
     }
 
     drawPath(points, color = 'red', width = 2) {
-        if (!points || points.length < 2) return;
+        if (!points || points.length < 2) {
+          return;
+        }
 
         this.ctx.beginPath();
         this.ctx.moveTo(points[0].x, points[0].y);

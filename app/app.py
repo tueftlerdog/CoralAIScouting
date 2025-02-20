@@ -95,6 +95,17 @@ def create_app():
     def rate_limit_error(e):
         return render_template("429.html"), 429
 
+    @app.route('/static/manifest.json')
+    def serve_manifest():
+        return send_from_directory(app.static_folder, 'manifest.json')
+
+    @app.route('/static/js/service-worker.js')
+    def serve_service_worker():
+        response = make_response(send_from_directory(app.static_folder, 'js/service-worker.js'))
+        response.headers['Service-Worker-Allowed'] = '/'
+        response.headers['Cache-Control'] = 'no-cache'
+        return response
+
     return app
 
 

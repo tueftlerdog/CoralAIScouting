@@ -32,7 +32,9 @@ function resizeModalCanvas() {
 }
 
 function redrawPaths() {
-    if (!modalCoordSystem || !currentPathData) return;
+    if (!modalCoordSystem || !currentPathData) {
+      return;
+    }
     
     modalCoordSystem.clear();
     
@@ -68,7 +70,9 @@ function redrawPaths() {
 }
 
 function zoomIn(event) {
-    if (!modalCoordSystem) return;
+    if (!modalCoordSystem) {
+      return;
+    }
     const rect = modalCanvas.getBoundingClientRect();
     let mouseX = rect.width / 2;
     let mouseY = rect.height / 2;
@@ -78,7 +82,9 @@ function zoomIn(event) {
 }
 
 function zoomOut(event) {
-    if (!modalCoordSystem) return;
+    if (!modalCoordSystem) {
+      return;
+    }
     const rect = modalCanvas.getBoundingClientRect();
     let mouseX = rect.width / 2;
     let mouseY = rect.height / 2;
@@ -88,7 +94,9 @@ function zoomOut(event) {
 }
 
 function resetZoom() {
-    if (!modalCoordSystem) return;
+    if (!modalCoordSystem) {
+      return;
+    }
     modalCoordSystem.resetView();
     redrawPaths();
 }

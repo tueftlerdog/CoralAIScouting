@@ -10,410 +10,164 @@ const team3Input = document.getElementById('team3-input');
 const compareBtn = document.getElementById('compare-btn');
 const comparisonResults = document.getElementById('comparison-results');
 
+// Chart instance
+let radarChart = null;
+
+// Add these variables at the top of the file
+let modalCanvas, modalCoordSystem;
+let currentPathData = null;
+
 // Event Listeners
-compareBtn.addEventListener('click', compareTeams);
+compareBtn.addEventListener('click', handleCompare);
+team1Input.addEventListener('keypress', handleEnterKey);
+team2Input.addEventListener('keypress', handleEnterKey);
+team3Input.addEventListener('keypress', handleEnterKey);
 
-async function compareTeams() {
-    const teams = [
-        team1Input.value.trim(),
-        team2Input.value.trim(),
-        team3Input.value.trim()
-    ].filter(team => team !== '');
+function handleEnterKey(e) {
+    if (e.key === 'Enter') {
+        handleCompare();
+    }
+}
 
-    if (teams.length < MIN_TEAMS) {
-        alert(`Please enter at least ${MIN_TEAMS} team numbers`);
+async function handleCompare() {
+    const team1 = team1Input.value.trim();
+    const team2 = team2Input.value.trim();
+    const team3 = team3Input.value.trim();
+
+    if (!team1 || !team2) {
+        alert('Teams 1 and 2 are required');
         return;
     }
 
     try {
-        const queryString = teams
-            .map((team, index) => `team${index + 1}=${encodeURIComponent(team)}`)
-            .join('&');
+        console.log('Fetching data for teams:', { team1, team2, team3 });
         
-        const response = await fetch(`${API_ENDPOINT}?${queryString}`);
+        const response = await fetch(`${API_ENDPOINT}?team1=${team1}&team2=${team2}${team3 ? `&team3=${team3}` : ''}`);
         const data = await response.json();
-                
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to fetch team data');
+        
+        console.log('Received data:', data);
+
+        if (data.error) {
+            alert(data.error);
+            return;
         }
 
-        // Check if we have valid data before updating the chart
-        if (!data || Object.keys(data).length === 0) {
-            throw new Error('No data received from API');
-        }
+        updateDisplay(data);
+        comparisonResults.classList.remove('hidden');
 
-        displayComparisonResults(data);
     } catch (error) {
         console.error('Error comparing teams:', error);
-        alert(error.message || 'An error occurred while comparing teams');
+        alert('An error occurred while comparing teams');
     }
 }
 
-function displayComparisonResults(teamsData) {
-    comparisonResults.classList.remove('hidden');
+function updateDisplay(data) {
+    updateTeamCards(data);
+    updateRadarChart(data);
+    updateRawDataTable(data);
     
-    // Display raw scouting data first
-    displayRawData(teamsData);
+    // Add a slight delay to ensure DOM is ready
+    setTimeout(() => {
+        updateAutoPaths(data);
+    }, 100);
+}
+
+function updateTeamCards(data) {
+    console.log('Updating team cards with data:', data);
     
-    // Get all teams' stats for comparison
-    const allStats = Object.values(teamsData).map(team => {
-        if (!team || !team.stats) {
-          return {};
-        }
-        return team.stats;
-    });
-    
-    // Hide all team info containers first
-    for (let i = 1; i <= MAX_TEAMS; i++) {
-        const container = document.getElementById(`team${i}-info`);
-        if (container) {
-            container.classList.add('hidden');
-        }
-    }
-    
-    // Display each team's data with highlighting
-    Object.entries(teamsData).forEach(([teamNum, teamData], index) => {
-        // Add error handling for malformed team data
-        if (!teamData) {
-            console.error(`No data received for team ${teamNum}`);
-            return;
+    // Process each team's data
+    Object.entries(data).forEach(([teamNumber, teamData], index) => {
+        const cardNum = index + 1;
+        const cardId = `team${cardNum}-info`;
+        const card = document.getElementById(cardId);
+        if (!card) {
+          return;
         }
 
-        const teamPrefix = `team${index + 1}`;
-        const container = document.getElementById(`${teamPrefix}-info`);
-        
-        if (!container) {
-            console.error(`Container not found for ${teamPrefix}`);
-            return;
-        }
+        // Show the card
+        card.classList.remove('hidden');
 
-        container.classList.remove('hidden');
+        // Update header information
+        document.getElementById(`team${cardNum}-header`).textContent = `Team ${teamNumber}`;
+        document.getElementById(`team${cardNum}-number-name`).textContent = teamData.nickname;
+        document.getElementById(`team${cardNum}-location`).textContent = 
+            `${teamData.city}, ${teamData.state_prov}, ${teamData.country}`;
+
+        const stats = teamData.stats || {};
+
+        // Update Auto Period stats
+        document.getElementById(`team${cardNum}-auto-l1`).textContent = (stats.avg_auto_coral_level1 || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-auto-l2`).textContent = (stats.avg_auto_coral_level2 || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-auto-l3`).textContent = (stats.avg_auto_coral_level3 || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-auto-l4`).textContent = (stats.avg_auto_coral_level4 || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-auto-net`).textContent = (stats.avg_auto_algae_net || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-auto-processor`).textContent = (stats.avg_auto_algae_processor || 0).toFixed(2);
+
+        // Update Teleop Period stats
+        document.getElementById(`team${cardNum}-teleop-l1`).textContent = (stats.avg_teleop_coral_level1 || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-teleop-l2`).textContent = (stats.avg_teleop_coral_level2 || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-teleop-l3`).textContent = (stats.avg_teleop_coral_level3 || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-teleop-l4`).textContent = (stats.avg_teleop_coral_level4 || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-teleop-net`).textContent = (stats.avg_teleop_algae_net || 0).toFixed(2);
+        document.getElementById(`team${cardNum}-teleop-processor`).textContent = (stats.avg_teleop_algae_processor || 0).toFixed(2);
+
+        // Update Endgame stats
+        document.getElementById(`team${cardNum}-climb-success`).textContent = ((stats.climb_success_rate || 0) * 100).toFixed(1);
+        document.getElementById(`team${cardNum}-preferred-climb`).textContent = stats.preferred_climb_type || '-';
+
+        // Update Defense stats
+        document.getElementById(`team${cardNum}-defense`).textContent = `${(stats.defense_rating || 0).toFixed(1)}/5`;
         
-        // Update basic team info with additional error checking
-        const header = document.getElementById(`${teamPrefix}-header`);
-        const numberName = document.getElementById(`${teamPrefix}-number-name`);
-        const locationEl = document.getElementById(`${teamPrefix}-location`);
-        const statsContainer = document.getElementById(`${teamPrefix}-stats`);
-        
-        if (header) {
-          header.textContent = `Team ${teamData.team_number}`;
-        }
-        if (numberName) {
-          numberName.textContent = 
-                    `#${teamData.team_number}${teamData.nickname ? ` - ${teamData.nickname}` : ''}`;
-        }
-        
-        // Only show location if we have any location data
-        const location = formatLocation(teamData);
-        if (locationEl) {
-            if (location) {
-                locationEl.textContent = location;
-                locationEl.classList.remove('hidden');
-            } else {
-                locationEl.classList.add('hidden');
-            }
-        }
-        
-        // Update stats with highlighting
-        if (statsContainer) {
-            statsContainer.innerHTML = formatStatsWithHighlighting(teamData.stats, allStats);
-        }
+        // Update Defense Notes - Fixed to handle array properly
+        const defenseNotes = teamData.stats?.defense_notes?.[0] || 'No defense notes available';
+        document.getElementById(`team${cardNum}-defense-notes`).textContent = defenseNotes;
     });
 
-    // Adjust containers based on number of teams
-    const teamCount = Object.keys(teamsData).length;
-    const cardsContainer = document.getElementById('team-cards-container');
-    const autoPathsContainer = document.getElementById('auto-paths-container');
-
-    if (cardsContainer) {
-        if (teamCount === 2) {
-            cardsContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
-        } else if (teamCount === 3) {
-            cardsContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-6';
+    // Hide team3 card if no third team
+    if (Object.keys(data).length < 3) {
+        const team3Card = document.getElementById('team3-info');
+        if (team3Card) {
+          team3Card.classList.add('hidden');
         }
     }
-
-    if (autoPathsContainer) {
-        if (teamCount === 2) {
-            autoPathsContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
-        } else if (teamCount === 3) {
-            autoPathsContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-6';
-        }
-    }
-
-    // Display auto paths for each team
-    Object.entries(teamsData).forEach(([teamNum, teamData], index) => {
-        displayAutoPath(teamNum, teamData.auto_paths, index + 1);
-    });
-    
-    // Update radar chart
-    updateRadarChart(teamsData);
 }
 
-function formatLocation(teamData) {
-    const parts = [];
-    if (teamData.city) {
-      parts.push(teamData.city);
-    }
-    if (teamData.state_prov) {
-      parts.push(teamData.state_prov);
-    }
-    if (teamData.country && teamData.country !== 'USA') {
-      parts.push(teamData.country);
-    }
-    return parts.join(', ');
-}
-
-function formatStatsWithHighlighting(stats = {}, allStats) {
-    // Add default values if stats is undefined
-    stats = stats || {};
-    
-    const statComparisons = {
-        // Auto Period
-        'Auto Coral Scoring': {
-            'Level 1': calculateStatRanking(stats.auto_coral_level1 || 0, allStats.map(s => s?.auto_coral_level1 || 0)),
-            'Level 2': calculateStatRanking(stats.auto_coral_level2 || 0, allStats.map(s => s?.auto_coral_level2 || 0)),
-            'Level 3': calculateStatRanking(stats.auto_coral_level3 || 0, allStats.map(s => s?.auto_coral_level3 || 0)),
-            'Level 4': calculateStatRanking(stats.auto_coral_level4 || 0, allStats.map(s => s?.auto_coral_level4 || 0))
-        },
-        'Auto Algae Scoring': {
-            'Net': calculateStatRanking(stats.auto_algae_net || 0, allStats.map(s => s?.auto_algae_net || 0)),
-            'Processor': calculateStatRanking(stats.auto_algae_processor || 0, allStats.map(s => s?.auto_algae_processor || 0))
-        },
-        
-        // Teleop Period
-        'Teleop Coral Scoring': {
-            'Level 1': calculateStatRanking(stats.teleop_coral_level1 || 0, allStats.map(s => s?.teleop_coral_level1 || 0)),
-            'Level 2': calculateStatRanking(stats.teleop_coral_level2 || 0, allStats.map(s => s?.teleop_coral_level2 || 0)),
-            'Level 3': calculateStatRanking(stats.teleop_coral_level3 || 0, allStats.map(s => s?.teleop_coral_level3 || 0)),
-            'Level 4': calculateStatRanking(stats.teleop_coral_level4 || 0, allStats.map(s => s?.teleop_coral_level4 || 0))
-        },
-        'Teleop Algae Scoring': {
-            'Net': calculateStatRanking(stats.teleop_algae_net || 0, allStats.map(s => s?.teleop_algae_net || 0)),
-            'Processor': calculateStatRanking(stats.teleop_algae_processor || 0, allStats.map(s => s?.teleop_algae_processor || 0))
-        },
-        
-        // Endgame
-        'Climb Success Rate': calculateStatRanking(stats.climb_success_rate || 0, allStats.map(s => s?.climb_success_rate || 0)),
-        'Preferred Climb Type': stats.preferred_climb_type || 'none',
-
-        // Defense comparisons
-        'Defense': {
-            'Defense Rating': calculateStatRanking(stats.defense_rating || 0, allStats.map(s => s?.defense_rating || 0))
-        }
-    };
-
-    // Add null checks for value formatting
-    return `
-        <div class="space-y-4">
-            <!-- Auto Period -->
-            <div>
-                <div class="font-medium text-gray-700 border-b mb-2">Auto Period</div>
-                <div class="grid grid-cols-2 gap-2">
-                    ${Object.entries(statComparisons['Auto Coral Scoring']).map(([level, {value, highlight}]) => `
-                        <div class="text-sm pl-2">${level}:</div>
-                        <div class="text-sm font-medium ${highlight || ''}">${value.toFixed(2)} times/match</div>
-                    `).join('')}
-                    
-                    <div class="col-span-2 text-sm font-medium mt-2">Algae Scoring:</div>
-                    ${Object.entries(statComparisons['Auto Algae Scoring']).map(([method, {value, highlight}]) => `
-                        <div class="text-sm pl-2">${method}:</div>
-                        <div class="text-sm font-medium ${highlight}">${value.toFixed(2)} times/match</div>
-                    `).join('')}
-                </div>
-            </div>
-
-            <!-- Teleop Period -->
-            <div>
-                <div class="font-medium text-gray-700 border-b mb-2">Teleop Period</div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="col-span-2 text-sm font-medium">Coral Scoring:</div>
-                    ${Object.entries(statComparisons['Teleop Coral Scoring']).map(([level, {value, highlight}]) => `
-                        <div class="text-sm pl-2">${level}:</div>
-                        <div class="text-sm font-medium ${highlight}">${value.toFixed(2)} times/match</div>
-                    `).join('')}
-                    
-                    <div class="col-span-2 text-sm font-medium mt-2">Algae Scoring:</div>
-                    ${Object.entries(statComparisons['Teleop Algae Scoring']).map(([method, {value, highlight}]) => `
-                        <div class="text-sm pl-2">${method}:</div>
-                        <div class="text-sm font-medium ${highlight}">${value.toFixed(2)} times/match</div>
-                    `).join('')}
-                </div>
-            </div>
-
-            <!-- Endgame -->
-            <div>
-                <div class="font-medium text-gray-700 border-b mb-2">Endgame</div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="text-sm">Climb Success:</div>
-                    <div class="text-sm font-medium ${statComparisons['Climb Success Rate'].highlight}">
-                        ${statComparisons['Climb Success Rate'].value.toFixed(2)}%
-                    </div>
-                    <div class="text-sm">Preferred Climb:</div>
-                    <div class="text-sm font-medium">${statComparisons['Preferred Climb Type']}</div>
-                </div>
-            </div>
-
-            <div>
-                <div class="font-medium text-gray-700 border-b mb-2"Defense</div>
-                <div class="grid grid-cols-2 gap-2">
-                    ${Object.entries(statComparisons['Defense']).map(([stat, {value, highlight}]) => `
-                        <div class="text-sm">${stat}:</div>
-                        <div class="text-sm font-medium ${highlight}">
-                            ${value.toFixed(2)} / 5
-                        </div>
-                    `).join('')}
-                    <div class="text-sm">Defense Notes:</div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function calculateStatRanking(value, allValues) {
-    const max = Math.max(...allValues);
-    const min = Math.min(...allValues);
-    
-    let highlight = '';
-    if (value === max && max !== 0) {
-      highlight = 'text-green-600';
-    }
-    if (value === min && min !== max) {
-      highlight = 'text-red-600';
-    }
-    
-    return { value, highlight };
-}
-
-function displayAutoPath(teamNum, pathData, containerIndex) {
-    const containerSelector = `#auto-path-team${containerIndex}-container`;
-    const container = document.querySelector(containerSelector);
-    
-    if (!container) {
-        console.error(`Container ${containerSelector} not found`);
-        return;
+function updateRadarChart(data) {
+    const canvas = document.getElementById('radarChart');
+    if (!canvas) {
+      return;
     }
 
-    // Clear existing content
-    container.innerHTML = `<h4 class="font-medium text-gray-700">Team ${teamNum} Auto Paths</h4>`;
-
-    if (!pathData || pathData.length === 0) {
-        container.innerHTML += `
-            <p class="text-gray-500 text-sm">No auto paths available for this team.</p>
-        `;
-        return;
+    if (radarChart) {
+        radarChart.destroy();
     }
 
-    // Sort paths by match number and get latest 5
-    const sortedPaths = [...pathData]
-        .sort((a, b) => b.match_number - a.match_number)
-        .slice(0, 5);
-
-    // Create accordion container
-    const accordionContainer = document.createElement('div');
-    accordionContainer.className = 'space-y-2';
-    
-    // Create accordion items for each path
-    sortedPaths.forEach((path, index) => {
-        const accordionItem = document.createElement('div');
-        accordionItem.className = 'border rounded-lg';
-        
-        const header = document.createElement('button');
-        header.className = 'w-full px-4 py-2 text-left flex justify-between items-center bg-gray-50 hover:bg-gray-100 rounded-lg focus:outline-none';
-        header.innerHTML = `
-            <span class="font-medium">Match ${path.match_number} - ${path.event_code}</span>
-            <svg class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-        `;
-
-        const content = document.createElement('div');
-        content.className = 'p-4 hidden';
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = 400;  // Smaller width
-        canvas.height = 300; // Smaller height
-        canvas.className = 'border rounded-lg bg-white w-full h-auto max-w-full';
-        
-        content.appendChild(canvas);
-        accordionItem.appendChild(header);
-        accordionItem.appendChild(content);
-        
-        // Add click handler for accordion
-        header.addEventListener('click', () => {
-            const isHidden = content.classList.contains('hidden');
-            content.classList.toggle('hidden');
-            header.querySelector('svg').style.transform = isHidden ? 'rotate(180deg)' : '';
-            
-            if (isHidden) {
-                // Draw the path only when accordion is opened
-                const ctx = canvas.getContext('2d');
-                const bgImage = new Image();
-                bgImage.onload = () => {
-                    
-                    const pathImage = new Image();
-                    pathImage.onload = () => {
-                        ctx.drawImage(pathImage, 0, 0, canvas.width, canvas.height);
-                    };
-                    pathImage.src = path.image_data;
-                };
-                bgImage.src = "/static/images/field-2025.png";
-            }
-        });
-        
-        accordionContainer.appendChild(accordionItem);
-    });
-
-    container.appendChild(accordionContainer);
-}
-
-function updateRadarChart(teamsData) {
-    const ctx = document.getElementById('radar-chart-combined');
-    
-    if (!ctx) {
-        console.error('Radar chart canvas not found');
-        return;
-    }
-    
-    // Destroy existing chart if it exists
-    if (window.radarChart) {
-        window.radarChart.destroy();
-    }
-    
-    const datasets = Object.entries(teamsData).map(([teamNum, teamData], index) => {
-        const colors = ['rgba(37, 99, 235, 0.2)', 'rgba(220, 38, 38, 0.2)', 'rgba(5, 150, 105, 0.2)'];
-        const borderColors = ['rgb(37, 99, 235)', 'rgb(220, 38, 38)', 'rgb(5, 150, 105)'];
-        
-        // Ensure normalized_stats exists and has default values
-        const stats = teamData?.normalized_stats || {};
+    const datasets = Object.entries(data).map(([teamKey, teamData], index) => {
+        const normalized = teamData.normalized_stats || {};
+        const color = getTeamColor(index);
         
         return {
-            label: `Team ${teamNum}`,
+            label: `Team ${teamData.team_number}`,
             data: [
-                (stats.auto_scoring || 0)*2,      
-                (stats.teleop_scoring || 0)*2,    
-                (stats.climb_rating || 0)*200,      
-                (stats.defense_rating || 0)*2,           
+                normalized.auto_scoring || 0,
+                normalized.teleop_scoring || 0,
+                normalized.climb_rating || 0,
+                normalized.defense_rating || 0
             ],
-            backgroundColor: colors[index],
-            borderColor: borderColors[index],
+            backgroundColor: `${color}33`,
+            borderColor: color,
             borderWidth: 2,
-            pointBackgroundColor: borderColors[index],
+            pointBackgroundColor: color,
             pointBorderColor: '#fff',
             pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: borderColors[index]
+            pointHoverBorderColor: color
         };
     });
-    
-    window.radarChart = new Chart(ctx, {
+
+    radarChart = new Chart(canvas.getContext('2d'), {
         type: 'radar',
         data: {
-            labels: [
-                'Auto Scoring',
-                'Teleop Scoring',
-                'Climb Success',
-                'Defense Rating',
-            ],
+            labels: ['Auto Scoring', 'Teleop Scoring', 'Climb Success', 'Defense Rating'],
             datasets: datasets
         },
         options: {
@@ -422,32 +176,15 @@ function updateRadarChart(teamsData) {
             scales: {
                 r: {
                     beginAtZero: true,
-                    max: 10,
+                    max: 2,
                     ticks: {
-                        stepSize: 4
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    },
-                    angleLines: {
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    },
-                    pointLabels: {
-                        font: {
-                            size: window.innerWidth < 768 ? 10 : 14
-                        }
+                        stepSize: 0.5
                     }
                 }
             },
             plugins: {
                 legend: {
-                    position: window.innerWidth < 768 ? 'bottom' : 'right',
-                    labels: {
-                        boxWidth: window.innerWidth < 768 ? 12 : 40,
-                        font: {
-                            size: window.innerWidth < 768 ? 10 : 12
-                        }
-                    }
+                    position: 'top'
                 }
             }
         }
@@ -464,236 +201,308 @@ window.addEventListener('resize', () => {
     }
 });
 
-function displayRawData(teamsData) {
+function updateRawDataTable(data) {
     const tbody = document.getElementById('raw-data-tbody');
-    tbody.innerHTML = '';  // Clear existing rows
-    
-    Object.entries(teamsData).forEach(([teamNum, teamData]) => {
-        // Check if matches data exists
-        if (!teamData || !teamData.matches || !Array.isArray(teamData.matches)) {
-            console.warn(`No matches data for team ${teamNum}`, teamData);
-            return;
-        }
+    if (!tbody) {
+      return;
+    }
 
-        // Sort matches by match number (most recent first)
-        const sortedMatches = [...teamData.matches].sort((a, b) => b.match_number - a.match_number);
-        
-        sortedMatches.forEach(match => {
+    tbody.innerHTML = '';
+    
+    Object.entries(data).forEach(([teamNumber, teamData]) => {
+        teamData.matches?.forEach(match => {
             const row = document.createElement('tr');
-            row.className = 'hover:bg-gray-50';
             
-            // Safely get values with fallbacks
-            const alliance = match.alliance || 'unknown';
-            const matchNumber = match.match_number || 'N/A';
-            const autoCoralScores = [
-                match.auto_coral_level1 || 0,
-                match.auto_coral_level2 || 0,
-                match.auto_coral_level3 || 0,
-                match.auto_coral_level4 || 0
-            ].join('/');
-            const autoAlgaeScores = `${match.auto_algae_net || 0}/${match.auto_algae_processor || 0}`;
-            const teleopCoralScores = [
-                match.teleop_coral_level1 || 0,
-                match.teleop_coral_level2 || 0,
-                match.teleop_coral_level3 || 0,
-                match.teleop_coral_level4 || 0
-            ].join('/');
-            const teleopAlgaeScores = `${match.teleop_algae_net || 0}/${match.teleop_algae_processor || 0}`;
-            
+            // Parse auto path data
+            let autoPaths = [];
+            if (match.auto_path) {
+                try {
+                    if (typeof match.auto_path === 'string') {
+                        autoPaths = JSON.parse(match.auto_path);
+                    } else if (Array.isArray(match.auto_path)) {
+                        autoPaths = match.auto_path;
+                    }
+                } catch (e) {
+                    console.error('Error parsing auto path:', e);
+                }
+            }
+
+            const safeAutoPaths = JSON.stringify(autoPaths)
+                .replace(/'/g, '\\\'')
+                .replace(/"/g, '\\"');
+
             row.innerHTML = `
-                <td class="px-3 sm:px-6 py-4">
-                    <a href="/scouting/team/${teamNum}" class="text-blue-600 hover:text-blue-900">
-                        ${teamNum}
-                    </a>
+                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    ${teamNumber}
                 </td>
-                <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        <span class="px-2 py-1 text-sm rounded-full 
-                            ${alliance === 'red' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
-                            ${alliance.charAt(0).toUpperCase() + alliance.slice(1)}
-                        </span>
-                    </div>
+                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${match.alliance || '-'}
                 </td>
-                <td class="sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${matchNumber}</td>
-                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${autoCoralScores}</td>
-                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${autoAlgaeScores}</td>
-                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${teleopCoralScores}</td>
-                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">${teleopAlgaeScores}</td>
-                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
-                    ${match.climb_success ? 
-                        `<span class="text-green-600">✓ ${match.climb_type || 'Unknown'}</span>` : 
-                        `<span class="text-red-600">✗ ${match.climb_type || 'Unknown'}</span>`}
+                <td class="sm:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${match.match_number || '-'}
                 </td>
-                <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    ${match.auto_path ? 
-                        `<button onclick="showAutoPath('${match.auto_path}', '${match.auto_notes || ''}')" 
-                                class="text-blue-600 hover:text-blue-900">
-                            <span class="hidden sm:inline">View Path</span>
-                            <span class="sm:hidden">🗺️</span>
-                        </button>` : 
-                        `<span class="text-gray-400">No path</span>`}
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${match.auto_coral_level1 || 0}/${match.auto_coral_level2 || 0}/${match.auto_coral_level3 || 0}/${match.auto_coral_level4 || 0}
                 </td>
-                <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${match.auto_algae_net || 0}/${match.auto_algae_processor || 0}
+                </td>
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${match.teleop_coral_level1 || 0}/${match.teleop_coral_level2 || 0}/${match.teleop_coral_level3 || 0}/${match.teleop_coral_level4 || 0}
+                </td>
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${match.teleop_algae_net || 0}/${match.teleop_algae_processor || 0}
+                </td>
+                <td class="md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${match.climb_success ? `${match.climb_type || 'Yes'}` : 'No'}
+                </td>
+                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${autoPaths.length > 0 ? 
+                        `<button onclick='showAutoPath("${teamNumber}", ${match.match_number}, "${safeAutoPaths}")' class="text-blue-600 hover:text-blue-800">View</button>` 
+                        : 'None'}
+                </td>
+                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     ${match.defense_rating || 0}/5
                 </td>
-                <td class="lg:table-cell px-3 sm:px-6 py-4 whitespace-normal max-w-xs truncate">
-                    ${match.notes || ''}
+                <td class="lg:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${match.notes || '-'}
                 </td>
-                <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center space-x-2">
-                        <img src="${match.profile_picture && match.profile_picture !== 'default' ? 
-                                  `/api/profile_picture/${match.profile_picture}` : 
-                                  '/static/images/default_profile.png'}" 
-                             alt="Profile Picture" 
-                             class="w-6 h-6 sm:w-8 sm:h-8 rounded-full">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-1">
-                            <a class="text-blue-600 hover:text-blue-900 text-sm" 
-                               href="/auth/profile/${match.scouter_name || 'unknown'}">
-                                ${match.scouter_name || 'Unknown'}
-                            </a>
-                            ${match.scouter_team ? 
-                                `<span class="sm:inline">
-                                    <a href="/team/${match.scouter_team}" class="hover:text-blue-500">
-                                        (${match.scouter_team})
-                                    </a>
-                                </span>` : 
-                                ''}
-                        </div>
-                    </div>
+                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${match.scouter_name || '-'}
                 </td>
             `;
-            
             tbody.appendChild(row);
         });
     });
 }
 
-// Make sure showAutoPath function is defined globally
-window.showAutoPath = function(pathData, autoNotes = '') {
+// Helper function to get team colors
+function getTeamColor(index) {
+    const colors = ['#2563eb', '#dc2626', '#059669'];
+    return colors[index] || colors[0];
+}
+
+// Auto Path Modal Functions
+function showAutoPath(teamNumber, matchNumber, pathData, notes = '') {
+    // Store the path data
+    currentPathData = pathData;
+    
+    // Show the modal
     const modal = document.getElementById('autoPathModal');
-    const image = document.getElementById('modalAutoPathImage');
-    const notes = document.getElementById('modalAutoNotes');
+    modal.classList.remove('hidden');
     
-    if (modal && image && notes) {
-        image.src = pathData;
-        notes.textContent = autoNotes || 'No auto notes provided';
-        modal.classList.remove('hidden');
-    } else {
-        console.error('Modal elements not found');
+    // Initialize canvas if needed
+    if (!modalCanvas) {
+        modalCanvas = document.getElementById('modalAutoPathCanvas');
+        modalCoordSystem = new CanvasCoordinateSystem(modalCanvas);
+        resizeModalCanvas();
+        window.addEventListener('resize', resizeModalCanvas);
     }
-};
-
-function createRadarChart(data) {
-    // Extract teams for comparison
-    const teams = Object.keys(data);
     
-    // Define the metrics we want to compare
-    const metrics = [
-        'auto_scoring',
-        'teleop_scoring',
-        'climb_rating',
-        'defense_rating',
-    ];
+    // Draw the paths
+    redrawPaths();
+    
+    // Update notes
+    const notesElement = document.getElementById('modalAutoNotes');
+    if (notesElement) {
+        notesElement.textContent = `Team ${teamNumber} - Match ${matchNumber}${notes ? ': ' + notes : ''}`;
+    }
+}
 
-    // Prepare the data for the radar chart
-    const chartData = {
-        labels: metrics,
-        datasets: teams.map((team, index) => {
-            const teamData = data[team].normalized_stats;
-            const color = getTeamColor(index);
-            
-            return {
-                label: `Team ${team}`,
-                data: metrics.map(metric => teamData[metric] || 0),
-                fill: true,
-                backgroundColor: `${color}33`, // Add transparency
-                borderColor: color,
-                pointBackgroundColor: color,
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: color
-            };
-        })
-    };
+function resizeModalCanvas() {
+    const container = modalCanvas.parentElement;
+    modalCanvas.width = container.clientWidth;
+    modalCanvas.height = container.clientHeight;
+    modalCoordSystem.updateTransform();
+    redrawPaths();
+}
 
-    // Configuration for the radar chart
-    const config = {
-        type: 'radar',
-        data: chartData,
-        options: {
-            responsive: true,
-            scales: {
-                r: {
-                    min: 0,
-                    max: 5,
-                    ticks: {
-                        stepSize: 1
+function redrawPaths() {
+    if (!modalCoordSystem || !currentPathData) {
+      return;
+    }
+    
+    modalCoordSystem.clear();
+    
+    let paths = currentPathData;
+    if (typeof currentPathData === 'string') {
+        try {
+            paths = JSON.parse(currentPathData);
+        } catch (e) {
+            console.error('Error parsing path data:', e);
+            return;
+        }
+    }
+    
+    if (Array.isArray(paths)) {
+        paths.forEach(path => {
+            if (Array.isArray(path) && path.length > 0) {
+                const formattedPath = path.map(point => {
+                    if (typeof point === 'object' && 'x' in point && 'y' in point) {
+                        return {
+                            x: (point.x / 1000) * modalCanvas.width,
+                            y: (point.y / 300) * modalCanvas.height
+                        };
                     }
-                }
-            },
-            elements: {
-                line: {
-                    borderWidth: 3
+                    return null;
+                }).filter(point => point !== null);
+
+                if (formattedPath.length > 0) {
+                    modalCoordSystem.drawPath(formattedPath, '#3b82f6', 3);
                 }
             }
-        }
-    };
-
-    // Create the chart
-    const ctx = document.getElementById('radarChart').getContext('2d');
-    if (window.myRadarChart) {
-        window.myRadarChart.destroy();
+        });
     }
-    window.myRadarChart = new Chart(ctx, config);
 }
 
-// Helper function to get different colors for teams
-function getTeamColor(index) {
-    const colors = [
-        '#FF6384',
-        '#36A2EB',
-        '#FFCE56',
-        '#4BC0C0',
-        '#9966FF',
-        '#FF9F40'
-    ];
-    return colors[index % colors.length];
-}
-
-function showAutoPath(pathData, autoNotes = '') {
-    const modal = document.getElementById('autoPathModal');
-    const image = document.getElementById('modalAutoPathImage');
-    const notes = document.getElementById('modalAutoNotes');
+function zoomIn(event) {
+    if (!modalCoordSystem) {
+      return;
+    }
+    const rect = modalCanvas.getBoundingClientRect();
+    let mouseX = rect.width / 2;
+    let mouseY = rect.height / 2;
     
-    image.src = pathData;
-    notes.textContent = autoNotes || 'No auto notes provided';
-    modal.classList.remove('hidden');
+    modalCoordSystem.zoom(mouseX, mouseY, 1.1);
+    redrawPaths();
+}
+
+function zoomOut(event) {
+    if (!modalCoordSystem) {
+      return;
+    }
+    const rect = modalCanvas.getBoundingClientRect();
+    let mouseX = rect.width / 2;
+    let mouseY = rect.height / 2;
+    
+    modalCoordSystem.zoom(mouseX, mouseY, 0.9);
+    redrawPaths();
+}
+
+function resetZoom() {
+    if (!modalCoordSystem) {
+      return;
+    }
+    modalCoordSystem.resetView();
+    redrawPaths();
 }
 
 function closeAutoPathModal() {
-    document.getElementById('autoPathModal').classList.add('hidden');
+    const modal = document.getElementById('autoPathModal');
+    modal.classList.add('hidden');
+    if (modalCoordSystem) {
+        modalCoordSystem.resetView();
+    }
 }
 
+// Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // ... existing initialization code ...
-
-    // Add modal event listeners
     const modal = document.getElementById('autoPathModal');
     if (modal) {
-        // Close on clicking outside the modal
         modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeAutoPathModal();
-            }
-        });
-
-        // Close on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
+            if (e.target === modal) {
                 closeAutoPathModal();
             }
         });
     }
-
-    // ... rest of your initialization code ...
 });
+
+function updateAutoPaths(data) {
+    // First, ensure the container exists
+    const autoPathsContainer = document.getElementById('auto-paths-container');
+    if (!autoPathsContainer) {
+        console.error('Auto paths container not found');
+        return;
+    }
+
+    // Create the single container for all auto paths
+    autoPathsContainer.innerHTML = `
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h3 class="text-xl font-semibold">Auto Paths</h3>
+                <p class="text-sm text-gray-600">Latest 5 matches per team</p>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+        </div>
+    `;
+
+    const gridContainer = autoPathsContainer.querySelector('.grid');
+
+    Object.entries(data).forEach(([teamNumber, teamData], index) => {
+        const teamContainer = document.createElement('div');
+        
+        // Add team header
+        teamContainer.innerHTML = `
+            <h4 class="text-lg font-semibold mb-2">Team ${teamNumber} - ${teamData.nickname}</h4>
+        `;
+
+        // Get auto paths from matches
+        const autoPaths = teamData.matches?.map(match => ({
+            match_number: match.match_number,
+            path: match.auto_path,
+            notes: match.auto_notes
+        })).filter(path => path.path) || [];
+        
+        // Sort paths by match number and take latest 5
+        const sortedPaths = [...autoPaths]
+            .sort((a, b) => b.match_number - a.match_number)
+            .slice(0, 5);
+
+        if (sortedPaths.length === 0) {
+            teamContainer.innerHTML += `
+                <p class="text-gray-500 italic">No auto paths available</p>
+            `;
+        } else {
+            // Create a table for the paths
+            const table = document.createElement('table');
+            table.className = 'min-w-full divide-y divide-gray-200';
+            
+            // Add table header
+            table.innerHTML = `
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Match</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Path</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                </tbody>
+            `;
+
+            // Add paths to table
+            const tbody = table.querySelector('tbody');
+            sortedPaths.forEach(pathData => {
+                const row = document.createElement('tr');
+                
+                // Create a button that calls showAutoPath with the path data
+                const viewButton = document.createElement('button');
+                viewButton.className = 'text-blue-600 hover:text-blue-800';
+                viewButton.textContent = 'View Path';
+                viewButton.onclick = () => {
+                    showAutoPath(teamNumber, pathData.match_number, pathData.path, pathData.notes || '');
+                };
+                
+                row.innerHTML = `
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        ${pathData.match_number}
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm"></td>
+                    <td class="px-3 py-2 text-sm text-gray-500">
+                        ${pathData.notes || '-'}
+                    </td>
+                `;
+                
+                // Insert the button into the second cell
+                row.children[1].appendChild(viewButton);
+                
+                tbody.appendChild(row);
+            });
+            
+            teamContainer.appendChild(table);
+        }
+
+        gridContainer.appendChild(teamContainer);
+    });
+}
