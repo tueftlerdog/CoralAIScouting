@@ -73,8 +73,7 @@
                     {% if current_user.is_authenticated %}
                         {% if current_user.teamNumber %}
                             <a href="{{ url_for('scouting.home') }}" class="py-4 px-2 hover:text-blue-500 text-center">Scout</a>
-                            <a href="{{ url_for('scouting.search') }}" class="py-4 px-2 hover:text-blue-500 text-center">Search</a>
-                            <a href="{{ url_for('scouting.compare') }}" class="py-4 px-2 hover:text-purple-500 text-center">Compare</a>
+                            <a href="{{ url_for('scouting.lighthouse') }}" class="py-4 px-2 hover:text-purple-500 text-center">Compare</a>
                             <a href="{{ url_for('team.manage') }}" class="py-4 px-2 hover:text-blue-500 text-center">Team</a>
                         {% else %}
                             <a href="{{ url_for('team.join') }}" class="py-4 px-2 hover:text-green-500 text-center">Join Team</a>
@@ -139,8 +138,7 @@
             {% if current_user.is_authenticated %}
               {% if current_user.teamNumber %}
                   <a href="{{ url_for('scouting.home') }}" class="block py-3 px-4 hover:bg-blue-50 rounded-lg transition-colors">Scout</a>
-                  <a href="{{ url_for('scouting.search') }}" class="block py-3 px-4 hover:bg-blue-50 rounded-lg transition-colors">Search</a>
-                  <a href="{{ url_for('scouting.compare') }}" class="block py-3 px-4 hover:bg-blue-50 rounded-lg transition-colors">Compare</a>
+                  <a href="{{ url_for('scouting.lighthouse') }}" class="block py-3 px-4 hover:bg-blue-50 rounded-lg transition-colors">Compare</a>
                   <a href="{{ url_for('team.manage') }}" class="block py-3 px-4 hover:bg-blue-50 rounded-lg transition-colors">Team</a>
               {% else %}
                   <a href="{{ url_for('team.join') }}" class="block py-3 px-4 hover:bg-green-50 text-green-600 rounded-lg transition-colors">Join Team</a>

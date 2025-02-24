@@ -125,11 +125,11 @@ def delete(id):
     return redirect(url_for("scouting.home"))
 
 
-@scouting_bp.route("/compare")
+@scouting_bp.route("/lighthouse")
 @limiter.limit("30 per minute")
 @login_required
-def compare():
-    return render_template("compare.html")
+def lighthouse():
+    return render_template("lighthouse.html")
 
 def format_team_stats(stats):
     """Format team stats with calculated totals"""
@@ -325,13 +325,6 @@ def compare_teams():
     except Exception as e:
         current_app.logger.error(f"Error in compare_teams: {str(e)}", exc_info=True)
         return jsonify({"error": "An error occurred while comparing teams"}), 500
-
-@scouting_bp.route("/search")
-@login_required
-@limiter.limit("30 per minute")
-def search():
-    return render_template("search.html")
-
 
 @scouting_bp.route("/api/search")
 @login_required
