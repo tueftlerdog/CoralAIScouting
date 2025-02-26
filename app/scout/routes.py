@@ -38,7 +38,7 @@ def add():
     if "auto_path" in data:
         try:
             if isinstance(data["auto_path"], str):
-                if data["auto_path"].strip():  # If not empty string
+                if data["auto_path"].strip(): 
                     data["auto_path"] = json.loads(data["auto_path"])
                 else:
                     data["auto_path"] = [] 

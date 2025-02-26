@@ -32,22 +32,69 @@ function initCanvas() {
     if (pathDataInput && pathDataInput.value) {
         try {
             const rawValue = pathDataInput.value;
+            let parsedData;
+            
+            console.log('Loading path data:', rawValue);
+            
             // First, try parsing directly
             try {
-                paths = JSON.parse(rawValue);
-            } catch {
+                parsedData = JSON.parse(rawValue);
+                console.log('Direct parse successful:', parsedData);
+            } catch (err) {
+                console.log('Direct parse failed, trying cleanup:', err);
                 // If direct parsing fails, try cleaning the string
                 const cleanValue = rawValue.replace(/^"(.*)"$/, '$1');
                 const unescapedValue = cleanValue.replace(/\\"/g, '"');
-                paths = JSON.parse(unescapedValue);
+                parsedData = JSON.parse(unescapedValue);
+                console.log('Parse after cleanup:', parsedData);
             }
             
-            // Ensure paths is an array of arrays
-            if (!Array.isArray(paths)) {
-                paths = [[paths]];
-            } else if (!Array.isArray(paths[0])) {
-                paths = [paths];
+            // Check if we have the new format with metadata
+            if (parsedData && typeof parsedData === 'object' && 'paths' in parsedData) {
+                console.log('Using new format with metadata');
+                const { paths: loadedPaths, canvasWidth, canvasHeight } = parsedData;
+                
+                // Scale points if canvas dimensions have changed
+                if (canvasWidth && canvasHeight) {
+                    // Calculate scaling factors based on the current canvas dimensions
+                    const scaleX = canvas.width / canvasWidth;
+                    const scaleY = canvas.height / canvasHeight;
+                    
+                    console.log('Scaling factors:', { 
+                        originalWidth: canvasWidth, 
+                        originalHeight: canvasHeight,
+                        currentWidth: canvas.width,
+                        currentHeight: canvas.height,
+                        scaleX: scaleX,
+                        scaleY: scaleY
+                    });
+                    
+                    // Reset the coordinate system first to ensure clean state
+                    coordSystem.resetView();
+                    
+                    // Scale the points based on the ratio of dimensions
+                    paths = loadedPaths.map(path => 
+                        path.map(point => ({
+                            x: (point.x - 23) * scaleX, // WONTFIX: Added offset to x 
+                            y: (point.y - 1) * scaleY // WONTFIX: Added offset to y
+                        }))
+                    );
+                } else {
+                    paths = loadedPaths;
+                }
+            } else {
+                console.log('Using legacy format');
+                // Handle legacy format (just an array of paths)
+                if (!Array.isArray(parsedData)) {
+                    paths = [[parsedData]];
+                } else if (!Array.isArray(parsedData[0])) {
+                    paths = [parsedData];
+                } else {
+                    paths = parsedData;
+                }
             }
+            
+            console.log('Pre-validation paths:', paths);
             
             // Validate path structure
             paths = paths.map(path => {
@@ -64,6 +111,8 @@ function initCanvas() {
                 }
                 return [];
             }).filter(path => path.length > 0);
+            
+            console.log('Final validated paths:', paths);
             
             redrawPaths();
         } catch (error) {
@@ -142,7 +191,6 @@ function stopDrawing(e) {
 }
 
 function getPointFromEvent(e) {
-    const rect = canvas.getBoundingClientRect();
     return coordSystem.getDrawCoords(e.clientX, e.clientY);
 }
 
@@ -158,7 +206,13 @@ function redrawPaths() {
 
 function updateHiddenInput() {
     const input = document.getElementById('auto_path');
-    input.value = JSON.stringify(paths);
+    const pathData = {
+        paths: paths,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        timestamp: new Date().toISOString()
+    };
+    input.value = JSON.stringify(pathData);
 }
 
 function undoLastPath() {

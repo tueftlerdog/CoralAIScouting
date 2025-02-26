@@ -19,7 +19,6 @@ let paths = [];
 function initCanvas() {
     canvas = document.getElementById('autoPath');
     if (!canvas) {
-        console.error('Canvas element not found');
         return;
     }
 
@@ -39,7 +38,6 @@ function initCanvas() {
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd);
-
 }
 
 function resizeCanvas() {
@@ -111,7 +109,6 @@ function handleTouchEnd(e) {
 }
 
 function getPointFromEvent(e) {
-    const rect = canvas.getBoundingClientRect();
     return coordSystem.getDrawCoords(e.clientX, e.clientY);
 }
 
@@ -127,13 +124,19 @@ function redrawPaths() {
 
 function updateHiddenInput() {
     const input = document.getElementById('auto_path');
-    input.value = paths.length > 0 ? JSON.stringify(paths) : JSON.stringify([]);
+    const pathData = {
+        paths: paths,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        timestamp: new Date().toISOString()
+    };
+    input.value = JSON.stringify(pathData);
 }
 
 function undoLastPath() {
     paths.pop();
     redrawPaths();
-    updateHiddenInput();w
+    updateHiddenInput();
 }
 
 function clearCanvas() {
@@ -235,7 +238,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 form.submit();
             } catch (error) {
-                console.error('Error checking team:', error);
                 form.submit();
             }
         });
