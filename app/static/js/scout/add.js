@@ -195,6 +195,33 @@ function zoomOut(event) {
     redrawPaths();
 }
 
+function updateYouTubePlayer() {
+    const youtubeUrlInput = document.querySelector('input[name="youtube_url"]');
+    const youtubePlayerContainer = document.getElementById('youtubePlayerContainer');
+    const youtubePlayer = document.getElementById('youtubePlayer');
+
+    if (youtubeUrlInput && youtubePlayerContainer && youtubePlayer) {
+        const url = youtubeUrlInput.value.trim();
+        if (url) {
+            const videoId = extractYouTubeVideoId(url);
+            if (videoId) {
+                youtubePlayer.src = `https://www.youtube.com/embed/${videoId}`;
+                youtubePlayerContainer.classList.remove('hidden');
+            } else {
+                youtubePlayerContainer.classList.add('hidden');
+            }
+        } else {
+            youtubePlayerContainer.classList.add('hidden');
+        }
+    }
+}
+
+function extractYouTubeVideoId(url) {
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initCanvas();
 
@@ -241,5 +268,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.submit();
             }
         });
+    }
+
+    const youtubeUrlInput = document.querySelector('input[name="youtube_url"]');
+    if (youtubeUrlInput) {
+        youtubeUrlInput.addEventListener('input', updateYouTubePlayer);
     }
 });
