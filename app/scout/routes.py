@@ -46,6 +46,10 @@ def add():
             flash("Invalid path coordinates format", "error")
             return redirect(url_for("scouting.home"))
 
+    youtube_url = data.get("youtube_url")
+    if youtube_url:
+        data["youtube_url"] = youtube_url
+
     success, message = scouting_manager.add_scouting_data(data, current_user.get_id())
 
     if success:

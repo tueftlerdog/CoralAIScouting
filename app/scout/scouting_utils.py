@@ -160,6 +160,9 @@ class ScoutingManager(DatabaseManager):
                 # Metadata
                 "scouter_id": ObjectId(scouter_id),
                 "created_at": datetime.now(timezone.utc),
+
+                # YouTube Video URL
+                "youtube_url": data.get("youtube_url", "")
             }
 
             result = self.db.team_data.insert_one(team_data)
@@ -235,7 +238,8 @@ class ScoutingManager(DatabaseManager):
                     "scouter_id": 1,
                     "scouter_name": "$scouter.username",
                     "scouter_team": "$scouter.teamNumber",
-                    "device_type": 1
+                    "device_type": 1,
+                    "youtube_url": 1
                 }
             })
             
@@ -385,6 +389,9 @@ class ScoutingManager(DatabaseManager):
                 # Teleop Algae scoring
                 "teleop_algae_net": int(data.get("teleop_algae_net", 0)),
                 "teleop_algae_processor": int(data.get("teleop_algae_processor", 0)),
+
+                # YouTube Video URL
+                "youtube_url": data.get("youtube_url", "")
             }
 
             result = self.db.team_data.update_one(
