@@ -42,6 +42,14 @@ def create_app():
             mongo.db.create_collection("pit_scouting")
         if "assignments" not in mongo.db.list_collection_names():
             mongo.db.create_collection("assignments")
+        # Add new collection for coral analysis requests
+        if "coral_requests" not in mongo.db.list_collection_names():
+            mongo.db.create_collection("coral_requests")
+            # Create indexes for faster queries
+            mongo.db.coral_requests.create_index([("status", 1)])
+            mongo.db.coral_requests.create_index([("requested_by", 1)])
+            mongo.db.coral_requests.create_index([("youtube_url", 1)])
+            app.logger.info("Created coral_requests collection and indexes")
     
 
     login_manager.init_app(app)
@@ -72,6 +80,10 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(scouting_bp, url_prefix="/")
     app.register_blueprint(team_bp, url_prefix="/team")
+
+    # Register coral-specific routes
+    # These routes are already included in scouting_bp, but we log them for clarity
+    app.logger.info("Registered routes for coral analysis: /coral/request, /coral/results, /coral/status/<request_id>")
 
     @app.route("/")
     def index():
@@ -106,6 +118,14 @@ def create_app():
         response.headers['Cache-Control'] = 'no-cache'
         return response
 
+    # Add environment variable for Gemini API key (will be used by the Scout class)
+    app.config['GEMINI_API_KEY'] = os.getenv("GEMINI_API_KEY", "")
+    app.config['SECONDARY_GEMINI_API_KEY'] = os.getenv("SECONDARY_GEMINI_API_KEY", "")
+    
+    # Set configuration for coral analysis
+    app.config['CORAL_ANALYSIS_ENABLED'] = os.getenv("CORAL_ANALYSIS_ENABLED", "True").lower() == "true"
+    app.config['CORAL_MAX_REQUESTS_PER_HOUR'] = int(os.getenv("CORAL_MAX_REQUESTS_PER_HOUR", "3"))
+    
     return app
 
 

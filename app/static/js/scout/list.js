@@ -1,235 +1,166 @@
-let modalCanvas, modalCoordSystem;
-let currentPathData = null;
-
-function showAutoPath(pathData, autoNotes, deviceType) {
-    currentPathData = pathData;
-    
-    const modal = document.getElementById('autoPathModal');
-    modal.classList.remove('hidden');
-    
-    if (!modalCanvas) {
-        modalCanvas = document.getElementById('modalAutoPath');
-        modalCoordSystem = new CanvasCoordinateSystem(modalCanvas);
-        
-        resizeModalCanvas();
-        window.addEventListener('resize', resizeModalCanvas);
-    }
-    
-    redrawPaths();
-    
-    const notesElement = document.getElementById('modalAutoNotes');
-    if (notesElement) {
-        notesElement.textContent = autoNotes || 'No notes available';
-    }
-}
-
-function resizeModalCanvas() {
-    const container = modalCanvas.parentElement;
-    modalCanvas.width = container.clientWidth;
-    modalCanvas.height = container.clientHeight;
-    modalCoordSystem.updateTransform();
-    redrawPaths();
-}
-
-function redrawPaths() {
-    if (!modalCoordSystem || !currentPathData) {
-        console.log('Missing required data:', { modalCoordSystem: !!modalCoordSystem, currentPathData: !!currentPathData });
-        return;
-    }
-    
-    modalCoordSystem.clear();
-    console.log('Initial currentPathData:', currentPathData);
-    
-    let parsedData;
-    
-    // Parse the path data if it's a string
-    if (typeof currentPathData === 'string') {
-        try {
-            // First, try parsing directly
-            try {
-                parsedData = JSON.parse(currentPathData);
-                console.log('Direct parse successful:', parsedData);
-            } catch (err) {
-                console.log('Direct parse failed, trying cleanup:', err);
-                // If direct parsing fails, try cleaning the string
-                const cleanValue = currentPathData.replace(/^"(.*)"$/, '$1');
-                const unescapedValue = cleanValue.replace(/\\"/g, '"');
-                parsedData = JSON.parse(unescapedValue);
-                console.log('Parse after cleanup:', parsedData);
-            }
-        } catch (e) {
-            console.error('All parsing attempts failed:', e);
-            return;
-        }
-    } else {
-        parsedData = currentPathData;
-    }
-    
-    let paths = [];
-    console.log('Canvas dimensions:', { width: modalCanvas.width, height: modalCanvas.height });
-    
-    // Check if we have the new format with metadata
-    if (parsedData && typeof parsedData === 'object' && 'paths' in parsedData) {
-        console.log('Using new format with metadata');
-        const { paths: loadedPaths, canvasWidth, canvasHeight } = parsedData;
-        
-        // Scale points if canvas dimensions have changed
-        if (canvasWidth && canvasHeight) {
-            // Calculate scaling factors based on the current canvas dimensions
-            const scaleX = modalCanvas.width / canvasWidth;
-            const scaleY = modalCanvas.height / canvasHeight;
-            
-            console.log('Scaling factors:', { 
-                originalWidth: canvasWidth, 
-                originalHeight: canvasHeight,
-                currentWidth: modalCanvas.width,
-                currentHeight: modalCanvas.height,
-                scaleX: scaleX,
-                scaleY: scaleY
-            });
-            
-            // Reset the coordinate system first to ensure clean state
-            modalCoordSystem.resetView();
-            
-            // Scale the points directly based on the ratio of current to original dimensions
-            paths = loadedPaths.map(path => 
-                path.map(point => ({
-                    x: (point.x + 145) * scaleX, // WONTFIX: Added offset to x 
-                    y: (point.y - 1) * scaleY // WONTFIX: Added offset to y
-                }))
-            );
-        } else {
-            paths = loadedPaths;
-        }
-    } else {
-        console.log('Using legacy format');
-        // Handle legacy format (just an array of paths)
-        if (!Array.isArray(parsedData)) {
-            paths = [[parsedData]];
-        } else if (!Array.isArray(parsedData[0])) {
-            paths = [parsedData];
-        } else {
-            paths = parsedData;
-        }
-    }
-    
-    console.log('Pre-validation paths:', paths);
-    
-    // Validate path structure
-    paths = paths.map(path => {
-        if (Array.isArray(path)) {
-            return path.map(point => {
-                if (typeof point === 'object' && 'x' in point && 'y' in point) {
-                    return {
-                        x: parseFloat(point.x),
-                        y: parseFloat(point.y)
-                    };
-                }
-                return null;
-            }).filter(point => point !== null);
-        }
-        return [];
-    }).filter(path => path.length > 0);
-    
-    console.log('Final validated paths:', paths);
-    
-    // Reset zoom level to ensure consistent display
-    modalCoordSystem.resetView();
-    
-    // Draw each path
-    paths.forEach((path, index) => {
-        if (path.length > 0) {
-            console.log(`Drawing path ${index}:`, path);
-            modalCoordSystem.drawPath(path, '#3b82f6', 3);
-        }
-    });
-}
-
-function zoomIn(event) {
-    if (!modalCoordSystem) {
-      return;
-    }
-    const rect = modalCanvas.getBoundingClientRect();
-    let mouseX = rect.width / 2;
-    let mouseY = rect.height / 2;
-    
-    modalCoordSystem.zoom(mouseX, mouseY, 1.1);
-    redrawPaths();
-}
-
-function zoomOut(event) {
-    if (!modalCoordSystem) {
-      return;
-    }
-    const rect = modalCanvas.getBoundingClientRect();
-    let mouseX = rect.width / 2;
-    let mouseY = rect.height / 2;
-    
-    modalCoordSystem.zoom(mouseX, mouseY, 0.9);
-    redrawPaths();
-}
-
-function resetZoom() {
-    if (!modalCoordSystem) {
-      return;
-    }
-    modalCoordSystem.resetView();
-    redrawPaths();
-}
-
-function closeAutoPathModal() {
-    const modal = document.getElementById('autoPathModal');
-    modal.classList.add('hidden');
-    if (modalCoordSystem) {
-        modalCoordSystem.resetView();
-    }
-}
-
-const filterRows = () => {
-    const searchTerm = searchInput.value.toLowerCase();
-    const type = filterType.value;
-
-    Array.from(eventSections).forEach(section => {
-        const rows = Array.from(section.querySelectorAll('.team-row'));
-        
-        rows.forEach(row => {
-            let searchValue = '';
-            switch(type) {
-                case 'team':
-                    searchValue = row.dataset.teamNumber;
-                    break;
-                case 'match':
-                    searchValue = row.querySelector('td:nth-child(2)').textContent;
-                    break;
-                case 'scouter':
-                    searchValue = row.dataset.scouter.toLowerCase();
-                    break;
-            }
-
-            row.style.display = searchValue.includes(searchTerm) ? '' : 'none';
-        });
-
-        const visibleRows = Array.from(section.querySelectorAll('.team-row')).filter(row => row.style.display !== 'none');
-        section.style.display = visibleRows.length > 0 ? '' : 'none';
-    });
-};
+/**
+ * Scouting List JavaScript Module
+ * 
+ * Keep all existing functionality and add these modifications to integrate coral analysis features.
+ * Insert these functions at the appropriate places in your existing list.js file.
+ */
 
 document.addEventListener('DOMContentLoaded', function() {
-    filterType = document.getElementById('filterType');
-    searchInput = document.getElementById('searchInput');
-    eventSections = document.querySelectorAll('.event-section');
+    // Keep existing initialization code
+    
+    // Add this line to the existing DOMContentLoaded handler
+    setupCoralRequestButtons();
+    
+    // Keep any other existing initialization code
+});
 
-    if (searchInput && filterType) {
-        searchInput.addEventListener('input', filterRows);
-        filterType.addEventListener('change', filterRows);
-    }
-
-    const modal = document.getElementById('autoPathModal');
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeAutoPathModal();
+/**
+ * Sets up the coral request buttons
+ * Add this function to your list.js file
+ */
+function setupCoralRequestButtons() {
+    // Setup coral request buttons in the match list view
+    const coralRequestButtons = document.querySelectorAll('.coral-request-btn');
+    
+    coralRequestButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            
+            // Get data attributes from the button or parent row
+            const eventCode = this.getAttribute('data-event-code');
+            const matchNumber = this.getAttribute('data-match-number');
+            const youtubeUrl = this.getAttribute('data-youtube-url');
+            
+            // Redirect to the coral request page with pre-filled data
+            let requestUrl = `/coral/request?event_code=${eventCode}&match_number=${matchNumber}`;
+            
+            if (youtubeUrl) {
+                requestUrl += `&youtube_url=${encodeURIComponent(youtubeUrl)}`;
             }
+            
+            window.location.href = requestUrl;
+        });
+    });
+    
+    // Set up the global "Scout Coral for Me" button if it exists
+    const globalCoralButton = document.getElementById('globalCoralButton');
+    if (globalCoralButton) {
+        globalCoralButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            window.location.href = '/coral/request';
         });
     }
-});
+}
+
+/**
+ * Add this function to your showAutoPath function (if it doesn't exist already)
+ * This handles displaying the auto path modal
+ */
+function showAutoPath(pathData, notes, deviceType) {
+    // Open modal
+    const modal = document.getElementById('autoPathModal');
+    if (!modal) return;
+    
+    modal.classList.remove('hidden');
+    
+    // Set auto notes
+    const notesElement = document.getElementById('modalAutoNotes');
+    if (notesElement) {
+        notesElement.textContent = notes || 'No notes available';
+    }
+    
+    // Draw the path on canvas
+    const canvas = document.getElementById('modalAutoPath');
+    if (!canvas) return;
+    
+    // Get the canvas context and clear it
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Set up canvas dimensions
+    setupCanvasDimensions(canvas);
+    
+    // Draw the path data
+    drawPathOnCanvas(canvas, pathData);
+}
+
+/**
+ * Add this function to close the auto path modal (if it doesn't exist already)
+ */
+function closeAutoPathModal() {
+    const modal = document.getElementById('autoPathModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+/**
+ * Helper function to extract team number, match number, and event code
+ * from the current row or context
+ * 
+ * This is used by coral request buttons to get match information
+ */
+function getMatchInfoFromContext(element) {
+    // Try to get info from the button's data attributes first
+    let teamNumber = element.getAttribute('data-team-number');
+    let matchNumber = element.getAttribute('data-match-number');
+    let eventCode = element.getAttribute('data-event-code');
+    
+    // If not found, try to get from the parent row
+    if (!teamNumber || !matchNumber || !eventCode) {
+        const row = element.closest('tr');
+        if (row) {
+            teamNumber = teamNumber || row.getAttribute('data-team-number');
+            
+            // Try to get match number from the third column
+            if (!matchNumber) {
+                const matchCell = row.querySelector('td:nth-child(3)');
+                matchNumber = matchCell ? matchCell.textContent.trim() : '';
+            }
+            
+            // Try to get event code from parent section
+            if (!eventCode) {
+                const section = row.closest('.event-section');
+                eventCode = section ? section.getAttribute('data-event-code') : '';
+            }
+        }
+    }
+    
+    return {
+        teamNumber: teamNumber || '',
+        matchNumber: matchNumber || '',
+        eventCode: eventCode || ''
+    };
+}
+
+/**
+ * Enhance the existing search/filter functionality to also search for YouTube URLs
+ * Add this to your existing filterTeamRows function if you have one
+ */
+function enhanceFilterTeamRows() {
+    // This assumes you have an existing filterTeamRows function
+    // that handles filtering based on search input
+    
+    // Add 'youtube' as an option to the filter type dropdown
+    const filterType = document.getElementById('filterType');
+    if (filterType && !filterType.querySelector('option[value="youtube"]')) {
+        const youtubeOption = document.createElement('option');
+        youtubeOption.value = 'youtube';
+        youtubeOption.textContent = 'YouTube URL';
+        filterType.appendChild(youtubeOption);
+    }
+    
+    // Then in your existing filter logic, add a case for 'youtube'
+    // Example:
+    /*
+    switch (filter) {
+        case 'team':
+            // existing code
+            break;
+        case 'youtube':
+            textToSearch = row.getAttribute('data-youtube-url') || '';
+            break;
+        // other cases
+    }
+    */
+}
