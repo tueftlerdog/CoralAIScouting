@@ -299,6 +299,14 @@ document.addEventListener('DOMContentLoaded', function() {
         loadFile.click();
     });
 
+    // Reset view button
+    document.getElementById('goHome').addEventListener('click', (e) => {
+        e.preventDefault();
+        CanvasField.resetView();
+        CanvasField.redrawCanvas();
+        CanvasField.showStatus('View reset to origin');
+    });
+
     loadFile.addEventListener('change', (e) => {
         if (e.target.files.length === 0) return;
 
