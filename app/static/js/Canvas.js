@@ -1284,16 +1284,84 @@ class Canvas {
         const touch = e.touches[0];
         const pos = this.getTransformedPosition(touch.clientX, touch.clientY);
         
-        this.isDrawing = true;
-        this.lastX = pos.x;
-        this.lastY = pos.y;
-        
-        this.currentStroke = [{
-          x: pos.x,
-          y: pos.y,
-          color: this.currentColor,
-          thickness: this.currentThickness
-        }];
+        if (this.currentTool === 'select') {
+          // First check if clicking on a resize handle
+          const handle = this.getResizeHandleAtPoint(pos);
+          if (handle) {
+            this.resizeHandles.active = true;
+            this.resizeHandles.activeHandle = handle;
+            return;
+          }
+
+          // Then check if clicking inside selection area
+          if (this.selectedStrokes.length > 0 && this.selectionRect) {
+            const clickPoint = { x: pos.x, y: pos.y };
+            if (this.isPointInRect(clickPoint, this.selectionRect)) {
+              // Start moving the selection
+              this.moveSelection.active = true;
+              this.moveSelection.startX = pos.x;
+              this.moveSelection.startY = pos.y;
+              return;
+            }
+          }
+
+          // Check if clicking on any stroke
+          const clickedPoint = { x: pos.x, y: pos.y };
+          let clickedIndex = -1;
+          
+          // Check selected strokes first
+          for (const index of this.selectedStrokes) {
+            if (this.isPointInStroke(clickedPoint, this.drawingHistory[index])) {
+              clickedIndex = index;
+              break;
+            }
+          }
+          
+          // If not clicking on selected stroke, check others
+          if (clickedIndex === -1) {
+            for (let i = this.drawingHistory.length - 1; i >= 0; i--) {
+              if (this.isPointInStroke(clickedPoint, this.drawingHistory[i])) {
+                clickedIndex = i;
+                break;
+              }
+            }
+          }
+
+          if (clickedIndex >= 0) {
+            // Clicked on a stroke
+            this.selectedStrokes = [clickedIndex];
+            this.moveSelection.active = true;
+            this.moveSelection.startX = pos.x;
+            this.moveSelection.startY = pos.y;
+          } else {
+            // Start selection rectangle
+            this.isSelecting = true;
+            this.selectionRect = {
+              x: pos.x,
+              y: pos.y,
+              width: 0,
+              height: 0
+            };
+            this.selectedStrokes = [];
+          }
+          
+          this.redrawCanvas();
+        } else if (this.currentTool === 'pen') {
+          this.isDrawing = true;
+          this.lastX = pos.x;
+          this.lastY = pos.y;
+          
+          this.currentStroke = [{
+            x: pos.x,
+            y: pos.y,
+            color: this.currentColor,
+            thickness: this.currentThickness
+          }];
+        } else {
+          // For shapes, store the starting position
+          this.startX = pos.x;
+          this.startY = pos.y;
+        }
       });
       
       this.canvas.addEventListener('touchmove', (e) => {
@@ -1331,11 +1399,32 @@ class Canvas {
           return;
         }
         
-        if (this.isDrawing) {
-          const touch = e.touches[0];
-          const pos = this.getTransformedPosition(touch.clientX, touch.clientY);
-          
-          // Add to current stroke
+        const touch = e.touches[0];
+        const pos = this.getTransformedPosition(touch.clientX, touch.clientY);
+        
+        if (this.currentTool === 'select') {
+          if (this.resizeHandles.active && this.resizeHandles.activeHandle) {
+            // Handle resize operation
+            const dx = pos.x - this.startX;
+            const dy = pos.y - this.startY;
+            this.resizeSelectedShapes(this.resizeHandles.activeHandle, dx, dy);
+            this.startX = pos.x;
+            this.startY = pos.y;
+          } else if (this.moveSelection.active) {
+            // Handle move operation
+            const dx = pos.x - this.moveSelection.startX;
+            const dy = pos.y - this.moveSelection.startY;
+            this.moveSelectedStrokes(dx, dy);
+            this.moveSelection.startX = pos.x;
+            this.moveSelection.startY = pos.y;
+          } else if (this.isSelecting) {
+            // Update selection rectangle
+            this.selectionRect.width = pos.x - this.selectionRect.x;
+            this.selectionRect.height = pos.y - this.selectionRect.y;
+          }
+          this.redrawCanvas();
+        } else if (this.isDrawing && this.currentTool === 'pen') {
+          // Add to current stroke for pen tool
           this.currentStroke.push({
             x: pos.x,
             y: pos.y,
@@ -1343,11 +1432,24 @@ class Canvas {
             thickness: this.currentThickness
           });
           
-          // Redraw with the updated stroke
           this.redrawCanvas();
           
           this.lastX = pos.x;
           this.lastY = pos.y;
+        } else if (this.startX !== null && this.currentTool !== 'pen' && this.currentTool !== 'select') {
+          // Update preview shape for shape tools
+          this.previewShape = {
+            type: this.currentTool,
+            x: this.startX,
+            y: this.startY,
+            width: pos.x - this.startX,
+            height: pos.y - this.startY,
+            color: this.currentColor,
+            thickness: this.currentThickness,
+            isFilled: this.isFilled
+          };
+          
+          this.redrawCanvas();
         }
       });
       
@@ -1356,14 +1458,73 @@ class Canvas {
           this.isPanning = false;
           this.lastDistance = null;
           
-          if (this.isDrawing) {
+          if (this.currentTool === 'select') {
+            if (this.isSelecting) {
+              this.selectStrokesInRect(this.selectionRect);
+              this.isSelecting = false;
+            }
+
+            // Record the move operation in history only when the move is complete
+            if (this.moveSelection.active && this.moveSelection.totalDx !== undefined) {
+              const moveOp = {
+                type: 'move',
+                strokes: [...this.selectedStrokes],
+                dx: this.moveSelection.totalDx,
+                dy: this.moveSelection.totalDy
+              };
+              this.drawingHistory.push(moveOp);
+              this.redoHistory = [];
+            }
+
+            this.moveSelection.active = false;
+            this.moveSelection.totalDx = undefined;
+            this.moveSelection.totalDy = undefined;
+            this.resizeHandles.active = false;
+            this.resizeHandles.activeHandle = null;
+
+            // Update selection rectangle for selected strokes
+            if (this.selectedStrokes.length > 0) {
+              let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+              this.selectedStrokes.forEach(index => {
+                const stroke = this.drawingHistory[index];
+                if (Array.isArray(stroke) && !stroke[0]?.type) {
+                  stroke.forEach(point => {
+                    minX = Math.min(minX, point.x);
+                    minY = Math.min(minY, point.y);
+                    maxX = Math.max(maxX, point.x);
+                    maxY = Math.max(maxY, point.y);
+                  });
+                } else if (stroke[0]?.type) {
+                  const bounds = this.getShapeBounds(stroke[0]);
+                  minX = Math.min(minX, bounds.x);
+                  minY = Math.min(minY, bounds.y);
+                  maxX = Math.max(maxX, bounds.x + bounds.width);
+                  maxY = Math.max(maxY, bounds.y + bounds.height);
+                }
+              });
+              
+              this.selectionRect = {
+                x: minX,
+                y: minY,
+                width: maxX - minX,
+                height: maxY - minY
+              };
+            }
+          } else if (this.isDrawing && this.currentTool === 'pen') {
             this.isDrawing = false;
             if (this.currentStroke.length > 1) {
               this.drawingHistory.push(this.currentStroke);
             }
             this.currentStroke = [];
-            this.redrawCanvas();
+          } else if (this.startX !== null && this.previewShape) {
+            // Add the final shape to history
+            this.drawingHistory.push([this.previewShape]);
+            this.previewShape = null;
           }
+          
+          this.startX = null;
+          this.startY = null;
+          this.redrawCanvas();
         }
       });
   
