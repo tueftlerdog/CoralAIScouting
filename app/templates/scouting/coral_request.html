@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="sm:flex sm:items-center sm:justify-between">
+            <div class="sm:flex-auto">
+                <h1 class="text-3xl font-bold text-gray-900">Coral Video Analysis</h1>
+                <p class="mt-2 text-base text-gray-600">Request AI-powered analysis of coral scoring from match videos</p>
+            </div>
+            <div class="mt-4 sm:mt-0 sm:flex-none">
+                <a href="{{ url_for('scouting.coral_results') }}"
+                   class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    View My Requests
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <form method="POST" class="divide-y divide-gray-200" id="coralRequestForm">
+            <!-- Video Info Section -->
+            <div class="p-8 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Video Information</h3>
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">YouTube Video URL</label>
+                        <input type="url" 
+                               name="youtube_url" 
+                               required 
+                               placeholder="e.g., https://www.youtube.com/watch?v=..." 
+                               class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg transition-colors duration-200"
+                               {% if request.args.get('youtube_url') %}value="{{ request.args.get('youtube_url') }}"{% endif %}>
+                        <p class="mt-1 text-sm text-gray-500">Provide a YouTube link to the match</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Event Code</label>
+                            <input type="text" 
+                                   name="event_code" 
+                                   placeholder="e.g., NYLI" 
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 uppercase transition-colors duration-200"
+                                   {% if request.args.get('event_code') %}value="{{ request.args.get('event_code') }}"{% endif %}>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Match Number</label>
+                            <input type="number" 
+                                   name="match_number" 
+                                   min="1" 
+                                   placeholder="e.g., 42" 
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
+                                   {% if request.args.get('match_number') %}value="{{ request.args.get('match_number') }}"{% endif %}>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alliance Info Section -->
+            <div class="p-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Alliance Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Blue Alliance -->
+                    <div>
+                        <h4 class="text-md font-medium text-blue-700 mb-4">Blue Alliance</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Team 1</label>
+                                <input type="text" 
+                                       name="blue_team1" 
+                                       required 
+                                       placeholder="e.g., 334" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Team 2</label>
+                                <input type="text" 
+                                       name="blue_team2" 
+                                       required 
+                                       placeholder="e.g., 1234" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Team 3</label>
+                                <input type="text" 
+                                       name="blue_team3" 
+                                       required 
+                                       placeholder="e.g., 5678" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Red Alliance -->
+                    <div>
+                        <h4 class="text-md font-medium text-red-700 mb-4">Red Alliance</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Team 1</label>
+                                <input type="text" 
+                                       name="red_team1" 
+                                       required 
+                                       placeholder="e.g., 254" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Team 2</label>
+                                <input type="text" 
+                                       name="red_team2" 
+                                       required 
+                                       placeholder="e.g., 1114" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Team 3</label>
+                                <input type="text" 
+                                       name="red_team3" 
+                                       required 
+                                       placeholder="e.g., 2056" 
+                                       class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="p-8 bg-gray-50">
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                Analysis may take 10-15 minutes to complete. You'll be notified when it's ready.
+                                <br>
+                                Due to rate limiting, you can only submit 3 requests per hour.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="p-8 bg-white">
+                <div class="flex justify-end">
+                    <button type="submit"
+                            class="px-6 py-3 rounded-lg border border-transparent bg-purple-600 text-sm font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-200">
+                        Submit for Analysis
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from pymongo import MongoClient
 
-from app.models import TeamData
+from app.models import TeamData, CoralRequest # Modified import to include CoralRequest
 from app.utils import DatabaseManager, with_mongodb_retry
 
 logger = logging.getLogger(__name__)
@@ -170,7 +170,7 @@ class ScoutingManager(DatabaseManager):
 
         except Exception as e:
             logger.error(f"Error adding team data: {str(e)}")
-            return False, "An internal error has occurred."
+            return False
 
     @with_mongodb_retry(retries=3, delay=2)
     def get_all_scouting_data(self, user_team_number=None, user_id=None):
@@ -242,7 +242,7 @@ class ScoutingManager(DatabaseManager):
                     "youtube_url": 1
                 }
             })
-            
+
             team_data = list(self.db.team_data.aggregate(pipeline))
             return team_data
         except Exception as e:
@@ -311,10 +311,10 @@ class ScoutingManager(DatabaseManager):
                 },
                 {"$unwind": "$scouter"}
             ]
-            
+
             existing_entries = list(self.db.team_data.aggregate(pipeline))
             current_user = self.db.users.find_one({"_id": ObjectId(scouter_id)})
-            
+
             for entry in existing_entries:
                 if entry.get("scouter", {}).get("teamNumber") == current_user.get("teamNumber"):
                     logger.warning(
@@ -343,13 +343,13 @@ class ScoutingManager(DatabaseManager):
                 "event_code": data["event_code"],
                 "match_number": int(data["match_number"]),
                 "alliance": alliance,
-                
+
                 # Coral scoring
                 "coral_level1": int(data.get("coral_level1", 0)),
                 "coral_level2": int(data.get("coral_level2", 0)),
                 "coral_level3": int(data.get("coral_level3", 0)),
                 "coral_level4": int(data.get("coral_level4", 0)),
-                
+
                 # Algae scoring
                 "algae_net": int(data.get("algae_net", 0)),
                 "algae_processor": int(data.get("algae_processor", 0)),
@@ -357,35 +357,35 @@ class ScoutingManager(DatabaseManager):
                 # Climb
                 "climb_type": data.get("climb_type", ""),
                 "climb_success": bool(data.get("climb_success", False)),
-                
+
                 # Defense
                 "defense_rating": int(data.get("defense_rating", 1)),
                 "defense_notes": data.get("defense_notes", ""),
 
-                
+
                 # Auto
                 "auto_path": data.get("auto_path", ""),
                 "auto_notes": data.get("auto_notes", ""),
-                
+
                 # Notes
                 "notes": data.get("notes", ""),
-                
+
                 # Auto Coral scoring
                 "auto_coral_level1": int(data.get("auto_coral_level1", 0)),
                 "auto_coral_level2": int(data.get("auto_coral_level2", 0)),
                 "auto_coral_level3": int(data.get("auto_coral_level3", 0)),
                 "auto_coral_level4": int(data.get("auto_coral_level4", 0)),
-                
+
                 # Teleop Coral scoring
                 "teleop_coral_level1": int(data.get("teleop_coral_level1", 0)),
                 "teleop_coral_level2": int(data.get("teleop_coral_level2", 0)),
                 "teleop_coral_level3": int(data.get("teleop_coral_level3", 0)),
                 "teleop_coral_level4": int(data.get("teleop_coral_level4", 0)),
-                
+
                 # Auto Algae scoring
                 "auto_algae_net": int(data.get("auto_algae_net", 0)),
                 "auto_algae_processor": int(data.get("auto_algae_processor", 0)),
-                
+
                 # Teleop Algae scoring
                 "teleop_algae_net": int(data.get("teleop_algae_net", 0)),
                 "teleop_algae_processor": int(data.get("teleop_algae_processor", 0)),
@@ -459,7 +459,7 @@ class ScoutingManager(DatabaseManager):
                     }
                 }
             ]
-            
+
             result = list(self.db.team_data.aggregate(pipeline))
             if not result:
                 return {
@@ -470,7 +470,7 @@ class ScoutingManager(DatabaseManager):
                     "total_defense": 0,
                     "total_points": 0
                 }
-            
+
             stats = result[0]
             stats.pop("_id")  # Remove MongoDB ID
             return stats
@@ -557,10 +557,10 @@ class ScoutingManager(DatabaseManager):
                 },
                 {"$unwind": "$scouter"}
             ]
-            
+
             existing_entries = list(self.db.pit_scouting.aggregate(pipeline))
             current_user = self.db.users.find_one({"_id": ObjectId(scouter_id)})
-            
+
             for entry in existing_entries:
                 if entry.get("scouter", {}).get("teamNumber") == current_user.get("teamNumber"):
                     logger.warning(f"Team {team_number} has already been pit scouted by team {current_user.get('teamNumber')}")
@@ -618,7 +618,7 @@ class ScoutingManager(DatabaseManager):
                     }
                 }
             ]
-            
+
             result = list(self.db.pit_scouting.aggregate(pipeline))
             return result[0] if result else None
         except Exception as e:
@@ -695,10 +695,10 @@ class ScoutingManager(DatabaseManager):
                 },
                 {"$unwind": "$scouter"}
             ]
-            
+
             existing_entries = list(self.db.pit_scouting.aggregate(pipeline))
             current_user = self.db.users.find_one({"_id": ObjectId(scouter_id)})
-            
+
             for entry in existing_entries:
                 if entry.get("scouter", {}).get("teamNumber") == current_user.get("teamNumber"):
                     logger.warning(
@@ -728,4 +728,103 @@ class ScoutingManager(DatabaseManager):
             return result.deleted_count > 0
         except Exception as e:
             logger.error(f"Error deleting pit scouting data: {str(e)}")
+            return False
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def create_coral_request(self, request_data):
+        """Create a new coral analysis request"""
+        self.ensure_connected()
+        try:
+            # Ensure coral_requests collection exists
+            if "coral_requests" not in self.db.list_collection_names():
+                self.db.create_collection("coral_requests")
+                self.db.coral_requests.create_index([("requested_by", 1)])
+                self.db.coral_requests.create_index([("status", 1)])
+                logger.info("Created coral_requests collection")
+
+            result = self.db.coral_requests.insert_one(request_data)
+            return str(result.inserted_id) if result else None
+        except Exception as e:
+            logger.error(f"Error creating coral request: {str(e)}")
+            return None
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def get_coral_requests(self, user_team_number=None, user_id=None):
+        """Get all coral requests for a user or team"""
+        self.ensure_connected()
+        try:
+            # Base pipeline for user lookup
+            pipeline = [
+                {
+                    "$lookup": {
+                        "from": "users",
+                        "localField": "requested_by",
+                        "foreignField": "_id",
+                        "as": "requester"
+                    }
+                },
+                {"$unwind": "$requester"},
+            ]
+
+            # Add team access filter if user has a team
+            if user_team_number:
+                pipeline.append({
+                    "$match": {
+                        "$or": [
+                            {"requester.teamNumber": user_team_number},
+                            {"requested_by": ObjectId(user_id)}
+                        ]
+                    }
+                })
+            else:
+                # Otherwise just show user's own requests
+                pipeline.append({
+                    "$match": {
+                        "requested_by": ObjectId(user_id)
+                    }
+                })
+
+            # Sort by requested_at in descending order (newest first)
+            pipeline.append({"$sort": {"requested_at": -1}})
+
+            requests = list(self.db.coral_requests.aggregate(pipeline))
+            return [CoralRequest.create_from_db(req) for req in requests]
+        except Exception as e:
+            logger.error(f"Error fetching coral requests: {str(e)}")
+            return []
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def get_coral_request(self, request_id):
+        """Get a specific coral request by ID"""
+        self.ensure_connected()
+        try:
+            data = self.db.coral_requests.find_one({"_id": ObjectId(request_id)})
+            return CoralRequest.create_from_db(data) if data else None
+        except Exception as e:
+            logger.error(f"Error fetching coral request: {str(e)}")
+            return None
+
+    @with_mongodb_retry(retries=3, delay=2)
+    def update_coral_request_status(self, request_id, status, results=None, error_message=None):
+        """Update the status of a coral request"""
+        self.ensure_connected()
+        try:
+            update_data = {"status": status}
+
+            if status == "completed":
+                update_data["completed_at"] = datetime.now(timezone.utc)
+                if results:
+                    update_data["results"] = results
+
+            if error_message:
+                update_data["error_message"] = error_message
+
+            result = self.db.coral_requests.update_one(
+                {"_id": ObjectId(request_id)},
+                {"$set": update_data}
+            )
+
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Error updating coral request status: {str(e)}")
             return False

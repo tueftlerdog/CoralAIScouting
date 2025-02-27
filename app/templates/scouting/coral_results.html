@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <div class="sm:flex sm:items-center sm:justify-between">
+            <div class="sm:flex-auto">
+                <h1 class="text-3xl font-bold text-gray-900">Coral Video Analysis</h1>
+                <p class="mt-2 text-base text-gray-600">Results from AI-powered analysis of match videos</p>
+            </div>
+            <div class="mt-4 sm:mt-0 sm:flex-none">
+                <a href="{{ url_for('scouting.coral_request') }}"
+                   class="inline-flex items-center justify-center rounded-md border border-transparent bg-purple-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-200">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    New Analysis
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Summary -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Status Summary</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg text-center">
+                <span class="text-2xl font-bold text-blue-700">{{ requests|selectattr('status', 'equalto', 'pending')|list|length }}</span>
+                <p class="text-sm text-gray-700">Pending</p>
+            </div>
+            <div class="bg-yellow-50 p-4 rounded-lg text-center">
+                <span class="text-2xl font-bold text-yellow-700">{{ requests|selectattr('status', 'equalto', 'processing')|list|length }}</span>
+                <p class="text-sm text-gray-700">Processing</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg text-center">
+                <span class="text-2xl font-bold text-green-700">{{ requests|selectattr('status', 'equalto', 'completed')|list|length }}</span>
+                <p class="text-sm text-gray-700">Completed</p>
+            </div>
+            <div class="bg-red-50 p-4 rounded-lg text-center">
+                <span class="text-2xl font-bold text-red-700">{{ requests|selectattr('status', 'equalto', 'failed')|list|length }}</span>
+                <p class="text-sm text-gray-700">Failed</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending and Processing Requests -->
+    {% set active_requests = requests|selectattr('status', 'in', ['pending', 'processing'])|list %}
+    {% if active_requests %}
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Active Requests</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Video</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event & Match</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for req in active_requests %}
+                    <tr id="request-{{ req.id }}" class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ req.youtube_url }}" target="_blank" class="text-blue-600 hover:text-blue-900">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    View on YouTube
+                                </div>
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if req.event_code and req.match_number %}
+                                {{ req.event_code }} - Match {{ req.match_number }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {{ req.requested_at.strftime('%Y-%m-%d %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="status-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if req.status == 'pending' %}
+                                    bg-blue-100 text-blue-800
+                                {% else %}
+                                    bg-yellow-100 text-yellow-800
+                                {% endif %}">
+                                {{ req.status|title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Completed Requests -->
+    {% set completed_requests = requests|selectattr('status', 'equalto', 'completed')|list %}
+    {% if completed_requests %}
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Completed Analyses</h2>
+        </div>
+        
+        {% for req in completed_requests %}
+        <div class="border-b border-gray-200 last:border-0">
+            <div class="p-6">
+                <div class="flex flex-col md:flex-row justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold">
+                            {% if req.event_code and req.match_number %}
+                                {{ req.event_code }} - Match {{ req.match_number }}
+                            {% else %}
+                                Video Analysis
+                            {% endif %}
+                        </h3>
+                        <p class="text-sm text-gray-500">
+                            Completed on {{ req.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                        </p>
+                    </div>
+                    <a href="{{ req.youtube_url }}" target="_blank" class="text-blue-600 hover:text-blue-900 mt-2 md:mt-0">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            View Video
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Blue Alliance Results -->
+                <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                    <h4 class="text-md font-medium text-blue-700 mb-3">Blue Alliance</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {% for team in req.blue_alliance %}
+                        <div class="bg-white p-4 rounded shadow">
+                            <h5 class="font-medium text-center mb-2">Team {{ team }}</h5>
+                            {% set team_events = req.results.get('robots', {}).get(team, {}).get('events', []) %}
+                            {% if team_events %}
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500">Level</th>
+                                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500">Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        {% for event in team_events %}
+                                        <tr>
+                                            <td class="px-2 py-1 whitespace-nowrap text-sm">{{ event.level }}</td>
+                                            <td class="px-2 py-1 whitespace-nowrap text-sm">{{ event.timestamp }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <p class="text-center text-gray-500 text-sm">No coral scoring events</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Red Alliance Results -->
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <h4 class="text-md font-medium text-red-700 mb-3">Red Alliance</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {% for team in req.red_alliance %}
+                        <div class="bg-white p-4 rounded shadow">
+                            <h5 class="font-medium text-center mb-2">Team {{ team }}</h5>
+                            {% set team_events = req.results.get('robots', {}).get(team, {}).get('events', []) %}
+                            {% if team_events %}
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500">Level</th>
+                                            <th class="px-2 py-1 text-left text-xs font-medium text-gray-500">Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        {% for event in team_events %}
+                                        <tr>
+                                            <td class="px-2 py-1 whitespace-nowrap text-sm">{{ event.level }}</td>
+                                            <td class="px-2 py-1 whitespace-nowrap text-sm">{{ event.timestamp }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <p class="text-center text-gray-500 text-sm">No coral scoring events</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Failed Requests -->
+    {% set failed_requests = requests|selectattr('status', 'equalto', 'failed')|list %}
+    {% if failed_requests %}
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Failed Requests</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Video</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event & Match</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for req in failed_requests %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ req.youtube_url }}" target="_blank" class="text-blue-600 hover:text-blue-900">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    View on YouTube
+                                </div>
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if req.event_code and req.match_number %}
+                                {{ req.event_code }} - Match {{ req.match_number }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {{ req.requested_at.strftime('%Y-%m-%d %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-red-600">{{ req.error_message }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{{ url_for('scouting.coral_request') }}?youtube_url={{ req.youtube_url }}&event_code={{ req.event_code }}&match_number={{ req.match_number }}" 
+                               class="text-indigo-600 hover:text-indigo-900">Try Again</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not requests %}
+    <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">No Analysis Requests</h3>
+        <p class="mt-2 text-gray-500">
+            You haven't requested any video analyses yet.
+        </p>
+        <div class="mt-6">
+            <a href="{{ url_for('scouting.coral_request') }}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700">
+                Request New Analysis
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Function to check status of pending requests
+function checkRequestStatus() {
+    const pendingRequestIds = [
+        {% for req in requests|selectattr('status', 'equalto', 'pending')|list %}
+            '{{ req.id }}',
+        {% endfor %}
+        {% for req in requests|selectattr('status', 'equalto', 'processing')|list %}
+            '{{ req.id }}',
+        {% endfor %}
+    ];
+    
+    pendingRequestIds.forEach(id => {
+        fetch(`/coral/status/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status && data.status !== 'pending' && data.status !== 'processing') {
+                    // Status changed, reload the page
+                    window.location.reload();
+                }
+            })
+            .catch(error => console.error('Error checking status:', error));
+    });
+}
+
+// Check status every 30 seconds
+if ({{ (requests|selectattr('status', 'equalto', 'pending')|list|length + 
+        requests|selectattr('status', 'equalto', 'processing')|list|length) }} > 0) {
+    setInterval(checkRequestStatus, 30000);
+}
+</script>
+{% endblock %}

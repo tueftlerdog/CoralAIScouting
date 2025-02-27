@@ -185,4 +185,30 @@ async def check_password_strength(password: str) -> tuple[bool, str]:
     """
     if len(password) < 8:
         return False, "Password must be at least 8 characters long"
-    return True, "Password meets all requirements" 
+    return True, "Password meets all requirements"
+
+# ============ Coral Analysis Utilities ============
+
+def send_gridfs_file_url(file_id, db, expiry_minutes=30):
+    """Generate a temporary URL for a GridFS file"""
+    try:
+        from bson import ObjectId
+        from gridfs import GridFS
+        import uuid
+        import time
+
+        # Generate a random token
+        token = str(uuid.uuid4())
+
+        # Store the token with file ID and expiry time
+        expiry = time.time() + (expiry_minutes * 60)
+        db.temp_file_tokens.insert_one({
+            "token": token,
+            "file_id": ObjectId(file_id),
+            "expires_at": expiry
+        })
+
+        return token
+    except Exception as e:
+        logger.error(f"Error generating file URL: {str(e)}")
+        return None

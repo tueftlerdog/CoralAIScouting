@@ -6,7 +6,7 @@
     <title>{% block title %}Castle{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
-    
+
     <style>
         /* Font Face Declarations */
         @font-face {
@@ -25,7 +25,7 @@
             font-style: normal;
         }
     </style>
-    
+
     <link rel="preload" href="{{ url_for('static', filename='fonts/Richardson Brand Accelerator.otf') }}" as="font" type="font/otf" crossorigin>
     <link rel="preload" href="{{ url_for('static', filename='fonts/oxanium-vrb.ttf') }}" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
@@ -74,6 +74,7 @@
                         {% if current_user.teamNumber %}
                             <a href="{{ url_for('scouting.home') }}" class="py-4 px-2 hover:text-blue-500 text-center">Scout</a>
                             <a href="{{ url_for('scouting.lighthouse') }}" class="py-4 px-2 hover:text-purple-500 text-center">Compare</a>
+                            <a href="{{ url_for('scouting.coral_results') }}" class="py-4 px-2 hover:text-purple-500 text-center">Coral Analysis</a>
                             <a href="{{ url_for('team.manage') }}" class="py-4 px-2 hover:text-blue-500 text-center">Team</a>
                         {% else %}
                             <a href="{{ url_for('team.join') }}" class="py-4 px-2 hover:text-green-500 text-center">Join Team</a>
@@ -84,8 +85,8 @@
                     {% if current_user.is_authenticated %}
                         <div class="relative flex items-center space-x-2">
                             <button id="userDropdownButton" class="flex items-center space-x-2 hover:text-blue-500">
-                                <img src="{{ url_for('auth.profile_picture', user_id=current_user.get_id()) }}" 
-                                     alt="Profile Picture" 
+                                <img src="{{ url_for('auth.profile_picture', user_id=current_user.get_id()) }}"
+                                     alt="Profile Picture"
                                      class="w-10 h-10 rounded-full">
                                 <span class="py-4 px-2">{{current_user.username}}</span>
                                 <svg class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,16 +95,16 @@
                             </button>
                             <!-- Dropdown menu -->
                             <div id="userDropdown" class="hidden absolute right-0 top-full mt-2 w-32 text-center bg-white rounded-xl shadow-lg py-2 z-50">
-                                <a href="{{ url_for('auth.profile', username=current_user.username) }}" 
+                                <a href="{{ url_for('auth.profile', username=current_user.username) }}"
                                    class="block px-4 py-2 text-gray-800 hover:bg-blue-50 hover:text-blue-500">
                                     Profile
                                 </a>
-                                <a href="{{ url_for('auth.settings') }}" 
+                                <a href="{{ url_for('auth.settings') }}"
                                    class="block px-4 py-2 text-gray-800 hover:bg-blue-50 hover:text-blue-500">
                                     Settings
                                 </a>
                                 <div class="border-t border-gray-100 my-1"></div>
-                                <a href="{{ url_for('auth.logout') }}" 
+                                <a href="{{ url_for('auth.logout') }}"
                                    class="block px-4 py-2 text-red-600 hover:bg-red-50">
                                     Logout
                                 </a>
@@ -139,6 +140,7 @@
               {% if current_user.teamNumber %}
                   <a href="{{ url_for('scouting.home') }}" class="block py-3 px-4 hover:bg-blue-50 rounded-lg transition-colors">Scout</a>
                   <a href="{{ url_for('scouting.lighthouse') }}" class="block py-3 px-4 hover:bg-blue-50 rounded-lg transition-colors">Compare</a>
+                  <a href="{{ url_for('scouting.coral_results') }}" class="block py-3 px-4 hover:bg-purple-50 text-purple-600 rounded-lg transition-colors">Coral Analysis</a>
                   <a href="{{ url_for('team.manage') }}" class="block py-3 px-4 hover:bg-blue-50 rounded-lg transition-colors">Team</a>
               {% else %}
                   <a href="{{ url_for('team.join') }}" class="block py-3 px-4 hover:bg-green-50 text-green-600 rounded-lg transition-colors">Join Team</a>
@@ -146,10 +148,10 @@
               <hr class="my-2 border-gray-200">
               <div class="px-4 py-3">
                   <div class="flex items-center space-x-3">
-                      <img src="{{ url_for('auth.profile_picture', user_id=current_user.get_id()) }}" 
-                           alt="Profile Picture" 
+                      <img src="{{ url_for('auth.profile_picture', user_id=current_user.get_id()) }}"
+                           alt="Profile Picture"
                            class="w-10 h-10 rounded-full">
-                      <a href="{{ url_for('auth.profile', username=current_user.username) }}" 
+                      <a href="{{ url_for('auth.profile', username=current_user.username) }}"
                          class="text-gray-800 hover:text-blue-500 transition-colors">{{current_user.username}}</a>
                   </div>
               </div>
@@ -170,9 +172,9 @@
                 {% if messages %}
                     {% set category, message = messages[-1] %}
                     <div class="fixed bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:-translate-x-0 z-50 w-[90%] sm:w-full max-w-xl min-h-[60px] sm:min-h-[80px] mx-auto sm:mx-0  animate-fade-in-up">
-                        <div class="flex items-center p-6 rounded-lg shadow-xl {{ 
-                            'bg-red-50 text-red-800 border-2 border-red-200' if category == 'error' else 
-                            'bg-green-50 text-green-800 border-2 border-green-200' 
+                        <div class="flex items-center p-6 rounded-lg shadow-xl {{
+                            'bg-red-50 text-red-800 border-2 border-red-200' if category == 'error' else
+                            'bg-green-50 text-green-800 border-2 border-green-200'
                         }}">
                             {% if category == 'error' %}
                                 <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -184,9 +186,9 @@
                                 </svg>
                             {% endif %}
                             <p class="text-base font-medium">{{ message }}</p>
-                            <button onclick="this.parentElement.remove()" class="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 inline-flex h-8 w-8 {{ 
-                                'text-red-500 hover:bg-red-100' if category == 'error' else 
-                                'text-green-500 hover:bg-green-100' 
+                            <button onclick="this.parentElement.remove()" class="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 inline-flex h-8 w-8 {{
+                                'text-red-500 hover:bg-red-100' if category == 'error' else
+                                'text-green-500 hover:bg-green-100'
                             }}">
                                 <span class="sr-only">Dismiss</span>
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -233,7 +235,7 @@
                 transform: translateX(0);
             }
         }
-        
+
         .animate-fade-in-up {
             animation: fade-in-up 0.5s ease-out;
         }

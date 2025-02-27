@@ -5,36 +5,44 @@
         <h1 class="text-2xl font-bold mb-2">Team Leaderboard</h1>
         <p class="text-gray-600">Rankings based on match performance (minimum 1 match required)</p>
         <div class="flex gap-4 py-3 ">
-            <a href="{{ url_for('scouting.matches') }}" 
+            <a href="{{ url_for('scouting.matches') }}"
             class="text-blue-600 hover:text-blue-800 flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                 </svg>
                 Match View
             </a>
-            <a href="{{ url_for('scouting.home') }}" 
+            <a href="{{ url_for('scouting.home') }}"
                class="text-blue-600 hover:text-blue-800 flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                 </svg>
                 Game Scouting
             </a>
-            <a href="{{ url_for('scouting.pit_scouting') }}" 
+            <a href="{{ url_for('scouting.pit_scouting') }}"
                class="text-blue-600 hover:text-blue-800 flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
                 Pit Scouting
+            </a>
+            <a href="{{ url_for('scouting.coral_results') }}"
+               class="text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Coral Analysis
             </a>
         </div>
 
         <!-- Ranking Filter Buttons -->
         <div class="mt-4 flex flex-wrap gap-4">
-            <select id="rankingSelect" 
-                    onchange="changeRanking(this.value)" 
+            <select id="rankingSelect"
+                    onchange="changeRanking(this.value)"
                     class="block w-48 px-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
                 <option value="coral" {% if current_sort == 'coral' %}selected{% endif %}>Most Coral (Total)</option>
                 <option value="auto_coral" {% if current_sort == 'auto_coral' %}selected{% endif %}>Most Coral (Auto)</option>
@@ -91,7 +99,7 @@
                                 Team {{ team.team_number }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ team.matches_played }}</td>
-                            
+
                             <!-- Auto Coral -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm space-y-1">
@@ -101,7 +109,7 @@
                                     <div class="text-gray-500">L4: {{ "%.1f"|format(team.auto_coral_stats.level4) }}</div>
                                 </div>
                             </td>
-                            
+
                             <!-- Auto Algae -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm space-y-1">
@@ -109,7 +117,7 @@
                                     <div class="text-gray-500">Proc: {{ "%.1f"|format(team.auto_algae_stats.processor) }}</div>
                                 </div>
                             </td>
-                            
+
                             <!-- Teleop Coral -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm space-y-1">
@@ -119,7 +127,7 @@
                                     <div class="text-gray-500">L4: {{ "%.1f"|format(team.teleop_coral_stats.level4) }}</div>
                                 </div>
                             </td>
-                            
+
                             <!-- Teleop Algae -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm space-y-1">
@@ -127,19 +135,19 @@
                                     <div class="text-gray-500">Proc: {{ "%.1f"|format(team.teleop_algae_stats.processor) }}</div>
                                 </div>
                             </td>
-                            
+
                             <!-- Defense Rating -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-500">{{ "%.1f"|format(team.defense_rating) }}/5</div>
                             </td>
-                            
+
                             <!-- Climb Stats -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="space-y-2">
                                     <div class="flex items-center">
                                         <span class="text-xs text-gray-500 w-16">All:</span>
                                         <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-green-600 h-2 rounded-full" 
+                                            <div class="bg-green-600 h-2 rounded-full"
                                                  style="width: {{ team.climb_success_rate }}%"> <!-- Ignore -->
                                             </div>
                                         </div>
@@ -148,7 +156,7 @@
                                     <div class="flex items-center">
                                         <span class="text-xs text-gray-500 w-16">Deep:</span>
                                         <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                            <div class="bg-blue-600 h-2 rounded-full" 
+                                            <div class="bg-blue-600 h-2 rounded-full"
                                                  style="width: {{ team.deep_climb_success_rate }}%"> <!-- Ignore -->
                                             </div>
                                         </div>
@@ -171,4 +179,4 @@ function changeRanking(type) {
     window.location.href = `{{ url_for('scouting.leaderboard') }}?sort=${sanitizedType}`;
 }
 </script>
-{% endblock %} 
+{% endblock %}

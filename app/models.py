@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import Dict
+from datetime import datetime, timezone
+from typing import Dict, List, Optional, Union
 
 from bson import ObjectId
 from flask_login import UserMixin
@@ -73,51 +73,50 @@ class TeamData:
         self.match_number = data.get('match_number')
         self.event_code = data.get('event_code')
         self.alliance = data.get('alliance', '')
-        
+
         # Algae scoring
         self.algae_net = data.get('algae_net', 0)
-        self.algae_processor = data.get('algae_processor', 0)        
+        self.algae_processor = data.get('algae_processor', 0)
         # Climb
         self.climb_type = data.get('climb_type', '')  # 'shallow', 'deep', 'park', or ''
         self.climb_success = data.get('climb_success', False)
-        
+
         # Defense
         self.defense_rating = data.get('defense_rating', 1)  # 1-5 scale
         self.defense_notes = data.get('defense_notes', '')
-        
+
         # Auto
         self.auto_path = data.get('auto_path', '')  # Store coordinates of drawn path
         self.auto_notes = data.get('auto_notes', '')
-        
+
         # Notes
         self.notes = data.get('notes', '')
-        
+
         # Scouter information
         self.scouter_id = data.get('scouter_id')
         self.scouter_name = data.get('scouter_name')
         self.scouter_team = data.get('scouter_team')
         self.is_owner = data.get('is_owner', True)
-        
+
         # Auto Coral scoring
         self.auto_coral_level1 = data.get('auto_coral_level1', 0)
         self.auto_coral_level2 = data.get('auto_coral_level2', 0)
         self.auto_coral_level3 = data.get('auto_coral_level3', 0)
         self.auto_coral_level4 = data.get('auto_coral_level4', 0)
-        
+
         # Teleop Coral scoring
         self.teleop_coral_level1 = data.get('teleop_coral_level1', 0)
         self.teleop_coral_level2 = data.get('teleop_coral_level2', 0)
         self.teleop_coral_level3 = data.get('teleop_coral_level3', 0)
         self.teleop_coral_level4 = data.get('teleop_coral_level4', 0)
-        
+
         # Auto Algae scoring
         self.auto_algae_net = data.get('auto_algae_net', 0)
         self.auto_algae_processor = data.get('auto_algae_processor', 0)
-        
+
         # Teleop Algae scoring
         self.teleop_algae_net = data.get('teleop_algae_net', 0)
         self.teleop_algae_processor = data.get('teleop_algae_processor', 0)
-        
 
     @classmethod
     def create_from_db(cls, data):
@@ -161,8 +160,6 @@ class TeamData:
         if self.created_at:
             return self.created_at.strftime("%Y-%m-%d %H:%M:%S")
         return "N/A"
-    
-    
 
 
 class PitScouting:
@@ -170,7 +167,7 @@ class PitScouting:
         self._id = data.get("_id")
         self.team_number = data.get("team_number")
         self.scouter_id = data.get("scouter_id")
-        
+
         # Drive base information
         self.drive_type = data.get("drive_type", {
             "swerve": False,
@@ -178,7 +175,7 @@ class PitScouting:
             "other": ""
         })
         self.swerve_modules = data.get("swerve_modules", "")
-        
+
         # Motor details
         self.motor_details = data.get("motor_details", {
             "falcons": False,
@@ -188,14 +185,14 @@ class PitScouting:
             "other": ""
         })
         self.motor_count = data.get("motor_count", 0)
-        
+
         # Dimensions (in)
         self.dimensions = data.get("dimensions", {
             "length": 0,
             "width": 0,
             "height": 0,
         })
-        
+
         # Mechanisms
         self.mechanisms = data.get("mechanisms", {
             "coral_scoring": {
@@ -206,11 +203,11 @@ class PitScouting:
             },
             "climber": {
                 "has_climber": False,
-                "type_climber": "", # deep, shallow, park
+                "type_climber": "",  # deep, shallow, park
                 "notes": ""
             }
         })
-        
+
         # Programming and Autonomous
         self.programming_language = data.get("programming_language", "")
         self.autonomous_capabilities = data.get("autonomous_capabilities", {
@@ -219,7 +216,7 @@ class PitScouting:
             "preferred_start": "",
             "notes": ""
         })
-        
+
         # Driver Experience
         self.driver_experience = data.get("driver_experience", {
             "years": 0,
@@ -228,7 +225,7 @@ class PitScouting:
 
         # Analysis
         self.notes = data.get("notes", "")
-        
+
         # Metadata
         self.created_at = data.get("created_at")
         self.updated_at = data.get("updated_at")
@@ -265,6 +262,7 @@ class PitScouting:
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }
+
 
 class Team:
     def __init__(self, data: Dict):
@@ -329,6 +327,7 @@ class Team:
         else:
             raise ValueError("Expected a UserMixin instance")
 
+
 class Assignment:
     def __init__(self, id, title, description, team_number, creator_id, assigned_to, due_date=None, status='pending'):
         self.id = str(id)
@@ -374,6 +373,7 @@ class Assignment:
             "completed_at": self.completed_at,
         }
 
+
 class Match:
     def __init__(self, data: Dict):
         self._id = data.get("_id")
@@ -411,6 +411,7 @@ class Match:
             "scouter_id": str(self.scouter_id) if self.scouter_id else None,
         }
 
+
 class TeamStats:
     def __init__(self, team_number: int, data: Dict):
         self.team_number = team_number
@@ -432,4 +433,50 @@ class TeamStats:
             "total_points": self.total_points,
             "highest_score": self.highest_score,
             "win_rate": round(self.win_rate * 100, 1)  # Convert to percentage
+        }
+
+
+class CoralRequest:
+    def __init__(self, data: Dict):
+        self._id = data.get("_id")
+        self.status = data.get("status", "pending")  # pending, processing, completed, failed
+        self.youtube_url = data.get("youtube_url")
+        self.blue_alliance = data.get("blue_alliance", [])
+        self.red_alliance = data.get("red_alliance", [])
+        self.requested_by = data.get("requested_by")
+        self.requested_at = data.get("requested_at", datetime.now(timezone.utc))
+        self.completed_at = data.get("completed_at")
+        self.results = data.get("results", {})
+        self.error_message = data.get("error_message", "")
+        self.match_number = data.get("match_number")
+        self.event_code = data.get("event_code")
+
+    @property
+    def id(self):
+        return str(self._id)
+
+    @staticmethod
+    def create_from_db(data: Dict):
+        """Create a CoralRequest instance from database data"""
+        if not data:
+            return None
+        if "_id" in data and not isinstance(data["_id"], ObjectId):
+            data["_id"] = ObjectId(data["_id"])
+        return CoralRequest(data)
+
+    def to_dict(self):
+        """Convert the object to a dictionary for database storage"""
+        return {
+            "id": self.id,
+            "status": self.status,
+            "youtube_url": self.youtube_url,
+            "blue_alliance": self.blue_alliance,
+            "red_alliance": self.red_alliance,
+            "requested_by": str(self.requested_by) if self.requested_by else None,
+            "requested_at": self.requested_at,
+            "completed_at": self.completed_at,
+            "results": self.results,
+            "error_message": self.error_message,
+            "match_number": self.match_number,
+            "event_code": self.event_code
         }

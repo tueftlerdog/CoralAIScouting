@@ -38,10 +38,10 @@ def add():
     if "auto_path" in data:
         try:
             if isinstance(data["auto_path"], str):
-                if data["auto_path"].strip(): 
+                if data["auto_path"].strip():
                     data["auto_path"] = json.loads(data["auto_path"])
                 else:
-                    data["auto_path"] = [] 
+                    data["auto_path"] = []
         except json.JSONDecodeError:
             flash("Invalid path coordinates format", "error")
             return redirect(url_for("scouting.home"))
@@ -67,7 +67,7 @@ def add():
 def home():
     try:
         team_data = scouting_manager.get_all_scouting_data(
-            current_user.teamNumber, 
+            current_user.teamNumber,
             current_user.get_id()
         )
         return render_template("scouting/list.html", team_data=team_data)
@@ -94,7 +94,7 @@ def edit(id):
 
         if request.method == "POST":
             data = request.form.to_dict()
-            
+
             # Convert the drawing coordinates from string to JSON if present
             if "auto_path_coords" in data and isinstance(data["auto_path_coords"], str):
                 try:
@@ -102,7 +102,7 @@ def edit(id):
                 except json.JSONDecodeError:
                     flash("Invalid path coordinates format", "error")
                     return render_template("scouting/edit.html", team_data=team_data)
-            
+
             if scouting_manager.update_team_data(id, data, current_user.get_id()):
                 flash("Data updated successfully", "success")
                 return redirect(url_for("scouting.home"))
@@ -229,7 +229,7 @@ def compare_teams():
                     matches_played = stats[0]["matches_played"]
                     normalized_stats = {
                         "auto_scoring": (
-                            stats[0]["avg_auto_coral_level1"] + 
+                            stats[0]["avg_auto_coral_level1"] +
                             stats[0]["avg_auto_coral_level2"] * 2 +
                             stats[0]["avg_auto_coral_level3"] * 3 +
                             stats[0]["avg_auto_coral_level4"] * 4 +
@@ -237,7 +237,7 @@ def compare_teams():
                             stats[0]["avg_auto_algae_processor"] * 3
                         ) / 20,
                         "teleop_scoring": (
-                            stats[0]["avg_teleop_coral_level1"] + 
+                            stats[0]["avg_teleop_coral_level1"] +
                             stats[0]["avg_teleop_coral_level2"] * 2 +
                             stats[0]["avg_teleop_coral_level3"] * 3 +
                             stats[0]["avg_teleop_coral_level4"] * 4 +
@@ -342,12 +342,12 @@ async def search_teams():
     try:
         # Initialize TBA interface
         tba = TBAInterface()
-        
+
         # Handle both numeric and text searches
         if query.isdigit():
             team_key = f"frc{query}"
             url = f"{tba.base_url}/team/{team_key}"
-            
+
             async with aiohttp.ClientSession(headers=tba.headers) as session:
                 async with session.get(url) as response:
                     if response.status != 200:
@@ -367,7 +367,7 @@ async def search_teams():
 
         # Get team number from the response
         team_number = team.get("team_number")
-        
+
         # Fetch scouting data from our database
         pipeline = [
             {"$match": {"team_number": team_number}},
@@ -410,7 +410,7 @@ async def search_teams():
                     "defense_rating": {"$ifNull": ["$defense_rating", 0]},
                     "notes": 1,
                     "scouter_name": "$scouter.username",
-                    "scouter_id": {"$toString": "$scouter._id"} 
+                    "scouter_id": {"$toString": "$scouter._id"}
                 }
             }
         ]
@@ -442,7 +442,7 @@ def leaderboard():
     try:
         MIN_MATCHES = 1
         sort_type = request.args.get('sort', 'coral')
-        
+
         pipeline = [
             {"$group": {
                 "_id": "$team_number",
@@ -463,7 +463,7 @@ def leaderboard():
                 # Teleop Algae
                 "teleop_algae_net": {"$avg": {"$ifNull": ["$teleop_algae_net", 0]}},
                 "teleop_algae_processor": {"$avg": {"$ifNull": ["$teleop_algae_processor", 0]}},
-                
+
                 # Defense Rating
                 "defense_rating": {"$avg": {"$ifNull": ["$defense_rating", 0]}},
 
@@ -515,21 +515,21 @@ def leaderboard():
                 # Calculate totals for each category
                 "total_coral": {
                     "$add": [
-                        "$auto_coral_level1", "$auto_coral_level2", 
+                        "$auto_coral_level1", "$auto_coral_level2",
                         "$auto_coral_level3", "$auto_coral_level4",
-                        "$teleop_coral_level1", "$teleop_coral_level2", 
+                        "$teleop_coral_level1", "$teleop_coral_level2",
                         "$teleop_coral_level3", "$teleop_coral_level4"
                     ]
                 },
                 "total_auto_coral": {
                     "$add": [
-                        "$auto_coral_level1", "$auto_coral_level2", 
+                        "$auto_coral_level1", "$auto_coral_level2",
                         "$auto_coral_level3", "$auto_coral_level4"
                     ]
                 },
                 "total_teleop_coral": {
                     "$add": [
-                        "$teleop_coral_level1", "$teleop_coral_level2", 
+                        "$teleop_coral_level1", "$teleop_coral_level2",
                         "$teleop_coral_level3", "$teleop_coral_level4"
                     ]
                 },
@@ -648,14 +648,14 @@ def matches():
                 },
             }}
         ]
-        
+
         match_data = list(scouting_manager.db.team_data.aggregate(pipeline))
         matches = []
-        
+
         for match in match_data:
             red_teams = [t for t in match["teams"] if t["alliance"] == "red"]
             blue_teams = [t for t in match["teams"] if t["alliance"] == "blue"]
-            
+
             # Calculate alliance totals
             red_coral = {
                 "level1": sum(t["auto_coral_level1"] + t["teleop_coral_level1"] for t in red_teams),
@@ -663,24 +663,24 @@ def matches():
                 "level3": sum(t["auto_coral_level3"] + t["teleop_coral_level3"] for t in red_teams),
                 "level4": sum(t["auto_coral_level4"] + t["teleop_coral_level4"] for t in red_teams)
             }
-            
+
             red_algae = {
                 "net": sum(t["auto_algae_net"] + t["teleop_algae_net"] for t in red_teams),
                 "processor": sum(t["auto_algae_processor"] + t["teleop_algae_processor"] for t in red_teams)
             }
-            
+
             blue_coral = {
                 "level1": sum(t["auto_coral_level1"] + t["teleop_coral_level1"] for t in blue_teams),
                 "level2": sum(t["auto_coral_level2"] + t["teleop_coral_level2"] for t in blue_teams),
                 "level3": sum(t["auto_coral_level3"] + t["teleop_coral_level3"] for t in blue_teams),
                 "level4": sum(t["auto_coral_level4"] + t["teleop_coral_level4"] for t in blue_teams)
             }
-            
+
             blue_algae = {
                 "net": sum(t["auto_algae_net"] + t["teleop_algae_net"] for t in blue_teams),
                 "processor": sum(t["auto_algae_processor"] + t["teleop_algae_processor"] for t in blue_teams)
             }
-            
+
             # Prepare team data for template
             red_team_data = [{
                 "number": t["number"],
@@ -716,7 +716,7 @@ def matches():
                 "blue_coral": blue_coral,
                 "blue_algae": blue_algae
             })
-        
+
         return render_template("scouting/matches.html", matches=matches)
 
     except Exception as e:
@@ -731,7 +731,7 @@ def check_team():
     event_code = request.args.get('event')
     match_number = request.args.get('match')
     current_id = request.args.get('current_id')
-    
+
     try:
         # Get current user's team number
         current_user_team = current_user.teamNumber
@@ -754,16 +754,16 @@ def check_team():
             },
             {"$unwind": "$scouter"},
         ]
-        
+
         if current_id:
             pipeline[0]["$match"]["_id"] = {"$ne": ObjectId(current_id)}
-            
+
         existing = list(scouting_manager.db.team_data.aggregate(pipeline))
-        
+
         # Check if any existing entry is from the same team
-        exists = any(entry.get("scouter", {}).get("teamNumber") == current_user_team 
+        exists = any(entry.get("scouter", {}).get("teamNumber") == current_user_team
                     for entry in existing)
-        
+
         return jsonify({"exists": exists})
     except Exception as e:
         current_app.logger.error(f"Error checking team data: {str(e)}", exc_info=True)
@@ -795,7 +795,7 @@ def pit_scouting_add():
             pit_data = {
                 "team_number": int(request.form.get("team_number")),
                 "scouter_id": current_user.id,
-                
+
                 # Drive base information
                 "drive_type": {
                     "swerve": "swerve" in request.form.getlist("drive_type"),
@@ -803,7 +803,7 @@ def pit_scouting_add():
                     "other": request.form.get("drive_type_other", "")
                 },
                 "swerve_modules": request.form.get("swerve_modules", ""),
-                
+
                 # Motor details
                 "motor_details": {
                     "falcons": "falcons" in request.form.getlist("motors"),
@@ -813,14 +813,14 @@ def pit_scouting_add():
                     "other": request.form.get("motors_other", "")
                 },
                 "motor_count": int(request.form.get("motor_count", 0)),
-                
+
                 # Dimensions
                 "dimensions": {
                     "length": float(request.form.get("length", 0)),
                     "width": float(request.form.get("width", 0)),
                     "height": float(request.form.get("height", 0))
                 },
-                
+
                 # Mechanisms
                 "mechanisms": {
                     "coral_scoring": {
@@ -837,7 +837,7 @@ def pit_scouting_add():
                         "notes": request.form.get("climber_notes", "")
                     }
                 },
-                
+
                 # Programming and Autonomous
                 "programming_language": request.form.get("programming_language", ""),
                 "autonomous_capabilities": {
@@ -846,16 +846,16 @@ def pit_scouting_add():
                     "preferred_start": request.form.get("auto_preferred_start", "") if request.form.get("has_auto") == "true" else "",
                     "notes": request.form.get("auto_notes", "") if request.form.get("has_auto") == "true" else ""
                 },
-                
+
                 # Driver Experience
                 "driver_experience": {
                     "years": int(request.form.get("driver_years", 0)),
                     "notes": request.form.get("driver_notes", "")
                 },
-                
+
                 # General Notes
                 "notes": request.form.get("notes", ""),
-                
+
                 # Timestamps
                 "created_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc)
@@ -886,7 +886,7 @@ def pit_scouting_edit(team_number):
     if str(pit_data["scouter_id"]) != current_user.get_id():
         flash("You don't have permission to edit this data", "error")
         return redirect(url_for("scouting.pit_scouting"))
-    
+
     if request.method == "POST":
         try:
             data = {
@@ -940,7 +940,7 @@ def pit_scouting_edit(team_number):
                 "notes": request.form.get("notes", ""),
                 "updated_at": datetime.now(timezone.utc)
             }
-            
+
             if scouting_manager.update_pit_scouting(team_number, data, current_user.get_id()):
                 flash("Pit scouting data updated successfully", "success")
                 return redirect(url_for("scouting.pit_scouting"))
@@ -960,3 +960,98 @@ def pit_scouting_delete(team_number):
     else:
         flash("Error deleting pit scouting data", "error")
     return redirect(url_for("scouting.pit_scouting"))
+
+
+@scouting_bp.route("/coral/request", methods=["GET", "POST"])
+@limiter.limit("3 per hour")  # Strict rate limiting to prevent abuse
+@login_required
+@async_route
+async def coral_request():
+    if request.method == "POST":
+        try:
+            youtube_url = request.form.get("youtube_url")
+            match_number = request.form.get("match_number")
+            event_code = request.form.get("event_code")
+
+            # Validate YouTube URL
+            if not youtube_url or "youtube" not in youtube_url:
+                flash("Please provide a valid YouTube URL", "error")
+                return redirect(url_for("scouting.coral_request"))
+
+            # Get alliance teams
+            blue_alliance = [
+                request.form.get("blue_team1", ""),
+                request.form.get("blue_team2", ""),
+                request.form.get("blue_team3", "")
+            ]
+            red_alliance = [
+                request.form.get("red_team1", ""),
+                request.form.get("red_team2", ""),
+                request.form.get("red_team3", "")
+            ]
+
+            # Create a coral request
+            request_data = {
+                "status": "pending",
+                "youtube_url": youtube_url,
+                "blue_alliance": blue_alliance,
+                "red_alliance": red_alliance,
+                "requested_by": ObjectId(current_user.get_id()),
+                "requested_at": datetime.now(timezone.utc),
+                "match_number": match_number,
+                "event_code": event_code
+            }
+
+            # Insert into MongoDB
+            result = await scouting_manager.create_coral_request(request_data)
+
+            if result:
+                flash("Coral analysis request submitted. Results will be available soon.", "success")
+                return redirect(url_for("scouting.coral_results"))
+            else:
+                flash("Failed to submit request. Please try again.", "error")
+        except Exception as e:
+            current_app.logger.error(f"Error creating coral request: {str(e)}", exc_info=True)
+            flash("An error occurred while processing your request", "error")
+
+    return render_template("scouting/coral_request.html")
+
+@scouting_bp.route("/coral/results")
+@login_required
+@limiter.limit("15 per minute")
+@async_route
+async def coral_results():
+    try:
+        # Get all coral requests for this user or team
+        requests = await scouting_manager.get_coral_requests(
+            current_user.teamNumber,
+            current_user.get_id()
+        )
+
+        return render_template("scouting/coral_results.html", requests=requests)
+    except Exception as e:
+        current_app.logger.error(f"Error fetching coral results: {str(e)}", exc_info=True)
+        flash("An error occurred while retrieving results", "error")
+        return render_template("scouting/coral_results.html", requests=[])
+
+@scouting_bp.route("/coral/status/<request_id>")
+@login_required
+@limiter.limit("30 per minute")
+def check_coral_status(request_id):
+    try:
+        request_data = scouting_manager.get_coral_request(request_id)
+        if not request_data:
+            return jsonify({"error": "Request not found"}), 404
+
+        # Check if user has access to this request
+        if str(request_data['requested_by']) != current_user.get_id() and current_user.teamNumber != request_data['team_number']:
+            return jsonify({"error": "Access denied"}), 403
+
+        return jsonify({
+            "status": request_data['status'],
+            "completed_at": request_data['completed_at'].isoformat() if request_data.get('completed_at') else None,
+            "error_message": request_data.get('error_message')
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error checking coral status: {str(e)}", exc_info=True)
+        return jsonify({"error": "An internal error occurred"}), 500
