@@ -1,7 +1,7 @@
 class Canvas {
     constructor(options = {}) {
       // Canvas elements
-      this.canvas = options.canvas || document.getElementById('CanvasField');
+      this.canvas = options.canvas || document.getElementById('whiteboard');
       if (!this.canvas) {
         throw new Error('Canvas element is required');
       }
@@ -16,7 +16,10 @@ class Canvas {
       }
       
       this.container = options.container || document.getElementById('container');
-      this.showStatus = options.showStatus || ((message) => console.log(message));
+      this.statusEl = options.statusEl || document.getElementById('status');
+      
+      // Readonly mode
+      this.readonly = options.readonly || false;
       
       // Field dimensions (fixed size we want to display)
       this.FIELD_WIDTH = 800;
@@ -543,11 +546,11 @@ class Canvas {
     
     // Status message
     showStatus(message) {
-      if (!this.showStatus) {
+      if (!this.statusEl) {
         return;
       }
       
-      this.showStatus(message);
+      this.statusEl.textContent = message;
     }
     
     // Action methods
@@ -688,11 +691,21 @@ class Canvas {
     }
     
     setTool(tool) {
+      if (this.readonly) {
+        this.showStatus('Cannot change tool in read-only mode');
+        return;
+      }
       this.currentTool = tool;
-      this.showStatus(`Tool set to: ${tool}`);
+      this.selectedStrokes = [];
+      this.selectionRect = null;
+      this.canvas.style.cursor = 'default';
     }
     
     setFill(filled) {
+      if (this.readonly) {
+        this.showStatus('Cannot change fill in read-only mode');
+        return;
+      }
       this.isFilled = filled;
       // Update fill of selected shapes
       if (this.selectedStrokes.length > 0) {
@@ -723,6 +736,10 @@ class Canvas {
     }
     
     setColor(color) {
+      if (this.readonly) {
+        this.showStatus('Cannot change color in read-only mode');
+        return;
+      }
       this.currentColor = color;
       // Immediately update selected strokes when color changes
       if (this.selectedStrokes.length > 0) {
@@ -754,6 +771,10 @@ class Canvas {
     }
     
     setThickness(thickness) {
+      if (this.readonly) {
+        this.showStatus('Cannot change thickness in read-only mode');
+        return;
+      }
       this.currentThickness = parseInt(thickness);
       // Update thickness of selected strokes/shapes
       if (this.selectedStrokes.length > 0) {
@@ -917,7 +938,6 @@ class Canvas {
       window.addEventListener('resize', () => this.resizeCanvas());
       
       // Mouse wheel for zooming
-      let zoomTimeout;
       this.container.addEventListener('wheel', (e) => {
         e.preventDefault();
         
@@ -949,24 +969,21 @@ class Canvas {
         // Redraw
         this.redrawCanvas();  
         
-        // Clear any existing timeout
-        clearTimeout(zoomTimeout);
-        
-        // // Set new timeout to show zoom level after zooming stops
-        // zoomTimeout = setTimeout(() => {
-        //   this.showStatus(`Zoom: ${Math.round(this.scale * 100)}%`);
-        // }, 150); // Wait 150ms after last wheel event before showing status
+        // Show zoom level
+        this.showStatus(`Zoom: ${Math.round(this.scale * 100)}%`);
       });
       
       // Mouse events for drawing and panning
       this.canvas.addEventListener('mousedown', (e) => {
-        this.lastEvent = e;  // Track the last event for selection behavior
+        if (this.readonly && !e.shiftKey && e.button !== 1) return; // Only allow panning in readonly mode
+        
+        this.lastEvent = e;
         if (e.shiftKey || e.button === 1) {
           this.isPanning = true;
           this.startPanX = e.clientX - this.offsetX;
           this.startPanY = e.clientY - this.offsetY;
           this.canvas.style.cursor = 'grabbing';
-        } else {
+        } else if (!this.readonly) {
           const pos = this.getTransformedPosition(e.clientX, e.clientY);
           this.startX = pos.x;
           this.startY = pos.y;
@@ -1062,6 +1079,8 @@ class Canvas {
       });
       
       this.canvas.addEventListener('mousemove', (e) => {
+        if (this.readonly && !this.isPanning) return; // Only handle panning in readonly mode
+        
         // Update cursor based on resize handles when in select mode
         if (this.currentTool === 'select' && !this.isSelecting && !this.moveSelection.active && !this.resizeHandles.active) {
           const pos = this.getTransformedPosition(e.clientX, e.clientY);
@@ -1146,6 +1165,8 @@ class Canvas {
       });
       
       this.canvas.addEventListener('mouseup', (e) => {
+        if (this.readonly && !this.isPanning) return; // Only handle panning in readonly mode
+        
         if (this.resizeHandles.active) {
           this.resizeHandles.active = false;
           this.resizeHandles.activeHandle = null;
@@ -1249,6 +1270,8 @@ class Canvas {
       
       // Touch events for mobile
       this.canvas.addEventListener('touchstart', (e) => {
+        if (this.readonly && e.touches.length !== 2) return; // Only allow two-finger pan/zoom in readonly mode
+        
         e.preventDefault();
         
         if (e.touches.length === 2) { // Two fingers for panning
@@ -1274,6 +1297,8 @@ class Canvas {
       });
       
       this.canvas.addEventListener('touchmove', (e) => {
+        if (this.readonly && e.touches.length !== 2) return; // Only allow two-finger pan/zoom in readonly mode
+        
         e.preventDefault();
         
         if (e.touches.length === 2) { // Two fingers for panning/zooming
@@ -1344,28 +1369,26 @@ class Canvas {
   
       // Add keyboard shortcuts
       window.addEventListener('keydown', (e) => {
-        // Check if the event has already been handled
-        if (e.defaultPrevented) {
-          return;
-        }
-
-        if (e.key === 'Escape' && (this.previewShape || this.selectionRect)) {
-              e.preventDefault();
-              this.previewShape = null;
-              this.selectionRect = null;
-              this.startX = null;
-              this.startY = null;
-              this.selectedStrokes = [];
-              this.redrawCanvas();
-              // this.showStatus('Operation cancelled');
-              return;
+        if (this.readonly) return; // Disable keyboard shortcuts in readonly mode
+        
+        if (e.key === 'Escape') {
+          // Cancel shape drawing or selection
+          if (this.previewShape || this.selectionRect) {
+            this.previewShape = null;
+            this.selectionRect = null;
+            this.startX = null;
+            this.startY = null;
+            this.selectedStrokes = [];
+            this.redrawCanvas();
+            this.showStatus('Operation cancelled');
+            return;
+          }
         }
   
         if (e.ctrlKey || e.metaKey) {  // Support both Windows/Linux and Mac
           switch(e.key.toLowerCase()) {
             case 'z':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               if (e.shiftKey) {
                 this.redo();
               } else {
@@ -1374,28 +1397,23 @@ class Canvas {
               break;
             case 'y':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               this.redo();
               break;
             case 'a':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               this.setTool('select');
               break;
             case 'p':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               this.setTool('pen');
               break;
             case 'r':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               this.setTool('rectangle');
               break;
             case 'c':
               if (!e.shiftKey) {
                 e.preventDefault();
-                e.stopPropagation();  // Stop event from bubbling
                 if (e.altKey) {
                   this.setTool('circle');
                 } else {
@@ -1405,40 +1423,37 @@ class Canvas {
               break;
             case 'x':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               this.cutSelectedStrokes();
               break;
             case 'v':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               this.pasteStrokes();
               break;
             case 'l':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               this.setTool('line');
               break;
             case 'h':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               this.setTool('hexagon');
               break;
             case 's':
-              e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
-              this.setTool('star');
+              if (!e.shiftKey) {
+                e.preventDefault();
+                this.setTool('star');
+              }
               break;
             case 'f':
               e.preventDefault();
-              e.stopPropagation();  // Stop event from bubbling
               this.setFill(!this.isFilled);
               break;
           }
-        } else if ((e.key === 'Backspace' || e.key === 'Delete') && this.selectedStrokes.length > 0) {
-                     e.preventDefault();
-                     e.stopPropagation();  // Stop event from bubbling
-                     this.deleteSelectedStrokes();
-               }
+        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+          if (this.selectedStrokes.length > 0) {
+            e.preventDefault();
+            this.deleteSelectedStrokes();
+          }
+        }
       });
     }
   
@@ -2085,5 +2100,27 @@ class Canvas {
         { x: rect.x + rect.width/2 - handleSize/2, y: rect.y + rect.height - handleSize/2, position: 's', cursor: 's-resize' },
         { x: rect.x + rect.width - handleSize/2, y: rect.y + rect.height - handleSize/2, position: 'se', cursor: 'se-resize' }
       ];
+    }
+  
+    // Add method to toggle readonly mode
+    setReadonly(readonly) {
+      this.readonly = readonly;
+      if (readonly) {
+        // Clear any ongoing operations
+        this.isDrawing = false;
+        this.isPanning = false;
+        this.isSelecting = false;
+        this.moveSelection.active = false;
+        this.resizeHandles.active = false;
+        this.selectedStrokes = [];
+        this.selectionRect = null;
+        this.currentStroke = [];
+        this.previewShape = null;
+        this.canvas.style.cursor = 'default';
+        this.redrawCanvas();
+        this.showStatus('Read-only mode enabled');
+      } else {
+        this.showStatus('Edit mode enabled');
+      }
     }
   }
