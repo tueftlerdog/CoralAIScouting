@@ -326,7 +326,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (e.shiftKey) {
                         CanvasField.redo();
                     } else {
-                        CanvasField.undo();
+                        if (!e.repeat) {  // Only trigger once when key is first pressed
+                            CanvasField.undo();
+                        }
                     }
                     updatePathData();
                     break;

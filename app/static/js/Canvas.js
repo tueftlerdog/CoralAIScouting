@@ -108,8 +108,8 @@ class Canvas {
       this.lastWidth = 0;
       this.velocityFilterWeight = 0.7;
       
-      // Auto-save interval (every 30 seconds)
-      this.autoSaveInterval = setInterval(() => this.autoSave(), 30000);
+      // // Auto-save interval (every 30 seconds)
+      // this.autoSaveInterval = setInterval(() => this.autoSave(), 30000);
   
       // Initialize
       this.resizeCanvas();
@@ -917,6 +917,7 @@ class Canvas {
       window.addEventListener('resize', () => this.resizeCanvas());
       
       // Mouse wheel for zooming
+      let zoomTimeout;
       this.container.addEventListener('wheel', (e) => {
         e.preventDefault();
         
@@ -948,8 +949,13 @@ class Canvas {
         // Redraw
         this.redrawCanvas();  
         
-        // Show zoom level
-        this.showStatus(`Zoom: ${Math.round(this.scale * 100)}%`);
+        // Clear any existing timeout
+        clearTimeout(zoomTimeout);
+        
+        // // Set new timeout to show zoom level after zooming stops
+        // zoomTimeout = setTimeout(() => {
+        //   this.showStatus(`Zoom: ${Math.round(this.scale * 100)}%`);
+        // }, 150); // Wait 150ms after last wheel event before showing status
       });
       
       // Mouse events for drawing and panning
@@ -1338,14 +1344,20 @@ class Canvas {
   
       // Add keyboard shortcuts
       window.addEventListener('keydown', (e) => {
+        // Check if the event has already been handled
+        if (e.defaultPrevented) {
+          return;
+        }
+
         if (e.key === 'Escape' && (this.previewShape || this.selectionRect)) {
+              e.preventDefault();
               this.previewShape = null;
               this.selectionRect = null;
               this.startX = null;
               this.startY = null;
               this.selectedStrokes = [];
               this.redrawCanvas();
-              this.showStatus('Operation cancelled');
+              // this.showStatus('Operation cancelled');
               return;
         }
   
@@ -1353,6 +1365,7 @@ class Canvas {
           switch(e.key.toLowerCase()) {
             case 'z':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               if (e.shiftKey) {
                 this.redo();
               } else {
@@ -1361,23 +1374,28 @@ class Canvas {
               break;
             case 'y':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.redo();
               break;
             case 'a':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.setTool('select');
               break;
             case 'p':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.setTool('pen');
               break;
             case 'r':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.setTool('rectangle');
               break;
             case 'c':
               if (!e.shiftKey) {
                 e.preventDefault();
+                e.stopPropagation();  // Stop event from bubbling
                 if (e.altKey) {
                   this.setTool('circle');
                 } else {
@@ -1387,31 +1405,38 @@ class Canvas {
               break;
             case 'x':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.cutSelectedStrokes();
               break;
             case 'v':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.pasteStrokes();
               break;
             case 'l':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.setTool('line');
               break;
             case 'h':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.setTool('hexagon');
               break;
             case 's':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.setTool('star');
               break;
             case 'f':
               e.preventDefault();
+              e.stopPropagation();  // Stop event from bubbling
               this.setFill(!this.isFilled);
               break;
           }
         } else if ((e.key === 'Backspace' || e.key === 'Delete') && this.selectedStrokes.length > 0) {
                      e.preventDefault();
+                     e.stopPropagation();  // Stop event from bubbling
                      this.deleteSelectedStrokes();
                }
       });
