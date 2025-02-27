@@ -659,7 +659,7 @@ class ScoutingManager(DatabaseManager):
         self.ensure_connected()
         try:
             logger.info(f"Fetching pit scouting data for user_id: {user_id}, team_number: {user_team_number}")
-            
+
             # First check if we have any data at all in the collection
             total_count = self.db.pit_scouting.count_documents({})
             logger.info(f"Total documents in pit_scouting collection: {total_count}")
@@ -671,18 +671,6 @@ class ScoutingManager(DatabaseManager):
                 if 'scouter_id' in doc:
                     scouter = self.db.users.find_one({"_id": doc['scouter_id']})
                     logger.info(f"Associated scouter: {scouter}")
-
-            pipeline = [
-                {
-                    "$lookup": {
-                        "from": "users",
-                        "localField": "scouter_id",
-                        "foreignField": "_id",
-                        "as": "scouter"
-                    }
-                },
-                {"$unwind": "$scouter"},
-            ]
 
             # Log the user's info
             user_info = self.db.users.find_one({"_id": ObjectId(user_id)})
@@ -708,39 +696,49 @@ class ScoutingManager(DatabaseManager):
                     }
                 }
                 logger.info("Using individual user filter")
-            
-            pipeline.append(match_stage)
 
-            # Project the needed fields
-            pipeline.append({
-                "$project": {
-                    "_id": 1,
-                    "team_number": 1,
-                    "drive_type": 1,
-                    "swerve_modules": 1,
-                    "motor_details": 1,
-                    "motor_count": 1,
-                    "dimensions": 1,
-                    "mechanisms": 1,
-                    "programming_language": 1,
-                    "autonomous_capabilities": 1,
-                    "driver_experience": 1,
-                    "notes": 1,
-                    "created_at": 1,
-                    "updated_at": 1,
-                    "scouter_id": "$scouter._id",
-                    "scouter_name": "$scouter.username",
-                    "scouter_team": "$scouter.teamNumber"
-                }
-            })
-
+            pipeline = [
+                {
+                    "$lookup": {
+                        "from": "users",
+                        "localField": "scouter_id",
+                        "foreignField": "_id",
+                        "as": "scouter",
+                    }
+                },
+                {"$unwind": "$scouter"},
+                *(
+                    match_stage,
+                    {
+                        "$project": {
+                            "_id": 1,
+                            "team_number": 1,
+                            "drive_type": 1,
+                            "swerve_modules": 1,
+                            "motor_details": 1,
+                            "motor_count": 1,
+                            "dimensions": 1,
+                            "mechanisms": 1,
+                            "programming_language": 1,
+                            "autonomous_capabilities": 1,
+                            "driver_experience": 1,
+                            "notes": 1,
+                            "created_at": 1,
+                            "updated_at": 1,
+                            "scouter_id": "$scouter._id",
+                            "scouter_name": "$scouter.username",
+                            "scouter_team": "$scouter.teamNumber",
+                        }
+                    },
+                ),
+            ]
             # Log the full pipeline for debugging
             logger.info(f"MongoDB pipeline: {pipeline}")
 
             # Execute the pipeline on the pit_scouting collection
             pit_data = list(self.db.pit_scouting.aggregate(pipeline))
             logger.info(f"Retrieved {len(pit_data)} pit scouting records")
-            
+
             # Log the first record if any exist (excluding sensitive info)
             if pit_data:
                 sample_record = pit_data[0].copy()

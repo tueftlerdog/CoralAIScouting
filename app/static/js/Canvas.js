@@ -966,7 +966,9 @@ class Canvas {
       
       // Mouse events for drawing and panning
       this.canvas.addEventListener('mousedown', (e) => {
-        if (this.readonly && !e.shiftKey && e.button !== 1) return; // Only allow panning in readonly mode
+        if (this.readonly && !e.shiftKey && e.button !== 1) {
+          return;
+        } // Only allow panning in readonly mode
         
         this.lastEvent = e;
         if (e.shiftKey || e.button === 1) {
@@ -1070,7 +1072,9 @@ class Canvas {
       });
       
       this.canvas.addEventListener('mousemove', (e) => {
-        if (this.readonly && !this.isPanning) return; // Only handle panning in readonly mode
+        if (this.readonly && !this.isPanning) {
+          return;
+        } // Only handle panning in readonly mode
         
         // Update cursor based on resize handles when in select mode
         if (this.currentTool === 'select' && !this.isSelecting && !this.moveSelection.active && !this.resizeHandles.active) {
@@ -1156,7 +1160,9 @@ class Canvas {
       });
       
       this.canvas.addEventListener('mouseup', (e) => {
-        if (this.readonly && !this.isPanning) return; // Only handle panning in readonly mode
+        if (this.readonly && !this.isPanning) {
+          return;
+        } // Only handle panning in readonly mode
         
         if (this.resizeHandles.active) {
           this.resizeHandles.active = false;
@@ -1261,7 +1267,9 @@ class Canvas {
       
       // Touch events for mobile
       this.canvas.addEventListener('touchstart', (e) => {
-        if (this.readonly && e.touches.length !== 2) return; // Only allow two-finger pan/zoom in readonly mode
+        if (this.readonly && e.touches.length !== 2) {
+          return;
+        } // Only allow two-finger pan/zoom in readonly mode
         
         e.preventDefault();
         
@@ -1356,7 +1364,9 @@ class Canvas {
       });
       
       this.canvas.addEventListener('touchmove', (e) => {
-        if (this.readonly && e.touches.length !== 2) return; // Only allow two-finger pan/zoom in readonly mode
+        if (this.readonly && e.touches.length !== 2) {
+          return;
+        } // Only allow two-finger pan/zoom in readonly mode
         
         e.preventDefault();
         
@@ -1521,20 +1531,19 @@ class Canvas {
   
       // Add keyboard shortcuts
       window.addEventListener('keydown', (e) => {
-        if (this.readonly) return; // Disable keyboard shortcuts in readonly mode
+        if (this.readonly) {
+          return;
+        } // Disable keyboard shortcuts in readonly mode
         
-        if (e.key === 'Escape') {
-          // Cancel shape drawing or selection
-          if (this.previewShape || this.selectionRect) {
-            this.previewShape = null;
-            this.selectionRect = null;
-            this.startX = null;
-            this.startY = null;
-            this.selectedStrokes = [];
-            this.redrawCanvas();
-            this.showStatus('Operation cancelled');
-            return;
-          }
+        if (e.key === 'Escape' && (this.previewShape || this.selectionRect)) {
+              this.previewShape = null;
+              this.selectionRect = null;
+              this.startX = null;
+              this.startY = null;
+              this.selectedStrokes = [];
+              this.redrawCanvas();
+              this.showStatus('Operation cancelled');
+              return;
         }
   
         if (e.ctrlKey || e.metaKey) {  // Support both Windows/Linux and Mac
@@ -1600,12 +1609,10 @@ class Canvas {
               this.setFill(!this.isFilled);
               break;
           }
-        } else if (e.key === 'Backspace' || e.key === 'Delete') {
-          if (this.selectedStrokes.length > 0) {
-            e.preventDefault();
-            this.deleteSelectedStrokes();
-          }
-        }
+        } else if ((e.key === 'Backspace' || e.key === 'Delete') && this.selectedStrokes.length > 0) {
+                     e.preventDefault();
+                     this.deleteSelectedStrokes();
+               }
       });
     }
   

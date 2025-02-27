@@ -27,7 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
         externalUpdateUIControls: updateUIControls,
         showStatus: (message) => {
             const flashContainer = document.querySelector('.container');
-            if (!flashContainer) return;
+            if (!flashContainer) {
+              return;
+            }
 
             const messageDiv = document.createElement('div');
             messageDiv.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:-translate-x-0 z-50 w-[90%] sm:w-full max-w-xl min-h-[60px] sm:min-h-[80px] mx-auto sm:mx-0 animate-fade-in-up';
@@ -182,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const thicknessValue = document.getElementById('pathThicknessValue');
     
     thicknessSlider.addEventListener('input', function() {
-        const value = this.value;
+        const {value} = this;
         thicknessValue.textContent = value;
         CanvasField.setThickness(parseInt(value));
     });
@@ -277,7 +279,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     loadFile.addEventListener('change', (e) => {
-        if (e.target.files.length === 0) return;
+        if (e.target.files.length === 0) {
+          return;
+        }
 
         const file = e.target.files[0];
         const reader = new FileReader();
@@ -301,7 +305,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+          return;
+        }
 
         if (e.ctrlKey) {
             switch (e.key.toLowerCase()) {
@@ -353,12 +359,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     e.preventDefault();
                     e.stopPropagation();
                     if (e.shiftKey) {
-                        CanvasField.redo();
-                    } else {
-                        if (!e.repeat) {  // Only trigger once when key is first pressed
-                            CanvasField.undo();
-                        }
-                    }
+                                            CanvasField.redo();
+                                        }
+                    else if (!e.repeat) {  // Only trigger once when key is first pressed
+                                                CanvasField.undo();
+                                            }
                     updatePathData();
                     break;
                 case 'y':

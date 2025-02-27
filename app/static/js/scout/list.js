@@ -33,7 +33,9 @@ function showAutoPath(pathData, autoNotes, deviceType) {
     const container = document.getElementById('autoPathContainer');
     const notesElement = document.getElementById('autoNotes');
     
-    if (!modal || !container) return;
+    if (!modal || !container) {
+      return;
+    }
     
     modal.classList.remove('hidden');
     
