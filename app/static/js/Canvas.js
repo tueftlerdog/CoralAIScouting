@@ -21,6 +21,9 @@ class Canvas {
       // Readonly mode
       this.readonly = options.readonly || false;
       
+      // External UI update function
+      this.externalUpdateUIControls = options.updateUIControls || null;
+      
       // Field dimensions (fixed size we want to display)
       this.FIELD_WIDTH = 800;
       this.FIELD_HEIGHT = 400;
@@ -1850,43 +1853,35 @@ class Canvas {
   
     // Add new method to update UI controls
     updateUIControls(color, thickness) {
-      if (color) {
-        // Update color picker if it exists
-        const colorPicker = document.querySelector('input[type="color"]');
-        if (colorPicker) {
-          colorPicker.value = color;
-          // Also update Coloris if it's being used
-          const colorisInput = document.querySelector('.clr-field input');
-          if (colorisInput) {
-            colorisInput.value = color;
-            // Update the preview
-            const preview = colorisInput.parentElement.querySelector('.clr-preview');
-            if (preview) {
-              preview.style.backgroundColor = color;
+      if (this.externalUpdateUIControls) {
+        this.externalUpdateUIControls(color, thickness);
+      } else {
+        // Fallback implementation
+        if (color) {
+          const colorPicker = document.getElementById('pathColorPicker');
+          if (colorPicker) {
+            colorPicker.value = color;
+            // Update Coloris field and button
+            const clrField = colorPicker.closest('.clr-field');
+            if (clrField) {
+              clrField.style.color = color;
+              const button = clrField.querySelector('button');
+              if (button) {
+                button.style.backgroundColor = color;
+              }
             }
           }
         }
-        this.currentColor = color; // Sync with internal state
-  
-        // Update any other color displays
-        const colorDisplay = document.querySelector('.current-color');
-        if (colorDisplay) {
-          colorDisplay.style.backgroundColor = color;
-        }
-      }
-  
-      if (thickness) {
-        // Update thickness slider if it exists
-        const thicknessSlider = document.querySelector('input[type="range"]');
-        if (thicknessSlider) {
-          thicknessSlider.value = thickness;
-          // Also update any thickness displays
-          const thicknessDisplay = document.querySelector('.current-thickness');
-          if (thicknessDisplay) {
-            thicknessDisplay.textContent = thickness;
+        if (thickness) {
+          const thicknessSlider = document.getElementById('pathThickness');
+          const thicknessDisplay = document.getElementById('pathThicknessValue');
+          if (thicknessSlider) {
+            thicknessSlider.value = thickness;
+            if (thicknessDisplay) {
+              thicknessDisplay.textContent = thickness;
+            }
           }
         }
-        this.currentThickness = parseInt(thickness); // Sync with internal state
       }
     }
   

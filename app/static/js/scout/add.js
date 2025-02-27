@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const CanvasField = new Canvas({
         canvas: document.getElementById('autoPath'),
         container: document.getElementById('autoPathContainer'),
+        externalUpdateUIControls: updateUIControls,
         showStatus: (message) => {
             const flashContainer = document.querySelector('.container');
             if (!flashContainer) return;
@@ -394,3 +395,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Update the updateUIControls method to be more specific
+function updateUIControls(color, thickness) {
+    if (color) {
+        // Update color picker if it exists
+        const colorPicker = document.querySelector('input[name="pathColorPicker"]');
+        if (colorPicker) {
+            colorPicker.value = color;
+            // Update Coloris
+            Coloris.setInstance('#pathColorPicker', { value: color });
+        }
+    }
+
+    if (thickness) {
+        // Update thickness slider if it exists - be more specific with the selector
+        const thicknessSlider = document.getElementById('pathThickness');
+        const thicknessDisplay = document.getElementById('pathThicknessValue');
+        if (thicknessSlider) {
+            thicknessSlider.value = thickness;
+            if (thicknessDisplay) {
+                thicknessDisplay.textContent = thickness;
+            }
+        }
+    }
+}
