@@ -3,7 +3,7 @@ const ASSETS_TO_CACHE = [
   '/',
   '/static/css/global.css',
   '/static/css/index.css',
-  '/static/js/CanvasCoordinateSystem.js',
+  '/static/js/Canvas.js',
   '/static/images/field-2025.png',
   '/static/images/default_profile.png',
 ];
