@@ -961,7 +961,7 @@ class Canvas {
         this.redrawCanvas();  
         
         // Show zoom level
-        this.showStatus(`Zoom: ${Math.round(this.scale * 100)}%`);
+        // this.showStatus(`Zoom: ${Math.round(this.scale * 100)}%`);
       });
       
       // Mouse events for drawing and panning

@@ -19,8 +19,34 @@ class ScoutingManager(DatabaseManager):
 
     def _ensure_collections(self):
         """Ensure required collections exist"""
-        if "team_data" not in self.db.list_collection_names():
+        collections = self.db.list_collection_names()
+        if "team_data" not in collections:
             self._create_team_data_collection()
+        if "pit_scouting" not in collections:
+            self.db.create_collection("pit_scouting")
+            self.db.pit_scouting.create_index([("team_number", 1)])
+            self.db.pit_scouting.create_index([("scouter_id", 1)])
+            logger.info("Created pit_scouting collection and indexes")
+        
+        # Fix any string scouter_ids in pit_scouting collection
+        self._migrate_pit_scouting_scouter_ids()
+
+    def _migrate_pit_scouting_scouter_ids(self):
+        """Migrate string scouter_ids to ObjectId in pit_scouting collection"""
+        try:
+            # Find documents where scouter_id is a string
+            for doc in self.db.pit_scouting.find({"scouter_id": {"$type": "string"}}):
+                try:
+                    # Convert string to ObjectId
+                    self.db.pit_scouting.update_one(
+                        {"_id": doc["_id"]},
+                        {"$set": {"scouter_id": ObjectId(doc["scouter_id"])}}
+                    )
+                    logger.info(f"Migrated pit scouting document {doc['_id']} scouter_id to ObjectId")
+                except Exception as e:
+                    logger.error(f"Failed to migrate pit scouting document {doc['_id']}: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error during pit scouting migration: {str(e)}")
 
     def connect(self):
         """Establish connection to MongoDB with basic error handling"""
@@ -32,9 +58,15 @@ class ScoutingManager(DatabaseManager):
                 self.db = self.client.get_default_database()
                 logger.info("Successfully connected to MongoDB")
 
-                # Ensure team_data collection exists
-                if "team_data" not in self.db.list_collection_names():
+                # Ensure collections exist
+                collections = self.db.list_collection_names()
+                if "team_data" not in collections:
                     self._create_team_data_collection()
+                if "pit_scouting" not in collections:
+                    self.db.create_collection("pit_scouting")
+                    self.db.pit_scouting.create_index([("team_number", 1)])
+                    self.db.pit_scouting.create_index([("scouter_id", 1)])
+                    logger.info("Created pit_scouting collection and indexes")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {str(e)}")
             raise
@@ -531,7 +563,7 @@ class ScoutingManager(DatabaseManager):
         self.ensure_connected()
         try:
             team_number = int(data["team_number"])
-            scouter_id = data["scouter_id"]
+            scouter_id = ObjectId(data["scouter_id"])  # Convert to ObjectId
 
             # Check if this team is already scouted by someone from the same team
             pipeline = [
@@ -552,13 +584,16 @@ class ScoutingManager(DatabaseManager):
             ]
             
             existing_entries = list(self.db.pit_scouting.aggregate(pipeline))
-            current_user = self.db.users.find_one({"_id": ObjectId(scouter_id)})
+            current_user = self.db.users.find_one({"_id": scouter_id})
             
             for entry in existing_entries:
                 if entry.get("scouter", {}).get("teamNumber") == current_user.get("teamNumber"):
                     logger.warning(f"Team {team_number} has already been pit scouted by team {current_user.get('teamNumber')}")
                     return False
 
+            # Ensure scouter_id is ObjectId in the data
+            data["scouter_id"] = scouter_id
+            
             result = self.db.pit_scouting.insert_one(data)
             return bool(result.inserted_id)
 
@@ -621,7 +656,22 @@ class ScoutingManager(DatabaseManager):
     @with_mongodb_retry(retries=3, delay=2)
     def get_all_pit_scouting(self, user_team_number=None, user_id=None):
         """Get all pit scouting data with team-based access control"""
+        self.ensure_connected()
         try:
+            logger.info(f"Fetching pit scouting data for user_id: {user_id}, team_number: {user_team_number}")
+            
+            # First check if we have any data at all in the collection
+            total_count = self.db.pit_scouting.count_documents({})
+            logger.info(f"Total documents in pit_scouting collection: {total_count}")
+
+            # Log the raw documents for debugging
+            raw_docs = list(self.db.pit_scouting.find())
+            for doc in raw_docs:
+                logger.info(f"Raw pit scouting document: {doc}")
+                if 'scouter_id' in doc:
+                    scouter = self.db.users.find_one({"_id": doc['scouter_id']})
+                    logger.info(f"Associated scouter: {scouter}")
+
             pipeline = [
                 {
                     "$lookup": {
@@ -634,26 +684,74 @@ class ScoutingManager(DatabaseManager):
                 {"$unwind": "$scouter"},
             ]
 
+            # Log the user's info
+            user_info = self.db.users.find_one({"_id": ObjectId(user_id)})
+            logger.info(f"User info: {user_info}")
+
             # Add match stage for filtering based on team number or user ID
             if user_team_number:
-                pipeline.append({
+                # If user has a team number, show data from their team and their own data
+                match_stage = {
                     "$match": {
                         "$or": [
                             {"scouter.teamNumber": user_team_number},
                             {"scouter._id": ObjectId(user_id)}
                         ]
                     }
-                })
+                }
+                logger.info(f"Using team filter with team number: {user_team_number}")
             else:
-                pipeline.append({
+                # If user has no team, only show their own data
+                match_stage = {
                     "$match": {
                         "scouter._id": ObjectId(user_id)
                     }
-                })
+                }
+                logger.info("Using individual user filter")
+            
+            pipeline.append(match_stage)
 
-            return list(self.db.pit_scouting.aggregate(pipeline))
+            # Project the needed fields
+            pipeline.append({
+                "$project": {
+                    "_id": 1,
+                    "team_number": 1,
+                    "drive_type": 1,
+                    "swerve_modules": 1,
+                    "motor_details": 1,
+                    "motor_count": 1,
+                    "dimensions": 1,
+                    "mechanisms": 1,
+                    "programming_language": 1,
+                    "autonomous_capabilities": 1,
+                    "driver_experience": 1,
+                    "notes": 1,
+                    "created_at": 1,
+                    "updated_at": 1,
+                    "scouter_id": "$scouter._id",
+                    "scouter_name": "$scouter.username",
+                    "scouter_team": "$scouter.teamNumber"
+                }
+            })
+
+            # Log the full pipeline for debugging
+            logger.info(f"MongoDB pipeline: {pipeline}")
+
+            # Execute the pipeline on the pit_scouting collection
+            pit_data = list(self.db.pit_scouting.aggregate(pipeline))
+            logger.info(f"Retrieved {len(pit_data)} pit scouting records")
+            
+            # Log the first record if any exist (excluding sensitive info)
+            if pit_data:
+                sample_record = pit_data[0].copy()
+                if "scouter_id" in sample_record:
+                    del sample_record["scouter_id"]
+                logger.info(f"Sample record: {sample_record}")
+
+            return pit_data
+
         except Exception as e:
-            logger.error(f"Error fetching pit scouting data: {str(e)}")
+            logger.error(f"Error fetching pit scouting data: {str(e)}", exc_info=True)
             return []
 
     @with_mongodb_retry(retries=3, delay=2)
