@@ -16,7 +16,7 @@ class Canvas {
       }
       
       this.container = options.container || document.getElementById('container');
-      this.statusEl = options.statusEl || document.getElementById('status');
+      this.showStatus = options.showStatus || null;
       
       // Readonly mode
       this.readonly = options.readonly || false;
@@ -537,11 +537,11 @@ class Canvas {
     
     // Status message
     showStatus(message) {
-      if (!this.statusEl) {
+      if (!this.showStatus) {
         return;
       }
       
-      this.statusEl.textContent = message;
+      this.showStatus(message);
     }
     
     // Action methods
