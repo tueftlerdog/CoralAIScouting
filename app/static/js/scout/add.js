@@ -83,7 +83,8 @@ document.addEventListener('DOMContentLoaded', function() {
         initialColor: '#2563eb',
         initialThickness: 3,
         maxPanDistance: 1000,
-        backgroundImage: '/static/images/field-2025.png'
+        backgroundImage: '/static/images/field-2025.png',
+        readonly: false
     });
 
     // Verify background image loading
@@ -261,6 +262,16 @@ document.addEventListener('DOMContentLoaded', function() {
         CanvasField.resetView();
         CanvasField.redrawCanvas();
         CanvasField.showStatus('View reset to origin');
+    });
+
+    // Readonly toggle button
+    const readonlyToggle = document.getElementById('readonlyToggle');
+    readonlyToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const newState = !CanvasField.readonly;
+        CanvasField.setReadonly(newState);
+        readonlyToggle.classList.toggle('bg-blue-800', newState);
+        readonlyToggle.classList.toggle('text-white', newState);
     });
 
     loadFile.addEventListener('change', (e) => {
