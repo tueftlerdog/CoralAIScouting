@@ -260,6 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset view button
     document.getElementById('goHome').addEventListener('click', (e) => {
         e.preventDefault();
+        CanvasField.resizeCanvas();
         CanvasField.resetView();
         CanvasField.redrawCanvas();
         CanvasField.showStatus('View reset to origin');
@@ -306,43 +307,51 @@ document.addEventListener('DOMContentLoaded', function() {
             switch (e.key.toLowerCase()) {
                 case 'a':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('select');
                     updateActiveToolButton('select');
                     break;
                 case 'p':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('pen');
                     updateActiveToolButton('pen');
                     break;
                 case 'r':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('rectangle');
                     updateActiveToolButton('rectangle');
                     break;
                 case 'c':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('circle');
                     updateActiveToolButton('circle');
                     break;
                 case 'l':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('line');
                     updateActiveToolButton('line');
                     break;
                 case 'h':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('hexagon');
                     updateActiveToolButton('hexagon');
                     break;
                 case 's':
                     if (!e.shiftKey) {
                         e.preventDefault();
+                        e.stopPropagation();
                         CanvasField.setTool('star');
                         updateActiveToolButton('star');
                     }
                     break;
                 case 'z':
                     e.preventDefault();
+                    e.stopPropagation();
                     if (e.shiftKey) {
                         CanvasField.redo();
                     } else {
@@ -354,11 +363,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case 'y':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.redo();
                     updatePathData();
                     break;
                 case 'f':
                     e.preventDefault();
+                    e.stopPropagation();
                     fillToggleBtn.click();
                     break;
             }

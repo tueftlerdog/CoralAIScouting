@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const CanvasField = new Canvas({
         canvas: document.getElementById('autoPath'),
         container: document.getElementById('autoPathContainer'),
+        externalUpdateUIControls: updateUIControls,
         showStatus: (message) => {
             const flashContainer = document.querySelector('.container');
             if (!flashContainer) return;
@@ -349,43 +350,51 @@ document.addEventListener('DOMContentLoaded', function() {
             switch (e.key.toLowerCase()) {
                 case 'a':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('select');
                     updateActiveToolButton('select');
                     break;
                 case 'p':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('pen');
                     updateActiveToolButton('pen');
                     break;
                 case 'r':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('rectangle');
                     updateActiveToolButton('rectangle');
                     break;
                 case 'c':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('circle');
                     updateActiveToolButton('circle');
                     break;
                 case 'l':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('line');
                     updateActiveToolButton('line');
                     break;
                 case 'h':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.setTool('hexagon');
                     updateActiveToolButton('hexagon');
                     break;
                 case 's':
                     if (!e.shiftKey) {
                         e.preventDefault();
+                        e.stopPropagation();
                         CanvasField.setTool('star');
                         updateActiveToolButton('star');
                     }
                     break;
                 case 'z':
                     e.preventDefault();
+                    e.stopPropagation();
                     if (e.shiftKey) {
                         CanvasField.redo();
                     } else {
@@ -397,11 +406,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case 'y':
                     e.preventDefault();
+                    e.stopPropagation();
                     CanvasField.redo();
                     updatePathData();
                     break;
                 case 'f':
                     e.preventDefault();
+                    e.stopPropagation();
                     fillToggleBtn.click();
                     break;
             }
@@ -439,3 +450,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Add the updateUIControls function at the end of the file
+function updateUIControls(color, thickness) {
+    if (color) {
+        // Update color picker if it exists
+        const colorPicker = document.getElementById('pathColorPicker');
+        if (colorPicker) {
+            colorPicker.value = color;
+            // Update Coloris field and button
+            const clrField = colorPicker.closest('.clr-field');
+            if (clrField) {
+                clrField.style.color = color;
+                const button = clrField.querySelector('button');
+                if (button) {
+                    button.style.backgroundColor = color;
+                }
+            }
+        }
+    }
+
+    if (thickness) {
+        // Update thickness slider if it exists
+        const thicknessSlider = document.getElementById('pathThickness');
+        const thicknessDisplay = document.getElementById('pathThicknessValue');
+        if (thicknessSlider) {
+            thicknessSlider.value = thickness;
+            if (thicknessDisplay) {
+                thicknessDisplay.textContent = thickness;
+            }
+        }
+    }
+}
