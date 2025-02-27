@@ -155,27 +155,24 @@ class Canvas {
       const rect = this.container.getBoundingClientRect();
       const containerWidth = rect.width;
       const containerHeight = rect.height;
+      const dpr = window.devicePixelRatio || 1;
       
-      // Calculate scale to fit the field in the container
-      const scaleX = containerWidth / this.FIELD_WIDTH;
-      const scaleY = containerHeight / this.FIELD_HEIGHT;
+      // Calculate scale to fit the field in the container, accounting for DPR
+      const scaleX = (containerWidth * dpr) / this.FIELD_WIDTH;
+      const scaleY = (containerHeight * dpr) / this.FIELD_HEIGHT;
       this.scale = Math.min(scaleX, scaleY) * 0.95; // 95% to add a small margin
       
-      // Center the field
-      this.offsetX = containerWidth / 2;
-      this.offsetY = containerHeight / 2;
+      // Center the field, accounting for DPR
+      this.offsetX = (containerWidth * dpr) / 2;
+      this.offsetY = (containerHeight * dpr) / 2;
     }
   
     resizeCanvas() {
-      // Store current scaling to adjust for new canvas size
-      const prevWidth = this.canvas.width || this.container.clientWidth;
-      const prevHeight = this.canvas.height || this.container.clientHeight;
-      
       // Get the container's CSS dimensions
       const rect = this.container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
       
       // Set canvas dimensions to match container size, accounting for device pixel ratio
-      const dpr = window.devicePixelRatio || 1;
       this.canvas.width = rect.width * dpr;
       this.canvas.height = rect.height * dpr;
       
@@ -183,17 +180,8 @@ class Canvas {
       this.canvas.style.width = `${rect.width}px`;
       this.canvas.style.height = `${rect.height}px`;
       
-      // If this is the first resize or the container aspect ratio changed significantly,
-      // reset the view to center and scale the field properly
-      const prevAspect = prevWidth / prevHeight;
-      const newAspect = rect.width / rect.height;
-      if (Math.abs(prevAspect - newAspect) > 0.1) {
-        this.resetView();
-      } else {
-        // Otherwise, adjust offset to maintain drawing position when canvas is resized
-        this.offsetX *= this.canvas.width / prevWidth;
-        this.offsetY *= this.canvas.height / prevHeight;
-      }
+      // Always reset view to ensure proper centering
+      this.resetView();
       
       // Apply pan limits after resize
       this.applyPanLimits();
