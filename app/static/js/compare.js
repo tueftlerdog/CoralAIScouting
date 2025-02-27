@@ -13,10 +13,6 @@ const comparisonResults = document.getElementById('comparison-results');
 // Chart instance
 let radarChart = null;
 
-// Add these variables at the top of the file
-let modalCanvas, modalCoordSystem;
-let currentPathData = null;
-
 // Event Listeners
 compareBtn.addEventListener('click', handleCompare);
 team1Input.addEventListener('keypress', handleEnterKey);
@@ -213,10 +209,6 @@ function updateRawDataTable(data) {
         teamData.matches?.forEach(match => {
             const row = document.createElement('tr');
 
-            const safeAutoPaths = JSON.stringify(autoPaths)
-                .replace(/'/g, '\\\'')
-                .replace(/"/g, '\\"');
-
             row.innerHTML = `
                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     ${teamNumber}
@@ -243,8 +235,8 @@ function updateRawDataTable(data) {
                     ${match.climb_success ? `${match.climb_type || 'Yes'}` : 'No'}
                 </td>
                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${autoPaths.length > 0 ? 
-                        `<button onclick='showAutoPath("${teamNumber}", ${match.match_number}, "${safeAutoPaths}")' class="text-blue-600 hover:text-blue-800">View</button>` 
+                    ${match.auto_path ? 
+                        `<button onclick='showAutoPath(${JSON.stringify(match.auto_path)}, ${JSON.stringify(match.auto_notes || '')}, "${match.device_type || ''}")' class="text-blue-600 hover:text-blue-800">View</button>` 
                         : 'None'}
                 </td>
                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -268,10 +260,71 @@ function getTeamColor(index) {
     return colors[index] || colors[0];
 }
 
+function showAutoPath(pathData, autoNotes, deviceType) {
+    const modal = document.getElementById('autoPathModal');
+    const container = document.getElementById('autoPathContainer');
+    const notesElement = document.getElementById('modalAutoNotes');
+    
+    if (!modal || !container) return;
+    
+    modal.classList.remove('hidden');
+    
+    // Initialize canvas with background image
+    const CanvasField = new Canvas({
+        canvas: document.getElementById('modalAutoPathCanvas'),
+        container: container,
+        backgroundImage: '/static/images/field-2025.png',
+        maxPanDistance: 1000
+    });
+
+    // Load the path data
+    if (pathData) {
+        try {
+            let sanitizedValue = pathData;
+            if (typeof pathData === 'string') {
+                // Remove any potential HTML entities
+                sanitizedValue = pathData.trim()
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#34;/g, '"')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&amp;/g, '&');
+                
+                // Convert single quotes to double quotes if needed
+                if (sanitizedValue.startsWith("'") && sanitizedValue.endsWith("'")) {
+                    sanitizedValue = sanitizedValue.slice(1, -1);
+                }
+                sanitizedValue = sanitizedValue.replace(/'/g, '"');
+                
+                // Convert Python boolean values to JSON boolean values
+                sanitizedValue = sanitizedValue
+                    .replace(/: True/g, ': true')
+                    .replace(/: False/g, ': false');
+            }
+
+            const parsedData = typeof sanitizedValue === 'string' ? JSON.parse(sanitizedValue) : sanitizedValue;
+            if (Array.isArray(parsedData)) {
+                CanvasField.drawingHistory = parsedData;
+                CanvasField.redrawCanvas();
+            }
+        } catch (error) {
+            console.error('Error loading path data:', error);
+        }
+    }
+
+    // Set to readonly mode after loading
+    CanvasField.setReadonly(true);
+
+    // Update notes
+    if (notesElement) {
+        notesElement.textContent = autoNotes || 'No notes available';
+    }
+}
 
 function closeAutoPathModal() {
     const modal = document.getElementById('autoPathModal');
-    modal.classList.add('hidden');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
 // Event Listeners
@@ -320,7 +373,8 @@ function updateAutoPaths(data) {
         const autoPaths = teamData.matches?.map(match => ({
             match_number: match.match_number,
             path: match.auto_path,
-            notes: match.auto_notes
+            notes: match.auto_notes,
+            device_type: match.device_type
         })).filter(path => path.path) || [];
         
         // Sort paths by match number and take latest 5
@@ -355,26 +409,20 @@ function updateAutoPaths(data) {
             sortedPaths.forEach(pathData => {
                 const row = document.createElement('tr');
                 
-                // Create a button that calls showAutoPath with the path data
-                const viewButton = document.createElement('button');
-                viewButton.className = 'text-blue-600 hover:text-blue-800';
-                viewButton.textContent = 'View Path';
-                viewButton.onclick = () => {
-                    showAutoPath(teamNumber, pathData.match_number, pathData.path, pathData.notes || '');
-                };
-                
                 row.innerHTML = `
                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                         ${pathData.match_number}
                     </td>
-                    <td class="px-3 py-2 whitespace-nowrap text-sm"></td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm">
+                        <button onclick='showAutoPath(${JSON.stringify(pathData.path)}, ${JSON.stringify(pathData.notes || '')}, "${pathData.device_type || ''}")' 
+                                class="text-blue-600 hover:text-blue-800">
+                            View Path
+                        </button>
+                    </td>
                     <td class="px-3 py-2 text-sm text-gray-500">
                         ${pathData.notes || '-'}
                     </td>
                 `;
-                
-                // Insert the button into the second cell
-                row.children[1].appendChild(viewButton);
                 
                 tbody.appendChild(row);
             });
