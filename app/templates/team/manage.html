@@ -439,61 +439,86 @@
         </div>
     </div>
 
-    <div id="editAssignmentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full p-4">
-        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Edit Assignment</h3>
-                <form id="editAssignmentForm" class="space-y-4" autocomplete="off">
-                    <input type="hidden" id="edit_assignment_id">
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_title">
-                            Title
-                        </label>
-                        <input type="text" name="title" id="edit_title" required autocomplete="off"
-                               maxlength="30"
-                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                        <p class="mt-1 text-sm text-gray-500">Maximum 30 characters</p>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_description">
-                            Description
-                        </label>
-                        <textarea name="description" id="edit_description" autocomplete="off"
-                                  maxlength="200"
-                                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
-                        <p class="mt-1 text-sm text-gray-500">Maximum 200 characters</p>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_assigned_to">
-                            Assign To
-                        </label>
-                        <select name="assigned_to" id="edit_assigned_to" multiple required autocomplete="off"
-                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+    <div id="editAssignmentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-8 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold text-gray-900">Edit Assignment</h3>
+                <p class="mt-2 text-sm text-gray-600">Update the details for this team assignment.</p>
+            </div>
+            
+            <form id="editAssignmentForm" class="space-y-6" autocomplete="off">
+                <input type="hidden" id="edit_assignment_id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" for="edit_title">
+                        Title
+                    </label>
+                    <input type="text" 
+                           name="title" 
+                           id="edit_title" 
+                           required 
+                           maxlength="30"
+                           autocomplete="off"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <p class="mt-1 text-sm text-gray-500">Maximum 30 characters</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" for="edit_description">
+                        Description
+                    </label>
+                    <textarea name="description" 
+                              id="edit_description" 
+                              rows="4"
+                              maxlength="200"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    <p class="mt-1 text-sm text-gray-500">Maximum 200 characters</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" for="edit_assigned_to">
+                        Assign To
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="editMemberSearchInput"
+                               placeholder="Search members..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-2">
+                        <select name="assigned_to" 
+                                id="edit_assigned_to" 
+                                multiple 
+                                required
+                                size="6"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             {% for member in team_members %}
                             <option value="{{ member.get_id() }}">{{ member.username }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2" for="edit_due_date">
-                            Due Date
-                        </label>
-                        <input type="datetime-local" name="due_date" id="edit_due_date" autocomplete="off"
-                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                    </div>
-                    <div class="flex items-center justify-between mt-4">
-                        <button type="submit"
-                                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                            Save Changes
-                        </button>
-                        <button type="button"
-                                onclick="document.getElementById('editAssignmentModal').classList.add('hidden')"
-                                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-                            Cancel
-                        </button>
-                    </div>
-                </form>
-            </div>
+                    <p class="mt-1 text-sm text-gray-500">Hold Ctrl/Cmd to select multiple members</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" for="edit_due_date">
+                        Due Date
+                    </label>
+                    <input type="datetime-local" 
+                           name="due_date" 
+                           id="edit_due_date"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div class="flex items-center justify-end space-x-4 pt-4 border-t border-gray-200">
+                    <button type="button"
+                            onclick="document.getElementById('editAssignmentModal').classList.add('hidden')"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     <script src="{{ url_for('static', filename='js/team/manage.js') }}"></script>
@@ -503,8 +528,10 @@
             const preview = container.querySelector('.description-preview');
             const full = container.querySelector('.description-full');
             
-            preview.classList.toggle('hidden');
-            full.classList.toggle('hidden');
+            if (preview && full) {
+                preview.classList.toggle('hidden');
+                full.classList.toggle('hidden');
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -522,6 +549,25 @@
                 originalOptions.forEach(option => {
                     if (option.text.toLowerCase().includes(searchTerm)) {
                         assignedToSelect.appendChild(option.cloneNode(true));
+                    }
+                });
+            });
+            
+            // Add search functionality for edit modal
+            const editMemberSearchInput = document.getElementById('editMemberSearchInput');
+            const editAssignedToSelect = document.getElementById('edit_assigned_to');
+            const editOriginalOptions = Array.from(editAssignedToSelect.options);
+
+            editMemberSearchInput.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                
+                // Clear current options
+                editAssignedToSelect.innerHTML = '';
+                
+                // Filter and add matching options
+                editOriginalOptions.forEach(option => {
+                    if (option.text.toLowerCase().includes(searchTerm)) {
+                        editAssignedToSelect.appendChild(option.cloneNode(true));
                     }
                 });
             });

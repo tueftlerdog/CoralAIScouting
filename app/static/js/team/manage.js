@@ -337,7 +337,28 @@ function openEditAssignmentModal(assignmentId) {
           document.getElementById('edit_title').value = titleCell.textContent.trim();
         }
         if (descriptionCell) {
-          document.getElementById('edit_description').value = descriptionCell.textContent.trim();
+          // Extract the description text properly
+          let descriptionText = '';
+          const descriptionPreview = descriptionCell.querySelector('.description-preview');
+          const descriptionFull = descriptionCell.querySelector('.description-full');
+          
+          if (descriptionFull) {
+            // Get the text content of the full description, excluding the button
+            const fullTextContent = descriptionFull.childNodes[0].textContent.trim();
+            descriptionText = fullTextContent;
+          } else if (descriptionPreview) {
+            // If no full description, get the preview text
+            const previewText = descriptionPreview.childNodes[0].textContent.trim();
+            descriptionText = previewText;
+          } else {
+            // Fallback to the cell's text content
+            descriptionText = descriptionCell.textContent.trim()
+              .replace('See more', '')
+              .replace('See less', '')
+              .trim();
+          }
+          
+          document.getElementById('edit_description').value = descriptionText;
         }
 
         // Handle assigned users
