@@ -142,7 +142,7 @@
                         {% for team in req.blue_alliance %}
                         <div class="bg-white p-4 rounded shadow">
                             <h5 class="font-medium text-center mb-2">Team {{ team }}</h5>
-                            {% set team_events = req.results.get('robots', {}).get(team, {}).get('events', []) %}
+                            {% set team_events = req.results.get('robots', {}).get(team, {}).get('events', []) if req.results else [] %}
                             {% if team_events %}
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead>
@@ -175,7 +175,7 @@
                         {% for team in req.red_alliance %}
                         <div class="bg-white p-4 rounded shadow">
                             <h5 class="font-medium text-center mb-2">Team {{ team }}</h5>
-                            {% set team_events = req.results.get('robots', {}).get(team, {}).get('events', []) %}
+                            {% set team_events = req.results.get('robots', {}).get(team, {}).get('events', []) if req.results else [] %}
                             {% if team_events %}
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead>

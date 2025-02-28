@@ -108,7 +108,8 @@ limiter = Limiter(
     key_func=get_remote_address,
     storage_uri=os.getenv("MONGO_URI"),
     default_limits=["5000 per day", "1000 per hour"],
-    strategy="fixed-window-elastic-expiry"
+    strategy="fixed-window-elastic-expiry",
+    enabled=False
 )
 
 
