@@ -1,4 +1,80 @@
 {% extends "base.html" %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css">
+<script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
+<style>
+    .clr-field button {
+        width: 36px;
+        height: 36px;
+        border-radius: 9999px;
+        transition: transform 0.2s;
+    }
+    .clr-field button:hover {
+        transform: scale(1.1);
+    }
+    .clr-field.active button {
+        --tw-ring-offset-width: 2px;
+        --tw-ring-width: 2px;
+        --tw-ring-color: rgb(59 130 246);
+        box-shadow: 0 0 0 var(--tw-ring-offset-width) #fff,
+                   0 0 0 calc(var(--tw-ring-offset-width) + var(--tw-ring-width)) var(--tw-ring-color);
+    }
+    .tool-btn {
+        @apply p-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors border border-gray-300;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    @media (min-width: 640px) {
+        .tool-btn {
+            width: 40px;
+            height: 40px;
+        }
+    }
+    .tool-btn svg {
+        width: 24px;
+        height: 24px;
+    }
+    .tool-btn.active {
+        @apply bg-blue-100 border-blue-500 text-blue-700;
+    }
+    .tool-btn:active {
+        @apply transform scale-95;
+    }
+    .tool-btn.bg-red-50 {
+        @apply bg-red-50 border-red-300 text-red-700 hover:bg-red-100;
+    }
+    .tool-btn.bg-green-50 {
+        @apply bg-green-50 border-green-300 text-green-700 hover:bg-green-100;
+    }
+    .tool-btn.bg-blue-50 {
+        @apply bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100;
+    }
+    /* Mobile-specific styles */
+    @media (max-width: 639px) {
+        .controls {
+            @apply sticky top-0 bg-white z-10 border-b border-gray-200;
+        }
+        
+        .color-picker-container {
+            @apply w-full;
+        }
+        
+        #pathColorPicker {
+            @apply w-full;
+        }
+        
+        .clr-field button {
+            width: 48px;
+            height: 48px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header Section -->
@@ -258,72 +334,129 @@
             </div>
 
             <!-- Auto Path Section -->
-            <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="p-8">
                 <h3 class="text-lg font-semibold text-gray-900 mb-6">Auto Path</h3>
-                <div class="relative w-full overflow-hidden" style="min-height: 350px; max-height: 500px;">
-                    <!-- Add zoom level display -->
-                    <div id="zoomLevel" class="absolute top-4 right-4 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg text-sm font-medium text-gray-700 z-50">
-                        100%
+                <p class="text-gray-600 secondary mb-4 text-center">
+                    Pan: Shift+Drag or Middle Mouse Button | Zoom: Scroll Wheel
+                </p>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <!-- Add canvas container -->
+                    <div id="autoPathContainer" class="bg-white rounded-lg shadow-lg mb-4 mx-auto w-full h-[400px]">
+                        <canvas id="autoPath" class="w-full h-full rounded border border-gray-200"></canvas>
                     </div>
-                    <div id="canvasContainer" class="absolute inset-0">
-                        <!-- Separate background image div -->
-                        <div class="bg-image absolute inset-0" 
-                             style="background: url('/static/images/field-2025.png') center center / contain no-repeat;">
+                    
+                    <!-- Controls -->
+                    <div class="controls space-y-4 flex flex-col items-center text-center p-4">
+                        <!-- Color and Thickness Controls -->
+                        <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:justify-center">
+                            <div class="color-picker-container w-full sm:w-auto">
+                                <input type="text" id="pathColorPicker" class="w-full sm:w-36" value="#2563eb" data-coloris>
+                            </div>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <label for="pathThickness" class="text-gray-700 whitespace-nowrap">Thickness:</label>
+                                <input type="range" id="pathThickness" min="1" max="20" value="3" 
+                                    class="w-full sm:w-48 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span id="pathThicknessValue" class="text-gray-700 w-8 text-center">3</span>
+                            </div>
+                            <div class="w-full sm:w-auto">
+                                <button id="fillToggle" type="button" 
+                                        class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" 
+                                        title="Fill: Off">
+                                    Fill: Off
+                                </button>
+                            </div>
                         </div>
-                        <!-- Canvas for drawing -->
-                        <canvas id="autoPath" 
-                                class="absolute inset-0 w-full h-full touch-none"
-                                style="touch-action: none;">
-                        </canvas>
+
+                        <!-- Tool Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-4 w-full items-center justify-center">
+                            <!-- Drawing Tools -->
+                            <div class="tools-group grid grid-cols-4 sm:flex sm:flex-row gap-2 w-full sm:w-auto sm:mr-4">
+                                <button id="selectTool" type="button" class="tool-btn rounded-xl" title="Select (Ctrl+A)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59" />
+                                    </svg>
+                                </button>
+                                <button id="penTool" type="button" class="tool-btn active rounded-xl" title="Pen (Ctrl+P)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                                    </svg>
+                                </button>
+                                <button id="rectangleTool" type="button" class="tool-btn rounded-xl" title="Rectangle (Ctrl+R)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
+                                    </svg>
+                                </button>
+                                <button id="circleTool" type="button" class="tool-btn rounded-xl" title="Circle (Ctrl+C)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                                <button id="lineTool" type="button" class="tool-btn rounded-xl" title="Line (Ctrl+L)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                                    </svg>
+                                </button>
+                                <button id="hexagonTool" type="button" class="tool-btn rounded-xl" title="Hexagon (Ctrl+H)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z" />
+                                    </svg>
+                                </button>
+                                <button id="starTool" type="button" class="tool-btn rounded-xl" title="Star (Ctrl+S)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                                    </svg>
+                                </button>
+                                <button id="goHome" type="button" class="tool-btn bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-300 rounded-xl" title="Reset View">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="actions-group grid grid-cols-4 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
+                                <button id="undoPath" type="button" class="tool-btn rounded-xl" title="Undo (Ctrl+Z)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                                    </svg>
+                                </button>
+                                <button id="redoPath" type="button" class="tool-btn rounded-xl" title="Redo (Ctrl+Y or Ctrl+Shift+Z)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+                                    </svg>
+                                </button>
+                                <button id="clearPath" type="button" class="tool-btn bg-red-50 text-red-700 hover:bg-red-100 border-red-300 rounded-xl" title="Clear">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
+                                </button>
+                                <button id="savePath" type="button" class="tool-btn bg-green-50 text-green-700 hover:bg-green-100 border-green-300 rounded-xl" title="Save">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                    </svg>
+                                </button>
+                                <button id="loadPath" type="button" class="tool-btn rounded-xl" title="Load">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                    </svg>
+                                </button>
+                                <button id="readonlyToggle" type="button" class="tool-btn rounded-xl" title="Toggle Read-only Mode">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                    </svg>
+                                </button>
+                                <input type="file" id="loadFile" class="hidden" accept=".json">
+                            </div>
+                        </div>
                     </div>
-                    <!-- Zoom controls -->
-                    <div class="absolute bottom-4 right-4 flex gap-2">
-                        <button type="button" 
-                                onclick="resetZoom()" 
-                                class="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <svg class="w-5 h-5" viewBox="-30 0 555.398 495.398" fill="currentColor">
-                                <g>
-                                    <path d="M487.083,225.514l-75.08-75.08V63.704c0-15.682-12.708-28.391-28.413-28.391c-15.669,0-28.377,12.709-28.377,28.391v29.941L299.31,37.74c-27.639-27.624-75.694-27.575-103.27,0.05L8.312,225.514c-11.082,11.104-11.082,29.071,0,40.158c11.087,11.101,29.089,11.101,40.172,0l187.71-187.729c6.115-6.083,16.893-6.083,22.976-0.018l187.742,187.747c5.567,5.551,12.825,8.312,20.081,8.312c7.271,0,14.541-2.764,20.091-8.312C498.17,254.586,498.17,236.619,487.083,225.514z"/>
-                                    <path d="M257.561,131.836c-5.454-5.451-14.285-5.451-19.723,0L72.712,296.913c-2.607,2.606-4.085,6.164-4.085,9.877v120.401c0,28.253,22.908,51.16,51.16,51.16h81.754v-126.61h92.299v126.61h81.755c28.251,0,51.159-22.907,51.159-51.159V306.79c0-3.713-1.465-7.271-4.085-9.877L257.561,131.836z"/>
-                                </g>
-                            </svg>
-                        </button>
-                        <button type="button" 
-                                onclick="zoomIn(event)" 
-                                class="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                        </button>
-                        <button type="button" 
-                                onclick="zoomOut(event)" 
-                                class="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"></path>
-                            </svg>
-                        </button>
-                    </div>
+
+                    <!-- Hidden input to store path data -->
+                    <input type="hidden" name="auto_path" id="autoPathData">
                 </div>
-                <input type="hidden" name="auto_path" id="auto_path">
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mt-4">
-                    <p class="text-sm text-gray-500 text-center sm:text-left">Draw the robot's autonomous path</p>
-                    <div class="flex gap-2">
-                        <button type="button" 
-                                onclick="undoLastPath()" 
-                                class="w-full sm:w-auto px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
-                            Undo
-                        </button>
-                        <button type="button" 
-                                onclick="clearCanvas()" 
-                                class="w-full sm:w-auto px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
-                            Clear Path
-                        </button>
-                    </div>
-                </div>
-                <div>
+                
+                <div class="mt-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Auto Notes</label>
-                    <textarea name="auto_notes" 
-                              rows="2" 
+                    <textarea name="auto_notes" rows="2" 
                               class="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               placeholder="Enter any observations about autonomous..." autocomplete="off"></textarea>
                 </div>
@@ -355,7 +488,7 @@
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/CanvasCoordinateSystem.js') }}"></script>
+<script src="{{ url_for('static', filename='js/Canvas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/scout/add.js') }}"></script>
 
 {% endblock %}

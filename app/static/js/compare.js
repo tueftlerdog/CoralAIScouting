@@ -13,10 +13,6 @@ const comparisonResults = document.getElementById('comparison-results');
 // Chart instance
 let radarChart = null;
 
-// Add these variables at the top of the file
-let modalCanvas, modalCoordSystem;
-let currentPathData = null;
-
 // Event Listeners
 compareBtn.addEventListener('click', handleCompare);
 team1Input.addEventListener('keypress', handleEnterKey);
@@ -212,24 +208,6 @@ function updateRawDataTable(data) {
     Object.entries(data).forEach(([teamNumber, teamData]) => {
         teamData.matches?.forEach(match => {
             const row = document.createElement('tr');
-            
-            // Parse auto path data
-            let autoPaths = [];
-            if (match.auto_path) {
-                try {
-                    if (typeof match.auto_path === 'string') {
-                        autoPaths = JSON.parse(match.auto_path);
-                    } else if (Array.isArray(match.auto_path)) {
-                        autoPaths = match.auto_path;
-                    }
-                } catch (e) {
-                    console.error('Error parsing auto path:', e);
-                }
-            }
-
-            const safeAutoPaths = JSON.stringify(autoPaths)
-                .replace(/'/g, '\\\'')
-                .replace(/"/g, '\\"');
 
             row.innerHTML = `
                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -257,8 +235,8 @@ function updateRawDataTable(data) {
                     ${match.climb_success ? `${match.climb_type || 'Yes'}` : 'No'}
                 </td>
                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${autoPaths.length > 0 ? 
-                        `<button onclick='showAutoPath("${teamNumber}", ${match.match_number}, "${safeAutoPaths}")' class="text-blue-600 hover:text-blue-800">View</button>` 
+                    ${match.auto_path ? 
+                        `<button onclick='showAutoPath(${JSON.stringify(match.auto_path)}, ${JSON.stringify(match.auto_notes || '')}, "${match.device_type || ''}")' class="text-blue-600 hover:text-blue-800">View</button>` 
                         : 'None'}
                 </td>
                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -282,116 +260,72 @@ function getTeamColor(index) {
     return colors[index] || colors[0];
 }
 
-// Auto Path Modal Functions
-function showAutoPath(teamNumber, matchNumber, pathData, notes = '') {
-    // Store the path data
-    currentPathData = pathData;
-    
-    // Show the modal
+function showAutoPath(pathData, autoNotes, deviceType) {
     const modal = document.getElementById('autoPathModal');
+    const container = document.getElementById('autoPathContainer');
+    const notesElement = document.getElementById('modalAutoNotes');
+    
+    if (!modal || !container) {
+      return;
+    }
+    
     modal.classList.remove('hidden');
     
-    // Initialize canvas if needed
-    if (!modalCanvas) {
-        modalCanvas = document.getElementById('modalAutoPathCanvas');
-        modalCoordSystem = new CanvasCoordinateSystem(modalCanvas);
-        resizeModalCanvas();
-        window.addEventListener('resize', resizeModalCanvas);
-    }
-    
-    // Draw the paths
-    redrawPaths();
-    
-    // Update notes
-    const notesElement = document.getElementById('modalAutoNotes');
-    if (notesElement) {
-        notesElement.textContent = `Team ${teamNumber} - Match ${matchNumber}${notes ? ': ' + notes : ''}`;
-    }
-}
+    // Initialize canvas with background image
+    const CanvasField = new Canvas({
+        canvas: document.getElementById('modalAutoPathCanvas'),
+        container: container,
+        backgroundImage: '/static/images/field-2025.png',
+        maxPanDistance: 1000
+    });
 
-function resizeModalCanvas() {
-    const container = modalCanvas.parentElement;
-    modalCanvas.width = container.clientWidth;
-    modalCanvas.height = container.clientHeight;
-    modalCoordSystem.updateTransform();
-    redrawPaths();
-}
-
-function redrawPaths() {
-    if (!modalCoordSystem || !currentPathData) {
-      return;
-    }
-    
-    modalCoordSystem.clear();
-    
-    let paths = currentPathData;
-    if (typeof currentPathData === 'string') {
+    // Load the path data
+    if (pathData) {
         try {
-            paths = JSON.parse(currentPathData);
-        } catch (e) {
-            console.error('Error parsing path data:', e);
-            return;
+            let sanitizedValue = pathData;
+            if (typeof pathData === 'string') {
+                // Remove any potential HTML entities
+                sanitizedValue = pathData.trim()
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#34;/g, '"')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&amp;/g, '&');
+                
+                // Convert single quotes to double quotes if needed
+                if (sanitizedValue.startsWith("'") && sanitizedValue.endsWith("'")) {
+                    sanitizedValue = sanitizedValue.slice(1, -1);
+                }
+                sanitizedValue = sanitizedValue.replace(/'/g, '"');
+                
+                // Convert Python boolean values to JSON boolean values
+                sanitizedValue = sanitizedValue
+                    .replace(/: True/g, ': true')
+                    .replace(/: False/g, ': false');
+            }
+
+            const parsedData = typeof sanitizedValue === 'string' ? JSON.parse(sanitizedValue) : sanitizedValue;
+            if (Array.isArray(parsedData)) {
+                CanvasField.drawingHistory = parsedData;
+                CanvasField.redrawCanvas();
+            }
+        } catch (error) {
+            console.error('Error loading path data:', error);
         }
     }
-    
-    if (Array.isArray(paths)) {
-        paths.forEach(path => {
-            if (Array.isArray(path) && path.length > 0) {
-                const formattedPath = path.map(point => {
-                    if (typeof point === 'object' && 'x' in point && 'y' in point) {
-                        return {
-                            x: (point.x / 1000) * modalCanvas.width,
-                            y: (point.y / 300) * modalCanvas.height
-                        };
-                    }
-                    return null;
-                }).filter(point => point !== null);
 
-                if (formattedPath.length > 0) {
-                    modalCoordSystem.drawPath(formattedPath, '#3b82f6', 3);
-                }
-            }
-        });
-    }
-}
+    // Set to readonly mode after loading
+    CanvasField.setReadonly(true);
 
-function zoomIn(event) {
-    if (!modalCoordSystem) {
-      return;
+    // Update notes
+    if (notesElement) {
+        notesElement.textContent = autoNotes || 'No notes available';
     }
-    const rect = modalCanvas.getBoundingClientRect();
-    let mouseX = rect.width / 2;
-    let mouseY = rect.height / 2;
-    
-    modalCoordSystem.zoom(mouseX, mouseY, 1.1);
-    redrawPaths();
-}
-
-function zoomOut(event) {
-    if (!modalCoordSystem) {
-      return;
-    }
-    const rect = modalCanvas.getBoundingClientRect();
-    let mouseX = rect.width / 2;
-    let mouseY = rect.height / 2;
-    
-    modalCoordSystem.zoom(mouseX, mouseY, 0.9);
-    redrawPaths();
-}
-
-function resetZoom() {
-    if (!modalCoordSystem) {
-      return;
-    }
-    modalCoordSystem.resetView();
-    redrawPaths();
 }
 
 function closeAutoPathModal() {
     const modal = document.getElementById('autoPathModal');
-    modal.classList.add('hidden');
-    if (modalCoordSystem) {
-        modalCoordSystem.resetView();
+    if (modal) {
+        modal.classList.add('hidden');
     }
 }
 
@@ -441,7 +375,8 @@ function updateAutoPaths(data) {
         const autoPaths = teamData.matches?.map(match => ({
             match_number: match.match_number,
             path: match.auto_path,
-            notes: match.auto_notes
+            notes: match.auto_notes,
+            device_type: match.device_type
         })).filter(path => path.path) || [];
         
         // Sort paths by match number and take latest 5
@@ -476,26 +411,20 @@ function updateAutoPaths(data) {
             sortedPaths.forEach(pathData => {
                 const row = document.createElement('tr');
                 
-                // Create a button that calls showAutoPath with the path data
-                const viewButton = document.createElement('button');
-                viewButton.className = 'text-blue-600 hover:text-blue-800';
-                viewButton.textContent = 'View Path';
-                viewButton.onclick = () => {
-                    showAutoPath(teamNumber, pathData.match_number, pathData.path, pathData.notes || '');
-                };
-                
                 row.innerHTML = `
                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                         ${pathData.match_number}
                     </td>
-                    <td class="px-3 py-2 whitespace-nowrap text-sm"></td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm">
+                        <button onclick='showAutoPath(${JSON.stringify(pathData.path)}, ${JSON.stringify(pathData.notes || '')}, "${pathData.device_type || ''}")' 
+                                class="text-blue-600 hover:text-blue-800">
+                            View Path
+                        </button>
+                    </td>
                     <td class="px-3 py-2 text-sm text-gray-500">
                         ${pathData.notes || '-'}
                     </td>
                 `;
-                
-                // Insert the button into the second cell
-                row.children[1].appendChild(viewButton);
                 
                 tbody.appendChild(row);
             });
