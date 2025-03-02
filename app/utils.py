@@ -4,7 +4,7 @@ import os
 import time
 from functools import wraps
 from io import BytesIO
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, parse_qsl, urlsplit, urlunsplit, urlencode
 
 from bson import ObjectId
 from dotenv import load_dotenv
@@ -13,7 +13,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from gridfs import GridFS
 from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, ConfigurationError
 from werkzeug.utils import secure_filename
 
 # Configure logging
@@ -47,10 +47,35 @@ def with_mongodb_retry(retries=3, delay=2):
         return wrapper
     return decorator
 
+def ensure_database_name(mongo_uri, default_dbname="scouting_app"):
+    """Ensure the MongoDB URI has a database name, add the default if missing"""
+    if not mongo_uri:
+        return f"mongodb://localhost:27017/{default_dbname}"
+        
+    # Parse the URI
+    parts = urlsplit(mongo_uri)
+    
+    # Check if a database name is already defined in the path
+    path = parts.path
+    if not path or path == '/':
+        # No database name, add the default
+        path = f"/{default_dbname}"
+    
+    # Reconstruct the URI with the ensured database name
+    updated_uri = urlunsplit((
+        parts.scheme,
+        parts.netloc,
+        path,
+        parts.query,
+        parts.fragment
+    ))
+    
+    return updated_uri
+
 class DatabaseManager:
     """Base class for database operations"""
     def __init__(self, mongo_uri: str):
-        self.mongo_uri = mongo_uri
+        self.mongo_uri = ensure_database_name(mongo_uri)
         self.client = None
         self.db = None
         self.connect()
@@ -59,13 +84,59 @@ class DatabaseManager:
         """Establish connection to MongoDB"""
         try:
             if self.client is None:
-                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
-                self.client.server_info()
-                self.db = self.client.get_default_database()
-                logger.info("Successfully connected to MongoDB")
+                logger.info(f"Connecting to MongoDB with URI (sanitized): {self.get_sanitized_uri()}")
+                self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=30000)
+                self.client.server_info()  # Test connection
+                
+                # Get database name from URI or use default
+                db_name = None
+                if '/' in self.mongo_uri.split('://', 1)[1]:
+                    path = self.mongo_uri.split('://', 1)[1].split('/', 1)[1]
+                    if path and '?' in path:
+                        db_name = path.split('?', 1)[0]
+                    elif path:
+                        db_name = path
+                
+                # Fallback to default database name if none found
+                if not db_name:
+                    db_name = "scouting_app"
+                    logger.warning(f"No database name found in URI, using default: {db_name}")
+                
+                self.db = self.client[db_name]
+                logger.info(f"Successfully connected to MongoDB database '{db_name}'")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {str(e)}")
             raise
+
+    def get_sanitized_uri(self):
+        """Return a sanitized version of the MongoDB URI for logging (hide credentials)"""
+        if not self.mongo_uri:
+            return "None"
+            
+        try:
+            parts = urlsplit(self.mongo_uri)
+            
+            # Replace password in netloc if present
+            netloc = parts.netloc
+            if '@' in netloc:
+                user_pass, rest = netloc.split('@', 1)
+                if ':' in user_pass:
+                    username = user_pass.split(':', 1)[0]
+                    netloc = f"{username}:***@{rest}"
+            
+            # Reconstruct sanitized URI
+            sanitized = urlunsplit((
+                parts.scheme,
+                netloc,
+                parts.path,
+                parts.query,
+                parts.fragment
+            ))
+            
+            return sanitized
+        except Exception:
+            # If parsing fails, redact the whole URI
+            return "[Redacted URI]"
 
     def ensure_connected(self):
         """Ensure database connection is active"""
@@ -106,7 +177,7 @@ def handle_route_errors(f):
 
 limiter = Limiter(
     key_func=get_remote_address,
-    storage_uri=os.getenv("MONGO_URI"),
+    storage_uri=ensure_database_name(os.getenv("MONGO_URI")),
     default_limits=["5000 per day", "1000 per hour"],
     strategy="fixed-window-elastic-expiry",
     enabled=False
