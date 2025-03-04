@@ -19,8 +19,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  const url = new URL(request.url);
+  const {request} = event;
 
   // Handle static assets (cache-first strategy)
   if (STATIC_ASSETS.some(asset => request.url.includes(asset))) {
@@ -85,13 +84,18 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Handle push events (notifications)
+// Cache for tracking dismissed notifications
+const dismissedNotifications = new Set();
+
 self.addEventListener('push', (event) => {
-  console.log('Push event received');
+  console.log('[ServiceWorker] Push event received', {
+    data: event.data ? 'Has data' : 'No data',
+    timestamp: new Date().toISOString()
+  });
   
   try {
     if (!event.data) {
-      console.warn('Push event has no data');
+      console.warn('[ServiceWorker] Push event has no data');
       return;
     }
     
@@ -99,29 +103,54 @@ self.addEventListener('push', (event) => {
     let data;
     try {
       data = event.data.json();
-      console.log('Push data received:', data);
+      console.log('[ServiceWorker] Push data received:', {
+        data,
+        type: typeof data,
+        hasTitle: !!data.title,
+        hasBody: !!data.body,
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
-      console.error('Failed to parse push data as JSON:', error);
+      console.error('[ServiceWorker] Failed to parse push data as JSON:', error);
       const text = event.data.text();
-      console.log('Push data as text:', text);
+      console.log('[ServiceWorker] Push data as text:', text);
       data = { title: 'New Notification', body: text };
+    }
+
+    // Check if this notification has been dismissed
+    const notificationId = data.data?.assignment_id || 'general';
+    if (dismissedNotifications.has(notificationId)) {
+      console.log('[ServiceWorker] Notification was previously dismissed:', notificationId);
+      return;
     }
     
     // Show the notification
     const title = data.title || 'New Notification';
     const options = {
       body: data.body || 'You have a new notification',
-      icon: '/static/images/logo.png',
-      badge: '/static/images/default_profile.png',
-      data: data.data || {},
-      actions: [
+      icon: '/static/images/logo.png',  // Your app logo
+      badge: '/static/images/logo.png',  // Small monochrome version of your logo
+      data: {
+        ...data.data || {},
+        notificationId: notificationId
+      },
+      actions: data.data?.type === 'new_assignment' ? [
+        {
+          action: 'view',
+          title: 'View Assignment'
+        },
+        {
+          action: 'dismiss',
+          title: 'Dismiss'
+        }
+      ] : [
         {
           action: 'view',
           title: 'View'
         },
         {
           action: 'complete',
-          title: 'Complete'
+          title: 'Marked as Complete'
         },
         {
           action: 'dismiss',
@@ -129,25 +158,35 @@ self.addEventListener('push', (event) => {
         }
       ],
       vibrate: [100, 50, 100],
-      tag: data.data?.assignment_id || 'general',  // Group by assignment ID
-      renotify: true,  // Notify even if replacing an existing notification
-      requireInteraction: true,  // Notification stays until user interacts with it
-      timestamp: data.timestamp || Date.now()
+      tag: notificationId,
+      renotify: false,
+      requireInteraction: false,
+      timestamp: data.timestamp || Date.now(),
+      silent: false,
+      dir: 'auto',
+      lang: 'en-US',
+      badge: '/static/images/badge.png',
+      image: '/static/images/logo.png',
+      applicationName: 'Castle',
     };
     
-    console.log('Showing notification:', { title, options });
+    console.log('[ServiceWorker] Showing notification:', { 
+      title, 
+      options,
+      timestamp: new Date().toISOString()
+    });
     
     event.waitUntil(
       self.registration.showNotification(title, options)
         .then(() => {
-          console.log('Notification shown successfully');
+          console.log('[ServiceWorker] Notification shown successfully');
         })
         .catch(error => {
-          console.error('Failed to show notification:', error);
+          console.error('[ServiceWorker] Failed to show notification:', error);
         })
     );
   } catch (error) {
-    console.error('Error handling push event:', error);
+    console.error('[ServiceWorker] Error handling push event:', error);
   }
 });
 
@@ -155,8 +194,13 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   console.log('Notification click received', event);
   
+  const {notificationId} = event.notification.data;
+  
   // Close the notification
   event.notification.close();
+  
+  // Add to dismissed set for ALL actions
+  dismissedNotifications.add(notificationId);
   
   // Handle action buttons
   const url = event.notification.data.url || '/team/manage';

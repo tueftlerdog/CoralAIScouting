@@ -1,9 +1,7 @@
 import logging
 import threading
-import time
 from datetime import datetime, timedelta
 import json
-import requests
 from bson import ObjectId
 from typing import Dict, List, Optional, Tuple, Any
 
@@ -37,10 +35,6 @@ class NotificationManager(DatabaseManager):
             self.db.create_collection("assignment_subscriptions")
             logger.info("Created assignment_subscriptions collection")
             
-        if "notification_preferences" not in self.db.list_collection_names():
-            self.db.create_collection("notification_preferences")
-            logger.info("Created notification_preferences collection")
-    
     def start_notification_service(self):
         """Start the background thread that processes notifications"""
         if self._notification_thread is None or not self._notification_thread.is_alive():
@@ -190,11 +184,6 @@ class NotificationManager(DatabaseManager):
             if user_id not in assignment.get("assigned_to", []):
                 continue
 
-            # Get user's notification preferences
-            pref = self.db.notification_preferences.find_one({"user_id": user_id})
-            if pref and not pref.get("enable_all_notifications", False):
-                continue
-
             # Calculate scheduled time based on reminder_time
             reminder_time = sub.get("reminder_time", 1440)  # Default: 1 day in minutes
             scheduled_time = due_date - timedelta(minutes=reminder_time)
@@ -215,15 +204,15 @@ class NotificationManager(DatabaseManager):
                 "status": "pending",
                 "title": f"Assignment Reminder: {assignment.get('title')}",
                 "body": f"Your assignment '{assignment.get('title')}' is due soon",
-                "url": f"/team/manage",
+                "url": "/team/manage",
                 "data": {
                     "assignment_id": assignment_id,
                     "title": assignment.get("title"),
                     "due_date": due_date.isoformat(),
-                    "type": "assignment_reminder"
+                    "type": "assignment_reminder",
                 },
                 "created_at": datetime.now(),
-                "updated_at": datetime.now()
+                "updated_at": datetime.now(),
             }
 
             # Insert the new notification
@@ -253,6 +242,19 @@ class NotificationManager(DatabaseManager):
                     "url": subscription.url,
                     **subscription.data  # Include any additional data
                 },
+                "icon": "/static/images/logo.png",
+                "badge": "/static/images/logo.png",
+                "image": "/static/images/logo.png",
+                "actions": [
+                    {
+                        "action": "view",
+                        "title": "View"
+                    },
+                    {
+                        "action": "dismiss",
+                        "title": "Dismiss"
+                    }
+                ],
                 "timestamp": datetime.now().timestamp() * 1000  # JavaScript timestamp
             }
             
@@ -355,7 +357,7 @@ class NotificationManager(DatabaseManager):
                 # Set notification content
                 update_data["title"] = f"Assignment Reminder: {assignment.get('title')}"
                 update_data["body"] = f"Your assignment '{assignment.get('title')}' is due soon"
-                update_data["url"] = f"/team/manage"
+                update_data["url"] = "/team/manage"
                 update_data["data"] = {
                     "assignment_id": assignment_id,
                     "title": assignment.get("title"),
@@ -416,41 +418,6 @@ class NotificationManager(DatabaseManager):
             logger.error(f"Error deleting subscription: {str(e)}")
             return False, "An internal error has occurred."
     
-    @with_mongodb_retry()
-    async def update_notification_preferences(self, user_id: str, enable_all: bool, 
-                                            default_reminder_time: int = 1440) -> Tuple[bool, str]:
-        """Update a user's notification preferences
-        
-        Args:
-            user_id: The user ID
-            enable_all: Whether to enable all notifications
-            default_reminder_time: Default minutes before due date for reminders
-            
-        Returns:
-            Tuple[bool, str]: Success status and message
-        """
-        self.ensure_connected()
-        
-        try:
-            update_data = {
-                "user_id": user_id,
-                "enable_all_notifications": enable_all,
-                "default_reminder_time": default_reminder_time,
-                "updated_at": datetime.now()
-            }
-            
-            result = self.db.notification_preferences.update_one(
-                {"user_id": user_id},
-                {"$set": update_data},
-                upsert=True
-            )
-            
-            return True, "Preferences updated successfully"
-                
-        except Exception as e:
-            logger.error(f"Error updating notification preferences: {str(e)}")
-            return False, "An internal error has occurred."
-    
     # @with_mongodb_retry()
     # async def test_notification(self, user_id: str) -> Tuple[bool, str]:
     #     """Send a test notification to a user
@@ -494,3 +461,88 @@ class NotificationManager(DatabaseManager):
     #     except Exception as e:
     #         logger.error(f"Error sending test notification: {str(e)}")
     #         return False, "An internal error has occurred." 
+
+    async def send_instant_assignment_notification(self, assignment_data: Dict, team_number: int) -> None:
+        """Send instant notifications to users when they are assigned to a new assignment
+        
+        Args:
+            assignment_data: The assignment data including title, description, etc.
+            team_number: The team number
+        """
+        self.ensure_connected()
+        
+        try:
+            # Get all subscriptions for assigned users
+            assigned_users = assignment_data.get("assigned_to", [])
+            if not assigned_users:
+                return
+                
+            # Find all valid subscriptions for these users
+            subscriptions = self.db.assignment_subscriptions.find({
+                "user_id": {"$in": assigned_users},
+                "team_number": team_number,
+                "subscription_json": {"$exists": True, "$ne": {}},
+                "updated_at": {"$gte": datetime.now() - timedelta(days=1)}  # Only get recent subscriptions
+            })
+            
+            # Group subscriptions by user_id and keep only the most recent one
+            user_subscriptions = {}
+            for sub_data in subscriptions:
+                user_id = sub_data.get("user_id")
+                updated_at = sub_data.get("updated_at", datetime.min)
+                
+                # Keep only the most recently updated subscription for each user
+                if user_id not in user_subscriptions or updated_at > user_subscriptions[user_id].get("updated_at", datetime.min):
+                    user_subscriptions[user_id] = sub_data
+            
+            expired_subscriptions = []
+            notification_sent = False
+            
+            # Send notification using only the most recent subscription for each user
+            for sub_data in user_subscriptions.values():
+                try:
+                    # Create subscription object
+                    subscription = AssignmentSubscription({
+                        **sub_data,
+                        "title": f"New Assignment: {assignment_data.get('title')}",
+                        "body": f"Assignment: {assignment_data.get('title')}",
+                        "url": "/team/manage",
+                        "data": {
+                            "assignment_id": str(assignment_data.get("_id")),
+                            "title": assignment_data.get("title"),
+                            "type": "new_assignment"
+                        },
+                        "sent": False,
+                        "status": "pending"
+                    })
+                    
+                    # Try to send the notification
+                    try:
+                        if self._send_push_notification(subscription):
+                            notification_sent = True
+                            logger.info(f"Successfully sent notification for assignment {assignment_data.get('title')} to user {subscription.user_id}")
+                        else:
+                            logger.warning(f"Failed to send notification for assignment {assignment_data.get('title')} to user {subscription.user_id}")
+                    except WebPushException as e:
+                        if e.response and e.response.status_code in (404, 410):
+                            expired_subscriptions.append(sub_data["_id"])
+                            logger.info(f"Subscription {subscription.id} has expired")
+                        else:
+                            logger.error(f"WebPush error for {subscription.id}: {str(e)}")
+                    
+                except Exception as e:
+                    logger.error(f"Error processing subscription: {str(e)}")
+                    continue
+            
+            # Clean up expired subscriptions in bulk if any found
+            if expired_subscriptions:
+                self.db.assignment_subscriptions.delete_many({
+                    "_id": {"$in": expired_subscriptions}
+                })
+                logger.info(f"Cleaned up {len(expired_subscriptions)} expired subscriptions")
+            
+            if not notification_sent:
+                logger.warning(f"No notifications were sent for assignment {assignment_data.get('title')}")
+                
+        except Exception as e:
+            logger.error(f"Error sending instant assignment notification: {str(e)}") 
