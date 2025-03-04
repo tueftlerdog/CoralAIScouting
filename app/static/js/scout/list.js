@@ -1,3 +1,7 @@
+let filterType;
+let searchInput;
+let eventSections;
+
 const filterRows = () => {
     const searchTerm = searchInput.value.toLowerCase();
     const type = filterType.value;
@@ -12,7 +16,7 @@ const filterRows = () => {
                     searchValue = row.dataset.teamNumber;
                     break;
                 case 'match':
-                    searchValue = row.querySelector('td:nth-child(2)').textContent;
+                    searchValue = row.querySelector('td:nth-child(3)').textContent;
                     break;
                 case 'scouter':
                     searchValue = row.dataset.scouter.toLowerCase();
@@ -27,27 +31,27 @@ const filterRows = () => {
     });
 };
 
-// Function to show auto path in modal
-function showAutoPath(pathData, autoNotes, deviceType) {
+function showAutoPath(pathData, autoNotes) {
     const modal = document.getElementById('autoPathModal');
     const container = document.getElementById('autoPathContainer');
     const notesElement = document.getElementById('autoNotes');
-    
-    if (!modal || !container) {
-      return;
+    const canvas = document.getElementById('autoPath');
+
+    if (!modal || !container || !notesElement || !canvas) {
+        console.error('Required elements not found');
+        return;
     }
-    
+
+    notesElement.textContent = autoNotes;
     modal.classList.remove('hidden');
-    
-    // Initialize canvas with background image
+
     const CanvasField = new Canvas({
-        canvas: document.getElementById('autoPath'),
+        canvas: canvas,
         container: container,
         backgroundImage: '/static/images/field-2025.png',
         maxPanDistance: 1000
     });
 
-    // Load the path data
     if (pathData) {
         try {
             let sanitizedValue = pathData;
@@ -80,14 +84,7 @@ function showAutoPath(pathData, autoNotes, deviceType) {
             console.error('Error loading path data:', error);
         }
     }
-
-    // Set to readonly mode after loading
     CanvasField.setReadonly(true);
-
-    // Update notes
-    if (notesElement) {
-        notesElement.textContent = autoNotes || 'No notes available';
-    }
 }
 
 function closeAutoPathModal() {
@@ -96,6 +93,7 @@ function closeAutoPathModal() {
         modal.classList.add('hidden');
     }
 }
+
 
 document.addEventListener('DOMContentLoaded', function() {
     filterType = document.getElementById('filterType');

@@ -197,11 +197,12 @@
                             </td>
                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                 {% if data.auto_path %}
-                                    <button onclick='showAutoPath({{ data.auto_path|tojson|safe }}, {{ data.auto_notes|tojson|safe }}, "{{ data.device_type }}")' 
-                                            class="text-blue-600 hover:text-blue-900">
-                                        <span class="hidden sm:inline">View Path{% if data.device_type == 'mobile' %} (M){% endif %}</span>
-                                        <span class="sm:hidden">🗺️{% if data.device_type == 'mobile' %}📱{% endif %}</span>
-                                    </button>
+                                <button onclick='showAutoPath({{ data.auto_path|tojson|safe }}, {{ data.auto_notes|default("")|tojson|safe }})' 
+                                        class="text-blue-600 hover:text-blue-900">
+                                    <span class="hidden sm:inline">View Path{% if data.device_type == 'mobile' %} (M){% endif %}</span>
+                                    <span class="sm:hidden">🗺️{% if data.device_type == 'mobile' %}📱{% endif %}</span>
+                                </button>
+                        
                                 {% else %}
                                     <span class="text-gray-400">No path</span>
                                 {% endif %}
