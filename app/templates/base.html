@@ -34,7 +34,7 @@
     <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" type="image/png"/>
     <link rel="shortcut icon" href="{{ url_for('static', filename='logo.png') }}" type="image/png"/>
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}" type="image/png"/>
-
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}"/>
 
     <meta property="twitter:image" content="{{ url_for('static', filename='logo.png') }}">
     <meta property="twitter:card" content="{{ url_for('static', filename='logo.png') }}">
@@ -283,18 +283,6 @@
                     userDropdown.classList.add('hidden');
                     dropdownArrow.style.transform = '';
                 }
-            });
-        }
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/js/service-worker.js')
-                    .then((registration) => {
-                        console.log('ServiceWorker registration successful');
-                    })
-                    .catch((err) => {
-                        console.log('ServiceWorker registration failed: ', err);
-                    });
             });
         }
     </script>

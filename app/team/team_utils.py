@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import secrets
 import string
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from io import BytesIO
 from typing import Dict, Optional, Tuple, Union
 
@@ -333,10 +333,8 @@ class TeamManager(DatabaseManager):
             return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
-    async def create_assignment(
-        self, team_number: int, creator_id: str, assignment_data: Dict
-    ):
-        """Create a new assignment for the team"""
+    async def create_or_update_assignment(self, team_number: int, assignment_data: dict, creator_id: str):
+        """Create or update an assignment"""
         self.ensure_connected()
         try:
             team = await self.get_team_by_number(team_number)
@@ -365,11 +363,9 @@ class TeamManager(DatabaseManager):
                 {"$addToSet": {"assignments": str(result.inserted_id)}},
             )
 
-            return True, Assignment.create_from_db(
-                {"_id": result.inserted_id, **assignment}
-            )
+            return True, "Assignment created successfully"
         except Exception as e:
-            logger.error(f"Error creating assignment: {str(e)}")
+            logger.error(f"Error creating/updating assignment: {str(e)}")
             return False, "An internal error has occurred."
 
     @with_mongodb_retry(retries=3, delay=2)
@@ -744,3 +740,19 @@ class TeamManager(DatabaseManager):
         except Exception as e:
             logger.error(f"Error transferring ownership: {str(e)}")
             return False, "An internal error has occurred."
+
+    @with_mongodb_retry(retries=3, delay=2)
+    async def get_user_team(self, user_id: str) -> Optional[Team]:
+        """Get the team associated with a user"""
+        self.ensure_connected()
+        try:
+            # Find the user to get their team number
+            user_data = self.db.users.find_one({"_id": ObjectId(user_id)})
+            if not user_data or not user_data.get("teamNumber"):
+                return None
+                
+            # Now get the team using the user's team number
+            return await self.get_team_by_number(user_data["teamNumber"])
+        except Exception as e:
+            logger.error(f"Error getting user team: {str(e)}")
+            return None

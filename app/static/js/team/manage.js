@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeAssignmentForm();
     initializeStatusHandlers();
     initializeEditAssignment();
+    initializeNotificationHandlers();
     const teamData = document.getElementById('teamData');
     if (teamData) {
         currentUserId = teamData.dataset.currentUserId;
@@ -491,4 +492,18 @@ function createAssignmentRow(assignment) {
     row.appendChild(actionTd);
     
     return row;
+}
+
+// Initialize notification handlers
+function initializeNotificationHandlers() {
+    // Add data-assignment-id to all reminder bell icons
+    const reminderBells = document.querySelectorAll('.assignment-row button[title="Set reminder for this assignment"]');
+    reminderBells.forEach(bell => {
+        const row = bell.closest('.assignment-row');
+        const {assignmentId} = row.dataset;
+        
+        // Add assignment ID to the button and add assignment-reminder-btn class
+        bell.setAttribute('data-assignment-id', assignmentId);
+        bell.classList.add('assignment-reminder-btn');
+    });
 }

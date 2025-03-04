@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+from datetime import datetime, timedelta
 
 from bson import ObjectId
 from flask import (Blueprint, current_app, flash, jsonify, redirect,
@@ -14,6 +15,7 @@ from app.team.team_utils import TeamManager
 from app.utils import (allowed_file, async_route, error_response,
                        handle_route_errors, limiter, save_file_to_gridfs,
                        success_response)
+from app.models import AssignmentSubscription
 
 from .forms import CreateTeamForm
 
@@ -205,17 +207,15 @@ async def remove_admin(team_number):
 
 @team_bp.route("/<int:team_number>/assignments", methods=["POST"])
 @login_required
-@limiter.limit("15 per minute")
+@limiter.limit("10 per minute")
 @async_route
 async def create_assignment(team_number):
     """Create a new assignment"""
 
     try:
         data = request.get_json()
-        success, result = await team_manager.create_assignment(
-            team_number=team_number,
-            creator_id=current_user.get_id(),
-            assignment_data=data,
+        success, message = await team_manager.create_or_update_assignment(
+            team_number, data, current_user.get_id()
         )
 
         if success:
@@ -225,7 +225,7 @@ async def create_assignment(team_number):
                 ),
                 200,
             )
-        return jsonify({"success": False, "message": result}), 400
+        return jsonify({"success": False, "message": message}), 400
 
     except Exception as e:
         current_app.logger.error(f"Error creating assignment: {str(e)}")
