@@ -407,21 +407,133 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            // Check if we're offline
+            if (!navigator.onLine) {
+                try {
+                    // Create a FormData object from the form
+                    const formData = new FormData(form);
+                    
+                    // Add form URL
+                    const formUrl = form.action || window.location.href;
+                    
+                    // Use the offline storage utility to store the data
+                    await storeScoutingData(formData, formUrl);
+                    
+                    // Show success message
+                    const container = document.querySelector('.container');
+                    if (container) {
+                        const notification = document.createElement('div');
+                        notification.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:-translate-x-0 z-50 w-[90%] sm:w-full max-w-xl min-h-[60px] sm:min-h-[80px] mx-auto sm:mx-0 animate-fade-in-up';
+                        
+                        notification.innerHTML = `
+                            <div class="flex items-center p-6 rounded-lg shadow-xl bg-yellow-50 text-yellow-800 border-2 border-yellow-200">
+                                <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                <p class="text-base font-medium">
+                                    You're offline. Data saved locally and will sync when you're back online.
+                                </p>
+                                <button class="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 inline-flex h-8 w-8 text-yellow-500 hover:bg-yellow-100" onclick="this.parentNode.parentNode.remove()">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        `;
+                        
+                        container.appendChild(notification);
+                        
+                        setTimeout(() => {
+                            if (notification.parentNode === container) {
+                                notification.remove();
+                            }
+                        }, 5000);
+                    }
+                    
+                    // Reset form for next entry
+                    resetForm();
+                    
+                    return;
+                } catch (error) {
+                    console.error('Error saving offline data:', error);
+                    alert('Error saving data offline. Please try again.');
+                    return;
+                }
+            }
+
             try {
-                const response = await fetch(`/scouting/check_team?team=${teamNumber}&event=${eventCode}&match=${matchNumber}`);
-                const data = await response.json();
+                // Try to check if the team already exists in this match
+                // This might fail if we're online but the server is unreachable
+                let isDuplicate = false;
+                try {
+                    const response = await fetch(`/scouting/check_team?team=${teamNumber}&event=${eventCode}&match=${matchNumber}`);
+                    const data = await response.json();
+                    isDuplicate = data.exists;
+                } catch (checkError) {
+                    console.warn('Error checking for duplicate team:', checkError);
+                    // Continue with submission if we can't check for duplicates
+                }
                 
-                if (data.exists) {
+                if (isDuplicate) {
                     alert(`Team ${teamNumber} already exists in match ${matchNumber} for event ${eventCode}`);
                     return;
                 }
                 
+                // If we got here, we're online and the team isn't a duplicate
+                // Submit the form normally
                 form.submit();
             } catch (error) {
-                console.error('Error checking team:', error);
-                form.submit();
+                console.error('Error submitting form:', error);
+                
+                // If we have a network error during submission, try offline mode
+                if (!navigator.onLine || error.message === 'OFFLINE_ERROR' || error.message.includes('network')) {
+                    try {
+                        const formData = new FormData(form);
+                        const formUrl = form.action || window.location.href;
+                        await storeScoutingData(formData, formUrl);
+                        
+                        // Show success message for offline storage
+                        alert('You appear to be offline. Data saved locally and will sync when you reconnect.');
+                        resetForm();
+                    } catch (offlineError) {
+                        console.error('Error saving offline:', offlineError);
+                        alert('Error saving data. Please try again later.');
+                    }
+                } else {
+                    // Some other error occurred
+                    alert('Error submitting data. Please try again.');
+                }
             }
         });
+    }
+
+    // Function to reset form after successful submission
+    function resetForm() {
+        // Reset canvas
+        CanvasField.clear();
+        
+        // Reset form values that should be reset
+        // Keep event and match selections for convenience
+        document.getElementById('auto_crossed').checked = false;
+        document.getElementById('auto_ampNotes').value = '';
+        document.getElementById('auto_speakerNotes').value = '';
+        document.getElementById('teleop_ampNotes').value = '';
+        document.getElementById('teleop_ampScored').value = '';
+        document.getElementById('teleop_speakerNotes').value = '';
+        document.getElementById('teleop_speakerScored').value = '';
+        document.getElementById('teleop_trapScored').value = '';
+        document.getElementById('teleop_coopertition').checked = false;
+        document.getElementById('endgame_climb').value = 'none';
+        document.getElementById('harmony').checked = false;
+        document.getElementById('spotlight').checked = false;
+        document.getElementById('melody').checked = false;
+        document.getElementById('ensemble').checked = false;
+        document.getElementById('solo').checked = false;
+        document.getElementById('defense_rating').value = '0';
+        document.getElementById('notes').value = '';
+        
+        // Optionally scroll back to top
+        window.scrollTo(0, 0);
     }
 
     // TBA Integration

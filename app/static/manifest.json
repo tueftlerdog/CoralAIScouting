@@ -1,9 +1,9 @@
 {
   "name": "Castle Scouting App",
   "short_name": "Castle",
-  "description": "FRC Team Scouting App",
+  "description": "FRC Team Scouting App - Works Offline",
   "start_url": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "id": "com.team334.castle",
@@ -49,11 +49,38 @@
     {
       "src": "/static/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   
-  "permissions": ["notifications"],
+  "screenshots": [
+    {
+      "src": "/static/images/screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Castle Scouting Dashboard"
+    }
+  ],
+  
+  "related_applications": [],
+  "prefer_related_applications": false,
+  
+  "shortcuts": [
+    {
+      "name": "Add Scouting Data",
+      "url": "/scouting/add",
+      "description": "Add new scouting data"
+    },
+    {
+      "name": "View Scouting List",
+      "url": "/scouting",
+      "description": "View all scouting data"
+    }
+  ],
+  
+  "permissions": ["notifications", "background-sync"],
   "gcm_sender_id": "103953800507",
   "gcm_user_visible_only": true
 } 

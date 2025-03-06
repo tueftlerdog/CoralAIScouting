@@ -24,6 +24,51 @@
             font-weight: normal;
             font-style: normal;
         }
+        
+        /* Offline indicator styles */
+        #offline-indicator {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #fef3c7;
+            color: #92400e;
+            padding: 0.5rem 1rem;
+            z-index: 100;
+            display: none;
+            border-top: 1px solid #fde68a;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Add a class for the offline mode body state */
+        body.offline-mode {
+            position: relative;
+            padding-bottom: 40px; /* Ensure content doesn't get hidden behind the offline bar */
+        }
+        
+        /* Add transitions for smoother UX */
+        .animate-fade-in-up {
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
     
     <link rel="preload" href="{{ url_for('static', filename='fonts/Richardson Brand Accelerator.otf') }}" as="font" type="font/otf" crossorigin>
@@ -58,6 +103,20 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Scout">
+    
+    <!-- Offline support scripts -->
+    <script src="{{ url_for('static', filename='js/offline-storage.js') }}"></script>
+    
+    <!-- Immediate check for offline status -->
+    <script>
+        // Initialize body class based on online status
+        document.documentElement.classList.toggle('offline-app', !navigator.onLine);
+        if (!navigator.onLine) {
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.classList.add('offline-mode');
+            });
+        }
+    </script>
 </head>
 
 <body class="bg-gray-100 p-2">
@@ -203,88 +262,105 @@
     <div class="absolute top-20 right-10 w-20 h-20 bg-blue-500 rounded-full opacity-20 animate-float z-10"></div>
     <div class="absolute bottom-10 left-10 w-16 h-16 bg-blue-600 rounded-full opacity-25 animate-float delay-200 z-10"></div>
     </div>
-    <script>
-        const menuButton = document.querySelector('.mobile-menu-button');
-        const mobileMenu = document.querySelector('.mobile-menu');
-
-        menuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
-    </script>
-    <style>
-        @keyframes fade-in-up {
-            0% {
-                opacity: 0;
-                transform: translateY(20px) translateX(-50%);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) translateX(-50%);
-            }
-        }
-
-        @keyframes fade-in-left {
-            0% {
-                opacity: 0;
-                transform: translateX(20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        .animate-fade-in-up {
-            animation: fade-in-up 0.5s ease-out;
-        }
-
-        @media (min-width: 640px) {
-            .animate-fade-in-up {
-                animation: fade-in-left 0.5s ease-out;
-            }
-        }
-    </style>
+    
+    <!-- Offline indicator -->
+    <div id="offline-indicator" class="hidden">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2 pulse-animation" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="offline-status-text">You are offline. Data will be saved locally.</span>
+            </div>
+            <button class="sync-now-button hidden bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1 rounded text-sm transition-colors duration-200" onclick="syncOfflineData()">
+                Sync Now
+            </button>
+        </div>
+    </div>
 
     <script>
+        // Mobile menu functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const flashMessages = document.querySelectorAll('.animate-fade-in-up > div');
+            const mobileMenuButton = document.querySelector('.mobile-menu-button');
+            const mobileMenu = document.querySelector('.mobile-menu');
+            
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+            
+            // User dropdown functionality
+            const userDropdownButton = document.getElementById('userDropdownButton');
+            const userDropdown = document.getElementById('userDropdown');
+            
+            if (userDropdownButton && userDropdown) {
+                userDropdownButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                });
+                
+                document.addEventListener('click', (e) => {
+                    if (!userDropdownButton.contains(e.target) && !userDropdown.contains(e.target)) {
+                        userDropdown.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Register service worker for PWA functionality
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/static/js/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                        
+                        // Check if we should update the service worker
+                        if (registration.waiting) {
+                            // If there's a waiting service worker, dispatch a message to skip waiting
+                            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                        
+                        // Add update handler for future updates
+                        registration.addEventListener('updatefound', () => {
+                            if (registration.installing) {
+                                registration.installing.addEventListener('statechange', (event) => {
+                                    if (event.target.state === 'installed' && navigator.serviceWorker.controller) {
+                                        // When a new worker has been installed but is waiting for activation
+                                        // Notify the user that an update is available
+                                        const updateNotification = document.createElement('div');
+                                        updateNotification.className = 'fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-xl animate-fade-in-up';
+                                        updateNotification.innerHTML = `
+                                            <div class="flex items-center p-4 rounded-lg shadow-xl bg-blue-50 text-blue-800 border-2 border-blue-200">
+                                                <svg class="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <p class="text-base font-medium">Updates available. Reload to apply.</p>
+                                                <button onclick="window.location.reload()" class="ml-auto bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
+                                                    Reload
+                                                </button>
+                                            </div>
+                                        `;
+                                        document.body.appendChild(updateNotification);
+                                    }
+                                });
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            }
+            
+            // Auto-dismiss flash messages after 5 seconds
+            const flashMessages = document.querySelectorAll('.animate-fade-in-up');
             flashMessages.forEach(message => {
                 setTimeout(() => {
-                    message.style.opacity = '0';
-                    message.style.transform = 'translateY(20px)';
-                    message.style.transition = 'all 0.5s ease-out';
-                    setTimeout(() => message.remove(), 500);
+                    if (message.parentNode) {
+                        message.remove();
+                    }
                 }, 5000);
             });
         });
     </script>
-    <script>
-        window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-    </script>
-    <script defer src="/_vercel/insights/script.js"></script>
-    <script defer src="/_vercel/speed-insights/script.js"></script>
-    <script>
-        // User dropdown functionality
-        const userDropdownButton = document.getElementById('userDropdownButton');
-        const userDropdown = document.getElementById('userDropdown');
-        const dropdownArrow = userDropdownButton?.querySelector('svg');
 
-        if (userDropdownButton && userDropdown) {
-            userDropdownButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                userDropdown.classList.toggle('hidden');
-                dropdownArrow.style.transform = userDropdown.classList.contains('hidden') ? '' : 'rotate(180deg)';
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!userDropdownButton.contains(e.target)) {
-                    userDropdown.classList.add('hidden');
-                    dropdownArrow.style.transform = '';
-                }
-            });
-        }
-    </script>
 </body>
 </html>

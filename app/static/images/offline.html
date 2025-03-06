@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're Offline - CoralAI Scouting</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f7f9fc;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            margin-top: 50px;
+        }
+        .logo {
+            max-width: 120px;
+            margin: 0 auto 30px;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #2563eb;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 25px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            margin: 10px;
+        }
+        .button:hover {
+            background-color: #1d4ed8;
+        }
+        .button.secondary {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+        .button.secondary:hover {
+            background-color: #d1d5db;
+        }
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 20px 0;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #eff6ff;
+            border-radius: 50%;
+        }
+        .icon svg {
+            width: 40px;
+            height: 40px;
+            color: #2563eb;
+        }
+        .cached-pages {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+        .cached-pages h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #4b5563;
+        }
+        .cached-pages ul {
+            list-style-type: none;
+            text-align: center;
+        }
+        .cached-pages li {
+            margin-bottom: 10px;
+        }
+        .cached-pages a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .cached-pages a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/static/images/logo.png" alt="CoralAI Scouting Logo" class="logo">
+        
+        <div class="icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+            </svg>
+        </div>
+        
+        <h1>You're Offline</h1>
+        
+        <p>It looks like you're currently offline. Don't worry, you can still access your cached scouting forms and any data you've previously loaded. Some features might be limited until you're back online.</p>
+        
+        <p>Any scouting data you submit while offline will be saved locally and automatically synced when your connection is restored.</p>
+        
+        <div>
+            <a href="/scouting/add" class="button">Continue Scouting</a>
+            <a href="/scouting" class="button secondary">View Cached Data</a>
+        </div>
+        
+        <div class="cached-pages">
+            <h2>Available Pages</h2>
+            <ul>
+                <li><a href="/scouting/add">Add Scouting Data</a></li>
+                <li><a href="/scouting">View Scouting List</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>CoralAI Scouting - Offline Mode</p>
+    </div>
+    
+    <script>
+        // Check if we're back online periodically
+        setInterval(() => {
+            if (navigator.onLine) {
+                window.location.reload();
+            }
+        }, 5000);
+        
+        // Add event listener for when we come back online
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+    </script>
+</body>
+</html> 
